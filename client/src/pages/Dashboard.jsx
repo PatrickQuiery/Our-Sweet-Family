@@ -1,0 +1,195 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import api from '../lib/api';
+import MemoryCard from '../components/MemoryCard';
+
+export default function Dashboard() {
+  const { user, family } = useAuth();
+  const [memories, setMemories] = useState([]);
+  const [children, setChildren] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const [selectedChild, setSelectedChild] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [error, setError] = useState('');
+
+  const fetchChildren = useCallback(async () => {
+    if (!family) return;
+    try {
+      const { data } = await api.get(`/children?familyId=${family.id}`);
+      setChildren(data.children);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [family]);
+
+  const fetchMemories = useCallback(async (reset = false) => {
+    if (!family) return;
+    const currentPage = reset ? 1 : page;
+    setLoading(true);
+    setError('');
+    try {
+      const params = new URLSearchParams({
+        familyId: family.id,
+        page: currentPage,
+        limit: 20,
+      });
+      if (selectedChild) params.set('childId', selectedChild);
+      if (selectedType) params.set('type', selectedType);
+
+      const { data } = await api.get(`/memories?${params}`);
+      if (reset || currentPage === 1) {
+        setMemories(data.memories);
+      } else {
+        setMemories((prev) => [...prev, ...data.memories]);
+      }
+      setPagination(data.pagination);
+      if (reset) setPage(1);
+    } catch (err) {
+      setError('Failed to load memories.');
+    } finally {
+      setLoading(false);
+    }
+  }, [family, page, selectedChild, selectedType]);
+
+  useEffect(() => {
+    fetchChildren();
+  }, [fetchChildren]);
+
+  useEffect(() => {
+    fetchMemories(true);
+  }, [family, selectedChild, selectedType]);
+
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+  };
+
+  useEffect(() => {
+    if (page > 1) fetchMemories(false);
+  }, [page]);
+
+  if (!family) {
+    return (
+      <div className="text-center py-20">
+        <div className="text-5xl mb-4">👨‍👩‍👧‍👦</div>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">No family set up yet</h2>
+        <p className="text-gray-500 mb-6">Create your family to start sharing memories.</p>
+        <Link to="/onboarding" className="btn-primary">
+          Set up your family
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Family Timeline</h1>
+          <p className="text-gray-500 text-sm mt-1">{family.name}</p>
+        </div>
+        <Link to="/upload" className="btn-primary flex items-center gap-2 self-start sm:self-auto">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Upload memory
+        </Link>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        <button
+          onClick={() => setSelectedChild('')}
+          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            !selectedChild ? 'bg-brand-500 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+          }`}
+        >
+          All children
+        </button>
+        {children.map((child) => (
+          <button
+            key={child.id}
+            onClick={() => setSelectedChild(child.id === selectedChild ? '' : child.id)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              selectedChild === child.id ? 'bg-brand-500 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            {child.name}
+          </button>
+        ))}
+        <div className="ml-auto flex gap-2">
+          {['', 'photo', 'video'].map((t) => (
+            <button
+              key={t}
+              onClick={() => setSelectedType(t)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                selectedType === t ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {t === '' ? 'All' : t === 'photo' ? 'Photos' : 'Videos'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-6">{error}</div>
+      )}
+
+      {loading && memories.length === 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="card overflow-hidden animate-pulse">
+              <div className="aspect-square bg-gray-200" />
+              <div className="p-3">
+                <div className="h-3 bg-gray-200 rounded w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : memories.length === 0 ? (
+        <div className="text-center py-20">
+          <div className="text-5xl mb-4">📷</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No memories yet</h3>
+          <p className="text-gray-500 text-sm mb-6">Upload your first photo or video to get started.</p>
+          <Link to="/upload" className="btn-primary">Upload first memory</Link>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {memories.map((memory) => (
+              <MemoryCard
+                key={memory.id}
+                memory={{ ...memory, _currentUserId: user?.id }}
+                onReactionChange={() => fetchMemories(true)}
+              />
+            ))}
+          </div>
+
+          {pagination && page < pagination.pages && (
+            <div className="flex justify-center mt-8">
+              <button
+                onClick={loadMore}
+                disabled={loading}
+                className="btn-secondary"
+              >
+                {loading ? 'Loading...' : 'Load more'}
+              </button>
+            </div>
+          )}
+
+          {pagination && (
+            <p className="text-center text-sm text-gray-400 mt-4">
+              Showing {memories.length} of {pagination.total} memories
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

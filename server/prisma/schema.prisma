@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  owner
+  loved_one
+}
+
+enum Plan {
+  free
+  plus
+  premium
+}
+
+enum Permission {
+  view_only
+  upload
+  share_download
+  all
+}
+
+enum FileType {
+  photo
+  video
+}
+
+enum ReactionType {
+  love
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  role         Role     @default(loved_one)
+  plan         Plan     @default(free)
+  createdAt    DateTime @default(now())
+
+  ownedFamilies  Family[]       @relation("FamilyOwner")
+  familyMembers  FamilyMember[]
+  memories       Memory[]
+  reactions      Reaction[]
+  comments       Comment[]
+}
+
+model Family {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+
+  owner    User           @relation("FamilyOwner", fields: [ownerId], references: [id])
+  children Child[]
+  members  FamilyMember[]
+  memories Memory[]
+}
+
+model Child {
+  id          String   @id @default(uuid())
+  familyId    String
+  name        String
+  dateOfBirth DateTime
+  avatarUrl   String?
+
+  family     Family           @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  milestones Milestone[]
+}
+
+model FamilyMember {
+  id            String     @id @default(uuid())
+  familyId      String
+  userId        String
+  permissions   Permission @default(view_only)
+  accessPerChild Json       @default("\"all\"")
+  createdAt     DateTime   @default(now())
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, userId])
+}
+
+model Memory {
+  id              String   @id @default(uuid())
+  familyId        String
+  childIds        Json     @default("[]")
+  uploadedById    String
+  fileUrl         String
+  thumbnailUrl    String?
+  fileType        FileType
+  originalQuality Boolean  @default(false)
+  capturedAt      DateTime
+  isClassified    Boolean  @default(false)
+  caption         String?
+  createdAt       DateTime @default(now())
+
+  family     Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  uploadedBy User       @relation(fields: [uploadedById], references: [id])
+  reactions  Reaction[]
+  comments   Comment[]
+}
+
+model Reaction {
+  id        String       @id @default(uuid())
+  memoryId  String
+  userId    String
+  type      ReactionType @default(love)
+  createdAt DateTime     @default(now())
+
+  memory Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([memoryId, userId, type])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  memoryId  String
+  userId    String
+  text      String
+  createdAt DateTime @default(now())
+
+  memory Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Milestone {
+  id        String   @id @default(uuid())
+  childId   String
+  type      String
+  value     String
+  unit      String?
+  note      String?
+  date      DateTime
+  createdAt DateTime @default(now())
+
+  child Child @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
