@@ -153,12 +153,12 @@ export default function Landing() {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=300',
+                  'https://images.unsplash.com/photo-1503919005314-30d93d07d823?w=300',
+                  'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=300',
                   'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300',
-                  'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=300',
-                  'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=300',
-                  'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=300',
-                  'https://images.unsplash.com/photo-1492725764893-90b379c2b6e7?w=300',
+                  'https://images.unsplash.com/photo-1471286174890-9c112ffca5b4?w=300',
+                  'https://images.unsplash.com/photo-1489710437720-ebb67ec84dd2?w=300',
+                  'https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=300',
                 ].map((src, i) => (
                   <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-200">
                     <img src={src} alt="" className="w-full h-full object-cover" />
