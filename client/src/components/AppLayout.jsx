@@ -76,9 +76,7 @@ export default function AppLayout() {
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Logo */}
         <div className="flex items-center gap-2 px-6 py-5 border-b border-gray-100">
-          <div className="w-8 h-8 bg-gradient-to-br from-brand-400 to-brand-600 rounded-xl flex items-center justify-center text-white text-sm font-bold">
-            OSF
-          </div>
+          <img src="/logo.svg" alt="Our Sweet Family" className="w-10 h-10" />
           <span className="font-bold text-gray-900">Our Sweet Family</span>
         </div>
 

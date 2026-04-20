@@ -98,9 +98,7 @@ export default function Landing() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-brand-400 to-brand-600 rounded-xl flex items-center justify-center text-white text-sm font-bold">
-            OSF
-          </div>
+          <img src="/logo.svg" alt="Our Sweet Family" className="w-10 h-10" />
           <span className="font-bold text-gray-900 text-lg">Our Sweet Family</span>
         </div>
         <div className="flex items-center gap-3">

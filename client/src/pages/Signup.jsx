@@ -32,9 +32,7 @@ export default function Signup() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-brand-400 to-brand-600 rounded-2xl flex items-center justify-center text-white font-bold">
-              OSF
-            </div>
+            <img src="/logo.svg" alt="Our Sweet Family" className="w-16 h-16" />
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
           <p className="text-gray-500 mt-1 text-sm">Start preserving memories for free</p>
