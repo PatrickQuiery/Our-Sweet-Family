@@ -158,7 +158,7 @@ export default function Landing() {
                   'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300',
                   'https://images.unsplash.com/photo-1471286174890-9c112ffca5b4?w=300',
                   'https://images.unsplash.com/photo-1489710437720-ebb67ec84dd2?w=300',
-                  'https://images.unsplash.com/photo-1545069151-d99ec2019f12?w=300',
+                  'https://images.unsplash.com/photo-1490818387583-1baba5e638af?w=300',
                 ].map((src, i) => (
                   <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-200">
                     <img src={src} alt="" className="w-full h-full object-cover" />
