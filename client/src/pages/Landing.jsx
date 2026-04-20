@@ -163,7 +163,7 @@ export default function Landing() {
                   <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-200">
                     <img src={src} alt="" className="w-full h-full object-cover" />
                     <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-md backdrop-blur-sm">
-                      {i === 0 ? '2y 3m' : i === 1 ? '1y' : i === 2 ? '4m' : i === 3 ? '3y' : i === 4 ? '1y 8m' : '4y 2m'}
+                      {i === 0 ? '1y 5m' : i === 1 ? '1y' : i === 2 ? '4m' : i === 3 ? '3y' : i === 4 ? '1y 8m' : '4y 2m'}
                     </div>
                   </div>
                 ))}
