@@ -243,6 +243,10 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="px-6 py-8 text-center text-gray-400 text-sm border-t border-gray-100">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <img src="/logo.svg" alt="Our Sweet Family" className="w-8 h-8" />
+          <span className="font-semibold text-gray-500">Our Sweet Family</span>
+        </div>
         <p>&copy; 2025 Our Sweet Family. All rights reserved. Built with love.</p>
       </footer>
     </div>
