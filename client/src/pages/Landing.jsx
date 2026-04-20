@@ -20,12 +20,12 @@ const features = [
   {
     icon: '🎂',
     title: 'Age Labels',
-    desc: 'Every memory automatically shows how old each child was — "2 years, 3 months" — from EXIF data.',
+    desc: 'Every memory automatically shows how old each child was — "2 years, 3 months".',
   },
   {
     icon: '📱',
     title: 'Mobile First',
-    desc: 'Upload from any device. Drag, drop, or capture directly. EXIF date extraction included.',
+    desc: 'Upload from any device. Drag, drop, or capture directly.',
   },
   {
     icon: '🔒',
