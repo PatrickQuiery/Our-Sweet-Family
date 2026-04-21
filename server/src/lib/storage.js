@@ -31,13 +31,19 @@ async function uploadToS3(buffer, originalName, mimeType, folder) {
   const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
   const { v4: uuidv4 } = require('uuid');
 
-  const s3 = new S3Client({
-    region: process.env.AWS_REGION,
+  const s3Config = {
+    region: process.env.AWS_REGION || 'auto',
     credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY,
       secretAccessKey: process.env.AWS_SECRET_KEY,
     },
-  });
+  };
+  if (process.env.AWS_ENDPOINT) {
+    s3Config.endpoint = process.env.AWS_ENDPOINT;
+    s3Config.forcePathStyle = true;
+  }
+
+  const s3 = new S3Client(s3Config);
 
   const ext = path.extname(originalName);
   const key = `${folder}/${uuidv4()}${ext}`;
@@ -49,7 +55,9 @@ async function uploadToS3(buffer, originalName, mimeType, folder) {
     ContentType: mimeType,
   }));
 
-  return `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+  const baseUrl = process.env.AWS_PUBLIC_URL
+    || `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com`;
+  return `${baseUrl}/${key}`;
 }
 
 module.exports = { uploadFile };
