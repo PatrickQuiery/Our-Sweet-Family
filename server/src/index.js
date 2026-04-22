@@ -27,6 +27,7 @@ if (!fs.existsSync(thumbnailsDir)) {
 
 const allowedOrigins = [
   'http://localhost:5173',
+  'https://oursweetfamily.com',
   ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL] : []),
 ];
 
