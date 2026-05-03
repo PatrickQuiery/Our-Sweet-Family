@@ -88,8 +88,12 @@ router.get('/', authenticate, async (req, res) => {
         ? membership.accessPerChild
         : JSON.parse(membership.accessPerChild);
 
-      // Filter by childIds overlap
-      where.childIds = { path: '$', array_contains: allowedChildren };
+      // Use OR so that memories tagged with ANY allowed child are returned.
+      // Using array_contains with the full array would require ALL allowed children
+      // to appear on every memory, which is far too restrictive.
+      where.OR = allowedChildren.map((cid) => ({
+        childIds: { path: '$', array_contains: [cid] },
+      }));
     }
 
     if (childId) {
@@ -181,6 +185,21 @@ router.get('/:id', authenticate, async (req, res) => {
 
     if (!isOwner && !membership) return res.status(403).json({ error: 'Access denied' });
     if (!isOwner && memory.isClassified) return res.status(403).json({ error: 'Access denied' });
+
+    // Enforce per-child access restrictions for members
+    if (!isOwner && membership && membership.accessPerChild !== 'all') {
+      const allowedChildren = Array.isArray(membership.accessPerChild)
+        ? membership.accessPerChild
+        : JSON.parse(membership.accessPerChild);
+      const rawChildIds = Array.isArray(memory.childIds)
+        ? memory.childIds
+        : JSON.parse(memory.childIds || '[]');
+      // Untagged memories (no childIds) are visible to all members;
+      // tagged memories require at least one child to be in the allowed list.
+      const hasAccess =
+        rawChildIds.length === 0 || rawChildIds.some((cid) => allowedChildren.includes(cid));
+      if (!hasAccess) return res.status(403).json({ error: 'Access denied' });
+    }
 
     const childIds = Array.isArray(memory.childIds) ? memory.childIds : JSON.parse(memory.childIds || '[]');
     const ageLabels = childIds.map((cid) => {
