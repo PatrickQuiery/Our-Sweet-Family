@@ -1,11 +1,15 @@
 jest.mock('../../lib/prisma');
 jest.mock('bcryptjs');
+jest.mock('google-auth-library');
+jest.mock('apple-signin-auth');
 
 const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const app = require('../../app');
 const prisma = require('../../lib/prisma');
+const { OAuth2Client } = require('google-auth-library');
+const appleSignin = require('apple-signin-auth');
 
 // Full DB row (includes passwordHash — used for login & authenticate lookups)
 const dbUser = {
@@ -154,5 +158,155 @@ describe('GET /api/auth/me', () => {
       .get('/api/auth/me')
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(401);
+  });
+});
+
+// ─── Google OAuth ─────────────────────────────────────────────────────────────
+
+describe('POST /api/auth/google', () => {
+  const googlePayload = { sub: 'google-uid-123', email: 'guser@gmail.com', name: 'Google User', picture: 'https://pic.example.com/g.jpg' };
+  const oauthUser = { ...dbUser, id: 'user-g1', email: 'guser@gmail.com', googleId: 'google-uid-123', avatarUrl: googlePayload.picture };
+
+  function mockGoogleVerify(payload = googlePayload) {
+    OAuth2Client.prototype.verifyIdToken = jest.fn().mockResolvedValue({
+      getPayload: () => payload,
+    });
+  }
+
+  it('creates a new user on first Google sign-in', async () => {
+    mockGoogleVerify();
+    bcrypt.hash.mockResolvedValue('tmp');
+    // googleId lookup → null, email lookup → null → create
+    prisma.user.findUnique
+      .mockResolvedValueOnce(null)  // googleId
+      .mockResolvedValueOnce(null); // email
+    prisma.user.create.mockResolvedValue(oauthUser);
+
+    const res = await request(app).post('/api/auth/google').send({ idToken: 'valid-id-token' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('token');
+    expect(res.body.user.email).toBe('guser@gmail.com');
+    expect(res.body.user.passwordHash).toBeUndefined();
+    expect(prisma.user.create).toHaveBeenCalled();
+  });
+
+  it('signs in existing user by googleId', async () => {
+    mockGoogleVerify();
+    prisma.user.findUnique.mockResolvedValueOnce(oauthUser); // found by googleId
+
+    const res = await request(app).post('/api/auth/google').send({ idToken: 'valid-id-token' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.user.id).toBe('user-g1');
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it('links Google ID to an existing email account', async () => {
+    mockGoogleVerify();
+    const existingUser = { ...dbUser, googleId: null };
+    const linkedUser = { ...existingUser, googleId: 'google-uid-123', avatarUrl: googlePayload.picture };
+    prisma.user.findUnique
+      .mockResolvedValueOnce(null)          // googleId → not found
+      .mockResolvedValueOnce(existingUser); // email → found
+    prisma.user.update.mockResolvedValue(linkedUser);
+
+    const res = await request(app).post('/api/auth/google').send({ idToken: 'valid-id-token' });
+
+    expect(res.status).toBe(200);
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ googleId: 'google-uid-123' }) })
+    );
+  });
+
+  it('returns 400 when idToken is missing', async () => {
+    const res = await request(app).post('/api/auth/google').send({});
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 401 when Google rejects the token', async () => {
+    OAuth2Client.prototype.verifyIdToken = jest.fn().mockRejectedValue(new Error('Invalid token'));
+
+    const res = await request(app).post('/api/auth/google').send({ idToken: 'bad-token' });
+    expect(res.status).toBe(401);
+    expect(res.body.error).toMatch(/invalid google token/i);
+  });
+});
+
+// ─── Apple OAuth ─────────────────────────────────────────────────────────────
+
+describe('POST /api/auth/apple', () => {
+  const applePayload = { sub: 'apple-uid-456', email: 'auser@privaterelay.appleid.com' };
+  const oauthUser = { ...dbUser, id: 'user-a1', email: applePayload.email, appleId: applePayload.sub };
+
+  function mockAppleVerify(payload = applePayload) {
+    appleSignin.verifyIdToken = jest.fn().mockResolvedValue(payload);
+  }
+
+  it('creates a new user on first Apple sign-in', async () => {
+    mockAppleVerify();
+    bcrypt.hash.mockResolvedValue('tmp');
+    prisma.user.findUnique
+      .mockResolvedValueOnce(null)  // appleId
+      .mockResolvedValueOnce(null); // email
+    prisma.user.create.mockResolvedValue(oauthUser);
+
+    const res = await request(app)
+      .post('/api/auth/apple')
+      .send({ idToken: 'valid-apple-token', name: 'Apple User' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('token');
+    expect(res.body.user.passwordHash).toBeUndefined();
+    expect(prisma.user.create).toHaveBeenCalled();
+  });
+
+  it('signs in existing user by appleId', async () => {
+    mockAppleVerify();
+    prisma.user.findUnique.mockResolvedValueOnce(oauthUser); // found by appleId
+
+    const res = await request(app).post('/api/auth/apple').send({ idToken: 'valid-apple-token' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.user.id).toBe('user-a1');
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it('links Apple ID to an existing email account', async () => {
+    mockAppleVerify();
+    const existingUser = { ...dbUser, appleId: null };
+    const linkedUser = { ...existingUser, appleId: applePayload.sub };
+    prisma.user.findUnique
+      .mockResolvedValueOnce(null)          // appleId → not found
+      .mockResolvedValueOnce(existingUser); // email → found
+    prisma.user.update.mockResolvedValue(linkedUser);
+
+    const res = await request(app).post('/api/auth/apple').send({ idToken: 'valid-apple-token' });
+
+    expect(res.status).toBe(200);
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ appleId: applePayload.sub }) })
+    );
+  });
+
+  it('returns 400 when Apple omits email and user is new', async () => {
+    mockAppleVerify({ sub: 'apple-uid-new', email: undefined });
+    prisma.user.findUnique.mockResolvedValueOnce(null); // appleId → not found
+
+    const res = await request(app).post('/api/auth/apple').send({ idToken: 'valid-apple-token' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when idToken is missing', async () => {
+    const res = await request(app).post('/api/auth/apple').send({});
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 401 when Apple rejects the token', async () => {
+    appleSignin.verifyIdToken = jest.fn().mockRejectedValue(new Error('Invalid token'));
+
+    const res = await request(app).post('/api/auth/apple').send({ idToken: 'bad-token' });
+    expect(res.status).toBe(401);
+    expect(res.body.error).toMatch(/invalid apple token/i);
   });
 });

@@ -57,6 +57,15 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  // provider: 'google' | 'apple'
+  // payload: { idToken, name? } — extra fields forwarded to the backend
+  const loginWithOAuth = async (provider, payload) => {
+    const { data } = await api.post(`/auth/${provider}`, payload);
+    localStorage.setItem('token', data.token);
+    setUser(data.user);
+    return data;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
@@ -67,7 +76,7 @@ export function AuthProvider({ children }) {
   const refreshFamily = () => fetchFamily();
 
   return (
-    <AuthContext.Provider value={{ user, loading, family, login, signup, logout, refreshFamily }}>
+    <AuthContext.Provider value={{ user, loading, family, login, signup, loginWithOAuth, logout, refreshFamily }}>
       {children}
     </AuthContext.Provider>
   );

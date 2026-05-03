@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import OAuthButtons from '../components/OAuthButtons';
 
 export default function Login() {
   const { login } = useAuth();
@@ -35,12 +36,15 @@ export default function Login() {
         </div>
 
         <div className="card p-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">
+              {error}
+            </div>
+          )}
+
+          <OAuthButtons redirectTo="/dashboard" onError={setError} />
+
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
-                {error}
-              </div>
-            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
               <input

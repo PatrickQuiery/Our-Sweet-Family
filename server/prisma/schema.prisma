@@ -42,6 +42,8 @@ model User {
   avatarUrl    String?
   role         Role     @default(loved_one)
   plan         Plan     @default(free)
+  googleId     String?  @unique
+  appleId      String?  @unique
   createdAt    DateTime @default(now())
 
   ownedFamilies  Family[]       @relation("FamilyOwner")
