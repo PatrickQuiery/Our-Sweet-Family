@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import AcceptInvite from './pages/AcceptInvite';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import Upload from './pages/Upload';
@@ -42,6 +43,8 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+      {/* Public — accessible even when logged in, token in URL drives the flow */}
+      <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route
         path="/onboarding"
         element={<ProtectedRoute><Onboarding /></ProtectedRoute>}

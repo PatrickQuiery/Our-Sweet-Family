@@ -1,7 +1,9 @@
 const express = require('express');
+const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
+const { sendInviteEmail } = require('../lib/email');
 
 const router = express.Router();
 
@@ -48,9 +50,14 @@ router.post(
       if (family.ownerId !== req.user.id)
         return res.status(403).json({ error: 'Only owner can invite members' });
 
+      // Generate a secure invite token (fresh for every invite, even re-invites)
+      const inviteToken = crypto.randomBytes(32).toString('hex');
+      const inviteTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
       let invitee = await prisma.user.findUnique({ where: { email } });
+      const isNewUser = !invitee;
+
       if (!invitee) {
-        // Create a placeholder account for the loved one
         const { v4: uuidv4 } = require('uuid');
         const bcrypt = require('bcryptjs');
         const tempPass = await bcrypt.hash(uuidv4(), 10);
@@ -60,7 +67,15 @@ router.post(
             passwordHash: tempPass,
             name: email.split('@')[0],
             role: 'loved_one',
+            inviteToken,
+            inviteTokenExpiry,
           },
+        });
+      } else {
+        // Refresh token so they always get a valid link even if re-invited
+        invitee = await prisma.user.update({
+          where: { id: invitee.id },
+          data: { inviteToken, inviteTokenExpiry },
         });
       }
 
@@ -78,6 +93,16 @@ router.post(
         },
         include: { user: { select: { id: true, name: true, email: true, avatarUrl: true } } },
       });
+
+      // Send invite email — fire-and-forget so a mail failure doesn't block the response
+      sendInviteEmail({
+        to: email,
+        inviteeName: invitee.name,
+        inviterName: req.user.name,
+        familyName: family.name,
+        token: inviteToken,
+      }).catch((err) => console.error('Failed to send invite email:', err));
+
       res.status(201).json({ member });
     } catch (err) {
       console.error(err);

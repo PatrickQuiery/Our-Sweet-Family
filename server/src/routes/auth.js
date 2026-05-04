@@ -15,7 +15,7 @@ function signToken(userId) {
 }
 
 function safeUser(user) {
-  const { passwordHash: _, ...safe } = user;
+  const { passwordHash: _, inviteToken: __, inviteTokenExpiry: ___, ...safe } = user;
   return safe;
 }
 
@@ -198,5 +198,81 @@ router.post('/apple', async (req, res) => {
     res.status(401).json({ error: 'Invalid Apple token' });
   }
 });
+
+// GET /api/auth/invite-info?token= — returns family + inviter details for the setup page
+router.get('/invite-info', async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ error: 'token required' });
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { inviteToken: token },
+      include: {
+        familyMembers: {
+          include: {
+            family: { include: { owner: { select: { id: true, name: true } } } },
+          },
+        },
+      },
+    });
+
+    if (!user || !user.inviteTokenExpiry || new Date(user.inviteTokenExpiry) < new Date()) {
+      return res.status(400).json({ error: 'Invite link is invalid or has expired' });
+    }
+
+    // Return just enough info for the setup page — no sensitive data
+    const membership = user.familyMembers[0];
+    res.json({
+      email: user.email,
+      familyName: membership?.family?.name || '',
+      inviterName: membership?.family?.owner?.name || '',
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/auth/accept-invite — set password and activate the invited account
+router.post(
+  '/accept-invite',
+  [
+    body('token').notEmpty(),
+    body('password').isLength({ min: 8 }),
+    body('name').trim().notEmpty(),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { token, password, name } = req.body;
+
+    try {
+      const user = await prisma.user.findUnique({ where: { inviteToken: token } });
+
+      if (!user || !user.inviteTokenExpiry || new Date(user.inviteTokenExpiry) < new Date()) {
+        return res.status(400).json({ error: 'Invite link is invalid or has expired' });
+      }
+
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      const updated = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          name,
+          passwordHash,
+          inviteToken: null,
+          inviteTokenExpiry: null,
+        },
+      });
+
+      const jwt_token = signToken(updated.id);
+      res.json({ token: jwt_token, user: safeUser(updated) });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
 
 module.exports = router;

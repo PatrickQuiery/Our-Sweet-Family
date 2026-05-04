@@ -35,16 +35,18 @@ enum ReactionType {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  avatarUrl    String?
-  role         Role     @default(loved_one)
-  plan         Plan     @default(free)
-  googleId     String?  @unique
-  appleId      String?  @unique
-  createdAt    DateTime @default(now())
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  passwordHash       String
+  name               String
+  avatarUrl          String?
+  role               Role      @default(loved_one)
+  plan               Plan      @default(free)
+  googleId           String?   @unique
+  appleId            String?   @unique
+  inviteToken        String?   @unique
+  inviteTokenExpiry  DateTime?
+  createdAt          DateTime  @default(now())
 
   ownedFamilies  Family[]       @relation("FamilyOwner")
   familyMembers  FamilyMember[]

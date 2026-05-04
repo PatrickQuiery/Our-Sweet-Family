@@ -310,3 +310,124 @@ describe('POST /api/auth/apple', () => {
     expect(res.body.error).toMatch(/invalid apple token/i);
   });
 });
+
+// ─── GET /api/auth/invite-info ────────────────────────────────────────────────
+
+describe('GET /api/auth/invite-info', () => {
+  const invitedUser = {
+    ...dbUser,
+    id: 'invited1',
+    email: 'invited@test.com',
+    inviteToken: 'validtoken123',
+    inviteTokenExpiry: new Date(Date.now() + 86400000).toISOString(), // tomorrow
+    familyMembers: [{
+      family: {
+        name: 'Smith Family',
+        owner: { id: 'owner1', name: 'Jane Smith' },
+      },
+    }],
+  };
+
+  it('returns invite info for a valid token', async () => {
+    prisma.user.findUnique.mockResolvedValue(invitedUser);
+
+    const res = await request(app).get('/api/auth/invite-info?token=validtoken123');
+
+    expect(res.status).toBe(200);
+    expect(res.body.email).toBe('invited@test.com');
+    expect(res.body.familyName).toBe('Smith Family');
+    expect(res.body.inviterName).toBe('Jane Smith');
+  });
+
+  it('returns 400 for an expired token', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      ...invitedUser,
+      inviteTokenExpiry: new Date(Date.now() - 86400000).toISOString(), // yesterday
+    });
+
+    const res = await request(app).get('/api/auth/invite-info?token=expiredtoken');
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when token is not found', async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+
+    const res = await request(app).get('/api/auth/invite-info?token=unknowntoken');
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when token query param is missing', async () => {
+    const res = await request(app).get('/api/auth/invite-info');
+    expect(res.status).toBe(400);
+  });
+});
+
+// ─── POST /api/auth/accept-invite ────────────────────────────────────────────
+
+describe('POST /api/auth/accept-invite', () => {
+  const pendingUser = {
+    ...dbUser,
+    id: 'invited1',
+    email: 'invited@test.com',
+    inviteToken: 'validtoken123',
+    inviteTokenExpiry: new Date(Date.now() + 86400000).toISOString(),
+  };
+  const activatedUser = {
+    ...pendingUser,
+    name: 'New Member',
+    inviteToken: null,
+    inviteTokenExpiry: null,
+  };
+
+  it('sets password and returns JWT for valid token', async () => {
+    prisma.user.findUnique.mockResolvedValue(pendingUser);
+    bcrypt.hash.mockResolvedValue('new_hash');
+    prisma.user.update.mockResolvedValue(activatedUser);
+
+    const res = await request(app).post('/api/auth/accept-invite').send({
+      token: 'validtoken123',
+      name: 'New Member',
+      password: 'securepass123',
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.token).toBeDefined();
+    expect(res.body.user.inviteToken).toBeUndefined();
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ inviteToken: null }),
+      })
+    );
+  });
+
+  it('returns 400 for an expired token', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      ...pendingUser,
+      inviteTokenExpiry: new Date(Date.now() - 86400000).toISOString(),
+    });
+
+    const res = await request(app).post('/api/auth/accept-invite').send({
+      token: 'expiredtoken',
+      name: 'New Member',
+      password: 'securepass123',
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when password is too short', async () => {
+    const res = await request(app).post('/api/auth/accept-invite').send({
+      token: 'validtoken123',
+      name: 'New Member',
+      password: 'short',
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when token is missing', async () => {
+    const res = await request(app).post('/api/auth/accept-invite').send({
+      name: 'New Member',
+      password: 'securepass123',
+    });
+    expect(res.status).toBe(400);
+  });
+});

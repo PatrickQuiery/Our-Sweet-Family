@@ -1,11 +1,13 @@
 jest.mock('../../lib/prisma');
 jest.mock('bcryptjs');
+jest.mock('../../lib/email');
 
 const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const app = require('../../app');
 const prisma = require('../../lib/prisma');
+const { sendInviteEmail } = require('../../lib/email');
 
 const ownerUser = { id: 'owner1', email: 'owner@test.com', name: 'Owner', role: 'owner', plan: 'free', avatarUrl: null };
 const memberUser = { id: 'member1', email: 'member@test.com', name: 'Member', role: 'loved_one', plan: 'free', avatarUrl: null };
@@ -61,9 +63,11 @@ describe('GET /api/members', () => {
 
 describe('POST /api/members', () => {
   it('invites an existing user by email', async () => {
+    sendInviteEmail.mockResolvedValue({});
     prisma.user.findUnique
       .mockResolvedValueOnce(ownerUser)   // authenticate
       .mockResolvedValueOnce(memberUser); // find invitee
+    prisma.user.update.mockResolvedValue(memberUser); // refresh invite token
     prisma.family.findUnique.mockResolvedValue(mockFamily);
     prisma.familyMember.findUnique.mockResolvedValue(null);
     prisma.familyMember.create.mockResolvedValue(mockMember);
@@ -78,6 +82,7 @@ describe('POST /api/members', () => {
   });
 
   it('creates a placeholder account when inviting an unknown email', async () => {
+    sendInviteEmail.mockResolvedValue({});
     bcrypt.hash.mockResolvedValue('temp_hash');
     prisma.user.findUnique
       .mockResolvedValueOnce(ownerUser)  // authenticate
@@ -100,6 +105,7 @@ describe('POST /api/members', () => {
     prisma.user.findUnique
       .mockResolvedValueOnce(ownerUser)
       .mockResolvedValueOnce(memberUser);
+    prisma.user.update.mockResolvedValue(memberUser); // refresh invite token
     prisma.family.findUnique.mockResolvedValue(mockFamily);
     prisma.familyMember.findUnique.mockResolvedValue(mockMember); // already exists
 
