@@ -92,15 +92,12 @@ router.get('/', authenticate, async (req, res) => {
       // Using array_contains with the full array would require ALL allowed children
       // to appear on every memory, which is far too restrictive.
       where.OR = allowedChildren.map((cid) => ({
-        childIds: { path: '$', array_contains: [cid] },
+        childIds: { array_contains: [cid] },
       }));
     }
 
     if (childId) {
-      // JSON array contains childId
-      where.AND = [
-        { childIds: { path: '$', array_contains: [childId] } },
-      ];
+      where.AND = [{ childIds: { array_contains: [childId] } }];
     }
 
     if (type && ['photo', 'video'].includes(type)) {

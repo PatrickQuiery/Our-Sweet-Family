@@ -37,7 +37,7 @@ router.get('/', authenticate, async (req, res) => {
     };
 
     if (childId) {
-      where.AND = [{ childIds: { path: '$', array_contains: [childId] } }];
+      where.AND = [{ childIds: { array_contains: [childId] } }];
     }
 
     const memories = await prisma.memory.findMany({
