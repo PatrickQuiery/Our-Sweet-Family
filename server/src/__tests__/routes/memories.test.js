@@ -1,5 +1,6 @@
 jest.mock('../../lib/prisma');
 jest.mock('../../lib/storage');
+jest.mock('file-type', () => ({ fromBuffer: jest.fn().mockResolvedValue({ ext: 'jpg', mime: 'image/jpeg' }) }));
 
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
@@ -32,6 +33,12 @@ const mockMemory = {
   uploadedById: 'owner1',
   uploadedBy: { id: 'owner1', name: 'Owner', avatarUrl: null },
   reactions: [], comments: [],
+};
+
+// Memory with family embedded — used by requireMemoryAccess in reaction/comment handlers
+const mockMemoryWithAccess = {
+  ...mockMemory,
+  family: { ownerId: 'owner1', members: mockFamily.members },
 };
 
 // ─── GET /api/memories ────────────────────────────────────────────────────────
@@ -267,6 +274,7 @@ describe('DELETE /api/memories/:id', () => {
 describe('POST /api/memories/:id/reactions', () => {
   it('adds a love reaction', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(mockMemoryWithAccess);
     prisma.reaction.upsert.mockResolvedValue({ id: 'r1', memoryId: 'mem1', userId: 'owner1', type: 'love' });
 
     const res = await request(app)
@@ -276,11 +284,23 @@ describe('POST /api/memories/:id/reactions', () => {
     expect(res.status).toBe(201);
     expect(res.body.reaction.type).toBe('love');
   });
+
+  it('returns 403 when reacting to a memory in a family the user does not belong to', async () => {
+    prisma.user.findUnique.mockResolvedValue(otherUser);
+    prisma.memory.findUnique.mockResolvedValue(mockMemoryWithAccess);
+
+    const res = await request(app)
+      .post('/api/memories/mem1/reactions')
+      .set('Authorization', `Bearer ${otherToken}`);
+
+    expect(res.status).toBe(403);
+  });
 });
 
 describe('DELETE /api/memories/:id/reactions', () => {
   it('removes love reaction', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(mockMemoryWithAccess);
     prisma.reaction.deleteMany.mockResolvedValue({ count: 1 });
 
     const res = await request(app)
@@ -297,6 +317,7 @@ describe('DELETE /api/memories/:id/reactions', () => {
 describe('POST /api/memories/:id/comments', () => {
   it('adds a comment', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(mockMemoryWithAccess);
     prisma.comment.create.mockResolvedValue({
       id: 'c1', memoryId: 'mem1', userId: 'owner1', text: 'So cute!',
       user: { id: 'owner1', name: 'Owner', avatarUrl: null },
@@ -309,6 +330,38 @@ describe('POST /api/memories/:id/comments', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.comment.text).toBe('So cute!');
+  });
+
+  it('strips HTML tags from comment text', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(mockMemoryWithAccess);
+    prisma.comment.create.mockImplementation(({ data }) =>
+      Promise.resolve({
+        id: 'c2', memoryId: 'mem1', userId: 'owner1', text: data.text,
+        user: { id: 'owner1', name: 'Owner', avatarUrl: null },
+      })
+    );
+
+    const res = await request(app)
+      .post('/api/memories/mem1/comments')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ text: '<script>alert(1)</script>Nice photo!' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.comment.text).not.toContain('<script>');
+    expect(res.body.comment.text).toContain('Nice photo!');
+  });
+
+  it('returns 403 when commenting on a memory outside the user\'s family', async () => {
+    prisma.user.findUnique.mockResolvedValue(otherUser);
+    prisma.memory.findUnique.mockResolvedValue(mockMemoryWithAccess);
+
+    const res = await request(app)
+      .post('/api/memories/mem1/comments')
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send({ text: 'Intruder!' });
+
+    expect(res.status).toBe(403);
   });
 
   it('returns 400 for empty comment text', async () => {
@@ -326,6 +379,7 @@ describe('POST /api/memories/:id/comments', () => {
 describe('DELETE /api/memories/:memoryId/comments/:commentId', () => {
   it('deletes own comment', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(mockMemoryWithAccess);
     prisma.comment.findUnique.mockResolvedValue({ id: 'c1', userId: 'owner1', text: 'test' });
     prisma.comment.delete.mockResolvedValue({});
 
@@ -338,6 +392,7 @@ describe('DELETE /api/memories/:memoryId/comments/:commentId', () => {
 
   it("returns 403 when deleting another user's comment", async () => {
     prisma.user.findUnique.mockResolvedValue(memberUser);
+    prisma.memory.findUnique.mockResolvedValue(mockMemoryWithAccess);
     prisma.comment.findUnique.mockResolvedValue({ id: 'c1', userId: 'owner1', text: 'test' });
 
     const res = await request(app)

@@ -2,6 +2,8 @@ const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
 const path = require('path');
+const xss = require('xss');
+const { fromBuffer } = require('file-type');
 const { authenticate } = require('../middleware/auth');
 const prisma = require('../lib/prisma');
 const { uploadFile } = require('../lib/storage');
@@ -9,10 +11,15 @@ const { calculateAgeLabel } = require('../lib/ageLabel');
 
 const router = express.Router();
 
-// Store in memory for processing
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/vnd.avi',
+  'video/x-matroska', 'video/x-m4v',
+]);
+
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|gif|webp|mp4|mov|avi|mkv|m4v/;
     const ext = path.extname(file.originalname).toLowerCase().slice(1);
@@ -53,14 +60,45 @@ async function generateThumbnail(buffer, mimetype, originalName) {
   }
 }
 
+// Verify the calling user has read access to a specific memory.
+// Returns { memory } on success or { error, status } on failure.
+async function requireMemoryAccess(req, memoryId) {
+  const memory = await prisma.memory.findUnique({
+    where: { id: memoryId },
+    include: { family: { include: { members: true } } },
+  });
+  if (!memory) return { error: 'Memory not found', status: 404 };
+
+  const isOwner = memory.family.ownerId === req.user.id;
+  const membership = memory.family.members.find((m) => m.userId === req.user.id);
+
+  if (!isOwner && !membership) return { error: 'Access denied', status: 403 };
+  if (!isOwner && memory.isClassified) return { error: 'Access denied', status: 403 };
+
+  if (!isOwner && membership && membership.accessPerChild !== 'all') {
+    const allowedChildren = Array.isArray(membership.accessPerChild)
+      ? membership.accessPerChild
+      : JSON.parse(membership.accessPerChild);
+    const rawChildIds = Array.isArray(memory.childIds)
+      ? memory.childIds
+      : JSON.parse(memory.childIds || '[]');
+    const hasAccess =
+      rawChildIds.length === 0 || rawChildIds.some((cid) => allowedChildren.includes(cid));
+    if (!hasAccess) return { error: 'Access denied', status: 403 };
+  }
+
+  return { memory };
+}
+
 // GET /api/memories?familyId=&childId=&page=&limit=&type=
 router.get('/', authenticate, async (req, res) => {
-  const { familyId, childId, page = 1, limit = 20, type } = req.query;
+  const { familyId, childId, type } = req.query;
+  const pageNum = Math.max(1, Math.min(parseInt(req.query.page) || 1, 10000));
+  const limitNum = Math.max(1, Math.min(parseInt(req.query.limit) || 20, 100));
 
   if (!familyId) return res.status(400).json({ error: 'familyId required' });
 
   try {
-    // Check access
     const family = await prisma.family.findUnique({
       where: { id: familyId },
       include: { members: true },
@@ -74,23 +112,16 @@ router.get('/', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Build filter
     const where = { familyId };
 
-    // Non-owners cannot see classified memories
     if (!isOwner) {
       where.isClassified = false;
     }
 
-    // Per-child access filter for loved ones
     if (!isOwner && membership && membership.accessPerChild !== 'all') {
       const allowedChildren = Array.isArray(membership.accessPerChild)
         ? membership.accessPerChild
         : JSON.parse(membership.accessPerChild);
-
-      // Use OR so that memories tagged with ANY allowed child are returned.
-      // Using array_contains with the full array would require ALL allowed children
-      // to appear on every memory, which is far too restrictive.
       where.OR = allowedChildren.map((cid) => ({
         childIds: { array_contains: [cid] },
       }));
@@ -104,8 +135,7 @@ router.get('/', authenticate, async (req, res) => {
       where.fileType = type;
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const take = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
 
     const [total, memories] = await Promise.all([
       prisma.memory.count({ where }),
@@ -113,7 +143,7 @@ router.get('/', authenticate, async (req, res) => {
         where,
         orderBy: { capturedAt: 'desc' },
         skip,
-        take,
+        take: limitNum,
         include: {
           uploadedBy: { select: { id: true, name: true, avatarUrl: true } },
           reactions: { include: { user: { select: { id: true, name: true } } } },
@@ -125,7 +155,6 @@ router.get('/', authenticate, async (req, res) => {
       }),
     ]);
 
-    // Enrich with age labels
     const children = await prisma.child.findMany({ where: { familyId } });
     const childMap = Object.fromEntries(children.map((c) => [c.id, c]));
 
@@ -148,9 +177,9 @@ router.get('/', authenticate, async (req, res) => {
       memories: enriched,
       pagination: {
         total,
-        page: parseInt(page),
-        limit: take,
-        pages: Math.ceil(total / take),
+        page: pageNum,
+        limit: limitNum,
+        pages: Math.ceil(total / limitNum),
       },
     });
   } catch (err) {
@@ -183,7 +212,6 @@ router.get('/:id', authenticate, async (req, res) => {
     if (!isOwner && !membership) return res.status(403).json({ error: 'Access denied' });
     if (!isOwner && memory.isClassified) return res.status(403).json({ error: 'Access denied' });
 
-    // Enforce per-child access restrictions for members
     if (!isOwner && membership && membership.accessPerChild !== 'all') {
       const allowedChildren = Array.isArray(membership.accessPerChild)
         ? membership.accessPerChild
@@ -191,8 +219,6 @@ router.get('/:id', authenticate, async (req, res) => {
       const rawChildIds = Array.isArray(memory.childIds)
         ? memory.childIds
         : JSON.parse(memory.childIds || '[]');
-      // Untagged memories (no childIds) are visible to all members;
-      // tagged memories require at least one child to be in the allowed list.
       const hasAccess =
         rawChildIds.length === 0 || rawChildIds.some((cid) => allowedChildren.includes(cid));
       if (!hasAccess) return res.status(403).json({ error: 'Access denied' });
@@ -223,8 +249,13 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
   const { familyId, childIds, caption, isClassified, capturedAtOverride } = req.body;
   if (!familyId) return res.status(400).json({ error: 'familyId required' });
 
+  // Validate file magic bytes against extension to prevent type confusion attacks
+  const detectedType = await fromBuffer(req.file.buffer);
+  if (!detectedType || !ALLOWED_MIME_TYPES.has(detectedType.mime)) {
+    return res.status(400).json({ error: 'File content does not match an allowed media type' });
+  }
+
   try {
-    // Check ownership
     const family = await prisma.family.findUnique({
       where: { id: familyId },
       include: { members: true },
@@ -235,32 +266,38 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
     const membership = family.members.find((m) => m.userId === req.user.id);
     if (!isOwner && !membership) return res.status(403).json({ error: 'Access denied' });
 
-    // Check upload permission for members
     if (!isOwner && membership && !['upload', 'all'].includes(membership.permissions)) {
       return res.status(403).json({ error: 'No upload permission' });
     }
 
-    const fileType = req.file.mimetype.startsWith('video/') ? 'video' : 'photo';
+    const fileType = detectedType.mime.startsWith('video/') ? 'video' : 'photo';
 
-    // Extract EXIF date
-    let capturedAt = capturedAtOverride ? new Date(capturedAtOverride) : null;
+    let capturedAt = null;
+    if (capturedAtOverride) {
+      const override = new Date(capturedAtOverride);
+      if (isNaN(override.getTime())) {
+        return res.status(400).json({ error: 'Invalid capturedAt date' });
+      }
+      if (override > new Date()) {
+        return res.status(400).json({ error: 'capturedAt cannot be in the future' });
+      }
+      capturedAt = override;
+    }
     if (!capturedAt) {
-      const exifDate = await extractExifDate(req.file.buffer, req.file.mimetype);
+      const exifDate = await extractExifDate(req.file.buffer, detectedType.mime);
       capturedAt = exifDate ? new Date(exifDate) : new Date();
     }
 
-    // Upload original
     const fileUrl = await uploadFile(
       req.file.buffer,
       req.file.originalname,
-      req.file.mimetype,
+      detectedType.mime,
       'memories'
     );
 
-    // Generate & upload thumbnail (photos only)
     let thumbnailUrl = null;
     if (fileType === 'photo') {
-      const thumb = await generateThumbnail(req.file.buffer, req.file.mimetype, req.file.originalname);
+      const thumb = await generateThumbnail(req.file.buffer, detectedType.mime, req.file.originalname);
       if (thumb) {
         thumbnailUrl = await uploadFile(thumb.buffer, thumb.name, 'image/jpeg', 'thumbnails');
       }
@@ -270,7 +307,6 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
       ? (Array.isArray(childIds) ? childIds : JSON.parse(childIds))
       : [];
 
-    // Premium check for classified memories
     const canClassify = req.user.plan === 'premium' && isOwner;
 
     const memory = await prisma.memory.create({
@@ -321,6 +357,9 @@ router.delete('/:id', authenticate, async (req, res) => {
 // POST /api/memories/:id/reactions
 router.post('/:id/reactions', authenticate, async (req, res) => {
   try {
+    const { error, status } = await requireMemoryAccess(req, req.params.id);
+    if (error) return res.status(status).json({ error });
+
     const reaction = await prisma.reaction.upsert({
       where: {
         memoryId_userId_type: {
@@ -346,6 +385,9 @@ router.post('/:id/reactions', authenticate, async (req, res) => {
 // DELETE /api/memories/:id/reactions
 router.delete('/:id/reactions', authenticate, async (req, res) => {
   try {
+    const { error, status } = await requireMemoryAccess(req, req.params.id);
+    if (error) return res.status(status).json({ error });
+
     await prisma.reaction.deleteMany({
       where: { memoryId: req.params.id, userId: req.user.id, type: 'love' },
     });
@@ -362,11 +404,18 @@ router.post('/:id/comments', authenticate, async (req, res) => {
   if (!text || !text.trim()) return res.status(400).json({ error: 'Comment text required' });
 
   try {
+    const { error, status } = await requireMemoryAccess(req, req.params.id);
+    if (error) return res.status(status).json({ error });
+
+    // Strip all HTML to prevent stored XSS
+    const sanitized = xss(text.trim(), { whiteList: {}, stripIgnoreTag: true });
+    if (!sanitized) return res.status(400).json({ error: 'Comment text required' });
+
     const comment = await prisma.comment.create({
       data: {
         memoryId: req.params.id,
         userId: req.user.id,
-        text: text.trim(),
+        text: sanitized,
       },
       include: { user: { select: { id: true, name: true, avatarUrl: true } } },
     });
