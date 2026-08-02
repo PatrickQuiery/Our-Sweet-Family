@@ -211,9 +211,17 @@ our-sweet-family/
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | /api/members?familyId= | List members |
-| POST | /api/members | Invite by email |
+| POST | /api/members | Invite by email (existing user → added directly; new email → pending invitation + link) |
 | PUT | /api/members/:id | Update permissions |
 | DELETE | /api/members/:id | Revoke access |
+
+### Invitations
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/invitations?familyId= | Owner: list pending invitations |
+| GET | /api/invitations/:token | Public: invite info for the accept page |
+| POST | /api/invitations/:token/accept | Public: set password, create account, join family |
+| DELETE | /api/invitations/:id | Owner: revoke a pending invitation |
 
 ### Milestones (Plus+)
 | Method | Path | Description |

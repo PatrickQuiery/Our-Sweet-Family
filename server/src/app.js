@@ -13,6 +13,7 @@ const membersRoutes = require('./routes/members');
 const milestonesRoutes = require('./routes/milestones');
 const reelsRoutes = require('./routes/reels');
 const contactRoutes = require('./routes/contact');
+const invitationsRoutes = require('./routes/invitations');
 
 const app = express();
 const isProd = process.env.NODE_ENV === 'production';
@@ -89,6 +90,7 @@ app.use('/api/members', membersRoutes);
 app.use('/api/milestones', milestonesRoutes);
 app.use('/api/reels', reelsRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/invitations', invitationsRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

@@ -70,20 +70,27 @@ contact-form submissions. Schema-to-DB is now managed by **migrations**
   Real `PATCH /api/auth/me` and `POST /api/auth/change-password` endpoints added
   and wired.
 
-**Tests:** 114 passing (was 99/101 with 2 failing). Added IDOR, contact, and
-profile/password regression tests.
+### Loved-one invite flow (was the #1 pre-launch blocker) — now shipped
+- Invites no longer create a fake placeholder `User`. A new email creates a
+  pending `Invitation` (random token, only its SHA-256 hash stored, 7-day expiry,
+  single-use). Existing users are added directly.
+- Public `/accept-invite?token=…` page: the invitee sets their own password, the
+  real `User` + `FamilyMember` are created, and they're auto-logged-in.
+- The owner gets a **copyable invite link** (works before SMTP is set up) plus a
+  best-effort email; the Family page lists **pending invitations** with revoke.
+- Endpoints: `GET/POST /api/invitations/:token`, `GET /api/invitations`,
+  `DELETE /api/invitations/:id`. See
+  `docs/superpowers/specs/2026-08-02-loved-one-invite-flow-design.md`.
+
+**Tests:** 126 passing (was 99/101 with 2 failing). Added IDOR, contact,
+profile/password, and full invite-flow regression tests.
 
 ---
 
 ## 3. Still open before launch ⚠️
 
 ### HIGH — must address
-1. **Loved-one invite / account model.** Inviting a loved one creates a real
-   `User` row with a random password and no way to set one — the invitee can never
-   log in, and their email is squatted (blocks their own future signup). **Needs an
-   invitation-token flow**: email a signed, expiring link → invitee sets their own
-   password → then the `User` + `FamilyMember` are created. (`members.js`)
-2. **Private media is served unauthenticated.** `/uploads` (local) and a public
+1. **Private media is served unauthenticated.** `/uploads` (local) and a public
    bucket (S3) let anyone with a file URL download any photo — including classified
    / per-child-restricted media — bypassing all API access control. **Fix:** private
    bucket + short-lived **presigned URLs** generated after an access check (the S3
@@ -91,14 +98,14 @@ profile/password regression tests.
    route. This is the top data-exposure risk for a privacy product.
 
 ### MEDIUM — recommended
-3. **JWT in `localStorage`** is XSS-exfiltratable. Consider httpOnly+Secure+SameSite
+2. **JWT in `localStorage`** is XSS-exfiltratable. Consider httpOnly+Secure+SameSite
    cookies, and/or shorter token TTL with refresh.
-4. **Multi-family support** — the client only ever uses `families[0]`; add a family
+3. **Multi-family support** — the client only ever uses `families[0]`; add a family
    switcher (data model already supports multiple).
-5. **Integration tests against a real Postgres.** The unit suite mocks Prisma, so it
+4. **Integration tests against a real Postgres.** The unit suite mocks Prisma, so it
    **cannot catch query-syntax bugs** (that's how the `path:'$'` bug shipped green).
    Add a small Testcontainers/CI-Postgres suite for the query paths.
-6. **Global `role` vs per-family role** — client owner-only UI shows for a user who
+5. **Global `role` vs per-family role** — client owner-only UI shows for a user who
    is a loved one in another family (server correctly rejects; UI is misleading).
 
 ### LOW
