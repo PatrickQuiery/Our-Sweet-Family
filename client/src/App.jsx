@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 import Landing from './pages/Landing';
+import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Onboarding from './pages/Onboarding';
@@ -40,6 +41,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/contact" element={<Contact />} />
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
       <Route

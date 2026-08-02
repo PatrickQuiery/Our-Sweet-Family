@@ -6,3 +6,6 @@ build/
 *.log
 server/uploads/
 server/prisma/migrations/dev.db
+
+# Local Postgres data directory (created for local dev)
+.pgdata/

@@ -4,8 +4,9 @@ const sharp = require('sharp');
 const path = require('path');
 const { authenticate } = require('../middleware/auth');
 const prisma = require('../lib/prisma');
-const { uploadFile } = require('../lib/storage');
+const { uploadFile, deleteFile } = require('../lib/storage');
 const { calculateAgeLabel } = require('../lib/ageLabel');
+const { loadAccessibleMemory } = require('../lib/memoryAccess');
 
 const router = express.Router();
 
@@ -91,15 +92,17 @@ router.get('/', authenticate, async (req, res) => {
       // Use OR so that memories tagged with ANY allowed child are returned.
       // Using array_contains with the full array would require ALL allowed children
       // to appear on every memory, which is far too restrictive.
+      // NOTE: PostgreSQL Json filtering uses `array_contains` with no `path`
+      // (the MySQL `path: '$'` form is rejected by the Postgres connector).
       where.OR = allowedChildren.map((cid) => ({
-        childIds: { path: '$', array_contains: [cid] },
+        childIds: { array_contains: [cid] },
       }));
     }
 
     if (childId) {
-      // JSON array contains childId
+      // JSON array contains childId (Postgres: array_contains, no path)
       where.AND = [
-        { childIds: { path: '$', array_contains: [childId] } },
+        { childIds: { array_contains: [childId] } },
       ];
     }
 
@@ -107,8 +110,11 @@ router.get('/', authenticate, async (req, res) => {
       where.fileType = type;
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const take = parseInt(limit);
+    // Coerce & clamp pagination so bad input can't 500 (NaN skip) or request an
+    // unbounded page (limit clamped to 100).
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (pageNum - 1) * take;
 
     const [total, memories] = await Promise.all([
       prisma.memory.count({ where }),
@@ -151,7 +157,7 @@ router.get('/', authenticate, async (req, res) => {
       memories: enriched,
       pagination: {
         total,
-        page: parseInt(page),
+        page: pageNum,
         limit: take,
         pages: Math.ceil(total / take),
       },
@@ -230,7 +236,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
     // Check ownership
     const family = await prisma.family.findUnique({
       where: { id: familyId },
-      include: { members: true },
+      include: { members: true, owner: { select: { plan: true } } },
     });
     if (!family) return res.status(404).json({ error: 'Family not found' });
 
@@ -269,12 +275,22 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
       }
     }
 
-    const parsedChildIds = childIds
-      ? (Array.isArray(childIds) ? childIds : JSON.parse(childIds))
-      : [];
+    let parsedChildIds = [];
+    if (childIds) {
+      try {
+        parsedChildIds = Array.isArray(childIds) ? childIds : JSON.parse(childIds);
+      } catch {
+        return res.status(400).json({ error: 'childIds must be a JSON array' });
+      }
+      if (!Array.isArray(parsedChildIds)) {
+        return res.status(400).json({ error: 'childIds must be a JSON array' });
+      }
+    }
 
-    // Premium check for classified memories
-    const canClassify = req.user.plan === 'premium' && isOwner;
+    // Storage tier and classified access follow the family OWNER's plan (the
+    // subscription holder), so a relative's contribution keeps the family's tier.
+    const ownerPlan = family.owner.plan;
+    const canClassify = ownerPlan === 'premium' && isOwner;
 
     const memory = await prisma.memory.create({
       data: {
@@ -284,7 +300,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
         fileUrl,
         thumbnailUrl,
         fileType,
-        originalQuality: ['plus', 'premium'].includes(req.user.plan),
+        originalQuality: ['plus', 'premium'].includes(ownerPlan),
         capturedAt,
         isClassified: canClassify && isClassified === 'true',
         caption: caption || null,
@@ -314,6 +330,11 @@ router.delete('/:id', authenticate, async (req, res) => {
     }
 
     await prisma.memory.delete({ where: { id: req.params.id } });
+
+    // Best-effort storage cleanup so deleted memories don't leak files/cost.
+    await deleteFile(memory.fileUrl);
+    await deleteFile(memory.thumbnailUrl);
+
     res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -324,6 +345,9 @@ router.delete('/:id', authenticate, async (req, res) => {
 // POST /api/memories/:id/reactions
 router.post('/:id/reactions', authenticate, async (req, res) => {
   try {
+    const access = await loadAccessibleMemory(req.params.id, req.user);
+    if (access.error) return res.status(access.status).json({ error: access.error });
+
     const reaction = await prisma.reaction.upsert({
       where: {
         memoryId_userId_type: {
@@ -349,6 +373,9 @@ router.post('/:id/reactions', authenticate, async (req, res) => {
 // DELETE /api/memories/:id/reactions
 router.delete('/:id/reactions', authenticate, async (req, res) => {
   try {
+    const access = await loadAccessibleMemory(req.params.id, req.user);
+    if (access.error) return res.status(access.status).json({ error: access.error });
+
     await prisma.reaction.deleteMany({
       where: { memoryId: req.params.id, userId: req.user.id, type: 'love' },
     });
@@ -365,6 +392,9 @@ router.post('/:id/comments', authenticate, async (req, res) => {
   if (!text || !text.trim()) return res.status(400).json({ error: 'Comment text required' });
 
   try {
+    const access = await loadAccessibleMemory(req.params.id, req.user);
+    if (access.error) return res.status(access.status).json({ error: access.error });
+
     const comment = await prisma.comment.create({
       data: {
         memoryId: req.params.id,

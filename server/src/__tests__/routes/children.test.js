@@ -154,6 +154,8 @@ describe('DELETE /api/children/:id', () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
     prisma.child.findUnique.mockResolvedValue(childWithFamily);
     prisma.child.delete.mockResolvedValue(mockChild);
+    // No memories tagged with the deleted child → nothing to strip.
+    prisma.memory.findMany.mockResolvedValue([]);
 
     const res = await request(app)
       .delete('/api/children/child1')

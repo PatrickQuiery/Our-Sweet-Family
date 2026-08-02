@@ -264,9 +264,16 @@ describe('DELETE /api/memories/:id', () => {
 
 // ─── POST /api/memories/:id/reactions ────────────────────────────────────────
 
+// Memory shaped for the loadAccessibleMemory gate (family + members).
+const accessibleMemory = {
+  ...mockMemory,
+  family: { ownerId: 'owner1', members: mockFamily.members },
+};
+
 describe('POST /api/memories/:id/reactions', () => {
   it('adds a love reaction', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(accessibleMemory);
     prisma.reaction.upsert.mockResolvedValue({ id: 'r1', memoryId: 'mem1', userId: 'owner1', type: 'love' });
 
     const res = await request(app)
@@ -276,11 +283,37 @@ describe('POST /api/memories/:id/reactions', () => {
     expect(res.status).toBe(201);
     expect(res.body.reaction.type).toBe('love');
   });
+
+  // Regression: an unrelated user must NOT be able to react on a memory in a
+  // family they don't belong to (IDOR).
+  it('denies reaction from a user outside the family', async () => {
+    prisma.user.findUnique.mockResolvedValue(otherUser);
+    prisma.memory.findUnique.mockResolvedValue(accessibleMemory);
+
+    const res = await request(app)
+      .post('/api/memories/mem1/reactions')
+      .set('Authorization', `Bearer ${otherToken}`);
+
+    expect(res.status).toBe(403);
+    expect(prisma.reaction.upsert).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 when reacting on a non-existent memory', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(null);
+
+    const res = await request(app)
+      .post('/api/memories/ghost/reactions')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(404);
+  });
 });
 
 describe('DELETE /api/memories/:id/reactions', () => {
   it('removes love reaction', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(accessibleMemory);
     prisma.reaction.deleteMany.mockResolvedValue({ count: 1 });
 
     const res = await request(app)
@@ -297,6 +330,7 @@ describe('DELETE /api/memories/:id/reactions', () => {
 describe('POST /api/memories/:id/comments', () => {
   it('adds a comment', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(accessibleMemory);
     prisma.comment.create.mockResolvedValue({
       id: 'c1', memoryId: 'mem1', userId: 'owner1', text: 'So cute!',
       user: { id: 'owner1', name: 'Owner', avatarUrl: null },
@@ -320,6 +354,20 @@ describe('POST /api/memories/:id/comments', () => {
       .send({ text: '   ' });
 
     expect(res.status).toBe(400);
+  });
+
+  // Regression: unrelated user cannot comment on another family's memory (IDOR).
+  it('denies comment from a user outside the family', async () => {
+    prisma.user.findUnique.mockResolvedValue(otherUser);
+    prisma.memory.findUnique.mockResolvedValue(accessibleMemory);
+
+    const res = await request(app)
+      .post('/api/memories/mem1/comments')
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send({ text: 'intruder' });
+
+    expect(res.status).toBe(403);
+    expect(prisma.comment.create).not.toHaveBeenCalled();
   });
 });
 

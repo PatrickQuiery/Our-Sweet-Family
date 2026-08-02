@@ -247,6 +247,10 @@ export default function Landing() {
           <img src="/logo.svg" alt="Our Sweet Family" className="w-8 h-8" />
           <span className="font-semibold text-gray-500">Our Sweet Family</span>
         </div>
+        <div className="flex items-center justify-center gap-4 mb-3">
+          <Link to="/contact" className="text-gray-500 hover:text-brand-600 transition-colors">Contact us</Link>
+          <Link to="/login" className="text-gray-500 hover:text-brand-600 transition-colors">Sign in</Link>
+        </div>
         <p>&copy; 2025 Our Sweet Family. All rights reserved. Built with love.</p>
       </footer>
     </div>

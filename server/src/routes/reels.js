@@ -12,7 +12,7 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const family = await prisma.family.findUnique({
       where: { id: familyId },
-      include: { members: true },
+      include: { members: true, owner: { select: { plan: true } } },
     });
     if (!family) return res.status(404).json({ error: 'Family not found' });
 
@@ -20,7 +20,9 @@ router.get('/', authenticate, async (req, res) => {
     const membership = family.members.find((m) => m.userId === req.user.id);
     if (!isOwner && !membership) return res.status(403).json({ error: 'Access denied' });
 
-    const plan = req.user.plan;
+    // Reel tiers are gated on the family OWNER's plan (the subscription holder),
+    // not the viewer's — a loved one is always on the free plan.
+    const plan = family.owner.plan;
 
     // Plan validation for reel types
     if (type === 'annual' && plan === 'free') {
@@ -36,8 +38,21 @@ router.get('/', authenticate, async (req, res) => {
       ...(!isOwner && { isClassified: false }),
     };
 
+    // Enforce per-child access for restricted loved ones — a member who is only
+    // granted access to some children must not see other children's memories in
+    // reels (mirrors the same restriction applied to the memories feed).
+    if (!isOwner && membership && membership.accessPerChild !== 'all') {
+      const allowedChildren = Array.isArray(membership.accessPerChild)
+        ? membership.accessPerChild
+        : JSON.parse(membership.accessPerChild);
+      where.OR = allowedChildren.map((cid) => ({
+        childIds: { array_contains: [cid] },
+      }));
+    }
+
     if (childId) {
-      where.AND = [{ childIds: { path: '$', array_contains: [childId] } }];
+      // Postgres Json membership: array_contains, no `path`.
+      where.AND = [{ childIds: { array_contains: [childId] } }];
     }
 
     const memories = await prisma.memory.findMany({

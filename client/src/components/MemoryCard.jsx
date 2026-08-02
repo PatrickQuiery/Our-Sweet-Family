@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import api from '../lib/api';
@@ -9,6 +9,14 @@ export default function MemoryCard({ memory, onReactionChange }) {
   );
   const [likeCount, setLikeCount] = useState(memory.reactions?.length || 0);
 
+  // Keep local like state in sync when the parent re-renders this card with
+  // fresh data (e.g. after a refetch), so the same-keyed card doesn't retain
+  // stale state or drift.
+  useEffect(() => {
+    setLiked(memory.reactions?.some((r) => r.userId === memory._currentUserId) || false);
+    setLikeCount(memory.reactions?.length || 0);
+  }, [memory.reactions, memory._currentUserId]);
+
   const handleLike = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -16,7 +24,7 @@ export default function MemoryCard({ memory, onReactionChange }) {
       if (liked) {
         await api.delete(`/memories/${memory.id}/reactions`);
         setLiked(false);
-        setLikeCount((c) => c - 1);
+        setLikeCount((c) => Math.max(0, c - 1));
       } else {
         await api.post(`/memories/${memory.id}/reactions`);
         setLiked(true);

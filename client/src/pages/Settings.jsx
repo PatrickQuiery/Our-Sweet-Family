@@ -27,7 +27,7 @@ const PLAN_DETAILS = {
 };
 
 export default function Settings() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const [nameForm, setNameForm] = useState({ name: user?.name || '' });
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
   const [nameSuccess, setNameSuccess] = useState('');
@@ -44,11 +44,19 @@ export default function Settings() {
     setSavingName(true);
     setNameError('');
     setNameSuccess('');
-    // In a real app this would call a PATCH /api/auth/me endpoint
-    setTimeout(() => {
+    try {
+      const { data } = await api.patch('/auth/me', { name: nameForm.name });
+      updateUser({ name: data.user.name });
       setNameSuccess('Name updated successfully!');
+    } catch (err) {
+      setNameError(
+        err.response?.data?.errors?.[0]?.msg ||
+        err.response?.data?.error ||
+        'Could not update your name.'
+      );
+    } finally {
       setSavingName(false);
-    }, 600);
+    }
   };
 
   const handlePwSave = async (e) => {
@@ -64,11 +72,22 @@ export default function Settings() {
       return;
     }
     setSavingPw(true);
-    setTimeout(() => {
+    try {
+      await api.post('/auth/change-password', {
+        currentPassword: pwForm.currentPassword,
+        newPassword: pwForm.newPassword,
+      });
       setPwSuccess('Password changed successfully!');
       setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
+    } catch (err) {
+      setPwError(
+        err.response?.data?.errors?.[0]?.msg ||
+        err.response?.data?.error ||
+        'Could not change your password.'
+      );
+    } finally {
       setSavingPw(false);
-    }, 600);
+    }
   };
 
   return (

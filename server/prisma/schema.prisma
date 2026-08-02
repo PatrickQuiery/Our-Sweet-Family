@@ -144,3 +144,16 @@ model Milestone {
 
   child Child @relation(fields: [childId], references: [id], onDelete: Cascade)
 }
+
+// Contact form submissions. Persisted so no message is lost even if the outbound
+// email transport is misconfigured or temporarily unavailable.
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  userId    String?
+  emailSent Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

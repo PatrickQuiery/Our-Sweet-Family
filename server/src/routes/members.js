@@ -5,6 +5,16 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
+// accessPerChild must be the literal "all" or an array of child-id strings.
+// Anything else (a bare string, an object) would later break JSON parsing and
+// the per-child access filter, so reject it at write time.
+function isValidAccessPerChild(value) {
+  if (value === undefined || value === null) return true;
+  if (value === 'all') return true;
+  if (Array.isArray(value) && value.every((v) => typeof v === 'string')) return true;
+  throw new Error("accessPerChild must be 'all' or an array of child ids");
+}
+
 // GET /api/members?familyId=
 router.get('/', authenticate, async (req, res) => {
   const { familyId } = req.query;
@@ -35,6 +45,7 @@ router.post(
     body('familyId').notEmpty(),
     body('email').isEmail().normalizeEmail(),
     body('permissions').isIn(['view_only', 'upload', 'share_download', 'all']),
+    body('accessPerChild').optional().custom(isValidAccessPerChild),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -90,7 +101,14 @@ router.post(
 router.put(
   '/:id',
   authenticate,
+  [
+    body('permissions').optional().isIn(['view_only', 'upload', 'share_download', 'all']),
+    body('accessPerChild').optional().custom(isValidAccessPerChild),
+  ],
   async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
     const { permissions, accessPerChild } = req.body;
 
     try {

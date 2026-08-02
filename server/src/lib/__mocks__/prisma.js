@@ -2,6 +2,7 @@ const prisma = {
   user: {
     findUnique: jest.fn(),
     create: jest.fn(),
+    update: jest.fn(),
   },
   family: {
     findUnique: jest.fn(),
@@ -27,8 +28,13 @@ const prisma = {
     findUnique: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
+    update: jest.fn(),
     delete: jest.fn(),
     count: jest.fn(),
+  },
+  contactMessage: {
+    create: jest.fn(),
+    update: jest.fn(),
   },
   reaction: {
     upsert: jest.fn(),

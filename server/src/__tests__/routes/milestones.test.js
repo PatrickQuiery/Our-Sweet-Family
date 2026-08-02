@@ -18,11 +18,12 @@ const mockChild = {
   family: {
     id: 'family1', ownerId: 'owner1',
     members: [{ userId: 'member1' }],
+    owner: { plan: 'free' },
   },
 };
 const mockChildForPlus = {
   ...mockChild,
-  family: { ...mockChild.family, ownerId: 'plus1' },
+  family: { ...mockChild.family, ownerId: 'plus1', owner: { plan: 'plus' } },
 };
 
 const mockMilestone = {

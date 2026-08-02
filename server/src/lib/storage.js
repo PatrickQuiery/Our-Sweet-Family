@@ -60,4 +60,41 @@ async function uploadToS3(buffer, originalName, mimeType, folder) {
   return `${baseUrl}/${key}`;
 }
 
-module.exports = { uploadFile };
+/**
+ * Best-effort delete of a previously uploaded file. Never throws — a failed
+ * cleanup should not fail the user-facing operation (the DB row is already gone).
+ * Safely ignores external URLs (e.g. seed images) that aren't ours.
+ */
+async function deleteFile(fileUrl) {
+  if (!fileUrl) return;
+  try {
+    if (STORAGE_PROVIDER === 's3') {
+      const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+      const key = new URL(fileUrl).pathname.replace(/^\//, '');
+      const s3Config = {
+        region: process.env.AWS_REGION || 'auto',
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY,
+          secretAccessKey: process.env.AWS_SECRET_KEY,
+        },
+      };
+      if (process.env.AWS_ENDPOINT) {
+        s3Config.endpoint = process.env.AWS_ENDPOINT;
+        s3Config.forcePathStyle = true;
+      }
+      const s3 = new S3Client(s3Config);
+      await s3.send(new DeleteObjectCommand({ Bucket: process.env.AWS_BUCKET, Key: key }));
+    } else {
+      const marker = '/uploads/';
+      const idx = fileUrl.indexOf(marker);
+      if (idx === -1) return; // not a locally-stored file
+      const rel = fileUrl.slice(idx + marker.length);
+      const filepath = path.join(__dirname, '../../uploads', rel);
+      if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+    }
+  } catch (e) {
+    console.error('deleteFile failed (ignored):', e.message);
+  }
+}
+
+module.exports = { uploadFile, deleteFile };

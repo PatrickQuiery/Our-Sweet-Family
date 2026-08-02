@@ -156,3 +156,84 @@ describe('GET /api/auth/me', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('PATCH /api/auth/me', () => {
+  it('updates the display name', async () => {
+    prisma.user.findUnique.mockResolvedValue(dbUser);
+    prisma.user.update.mockResolvedValue({ ...createdUser, name: 'New Name' });
+    const token = jwt.sign({ userId: 'user1' }, process.env.JWT_SECRET);
+
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'New Name' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.user.name).toBe('New Name');
+    expect(res.body.user.passwordHash).toBeUndefined();
+  });
+
+  it('rejects an empty name', async () => {
+    prisma.user.findUnique.mockResolvedValue(dbUser);
+    const token = jwt.sign({ userId: 'user1' }, process.env.JWT_SECRET);
+
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: '   ' });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('requires authentication', async () => {
+    const res = await request(app).patch('/api/auth/me').send({ name: 'X' });
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('POST /api/auth/change-password', () => {
+  it('changes the password when current password is correct', async () => {
+    prisma.user.findUnique.mockResolvedValue(dbUser);
+    bcrypt.compare.mockResolvedValue(true);
+    bcrypt.hash.mockResolvedValue('new_hash');
+    prisma.user.update.mockResolvedValue(dbUser);
+    const token = jwt.sign({ userId: 'user1' }, process.env.JWT_SECRET);
+
+    const res = await request(app)
+      .post('/api/auth/change-password')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ currentPassword: 'password123', newPassword: 'newpassword123' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { passwordHash: 'new_hash' } })
+    );
+  });
+
+  it('rejects an incorrect current password', async () => {
+    prisma.user.findUnique.mockResolvedValue(dbUser);
+    bcrypt.compare.mockResolvedValue(false);
+    const token = jwt.sign({ userId: 'user1' }, process.env.JWT_SECRET);
+
+    const res = await request(app)
+      .post('/api/auth/change-password')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ currentPassword: 'wrong', newPassword: 'newpassword123' });
+
+    expect(res.status).toBe(401);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects a too-short new password', async () => {
+    prisma.user.findUnique.mockResolvedValue(dbUser);
+    const token = jwt.sign({ userId: 'user1' }, process.env.JWT_SECRET);
+
+    const res = await request(app)
+      .post('/api/auth/change-password')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ currentPassword: 'password123', newPassword: 'short' });
+
+    expect(res.status).toBe(400);
+  });
+});

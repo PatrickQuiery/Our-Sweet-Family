@@ -58,7 +58,19 @@ AWS_SECRET_KEY="..."
 PORT=3001
 NODE_ENV="development"
 CLIENT_URL="http://localhost:5173"
+
+# Contact form (email delivery is optional locally — messages are still saved to the DB)
+CONTACT_TO="Contact@oursweetfamily.com"
+SMTP_HOST=""
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER=""
+SMTP_PASS=""
+SMTP_FROM="no-reply@oursweetfamily.com"
 ```
+
+> **Security:** `JWT_SECRET` must be a strong, unique value of at least 16
+> characters. The server refuses to start with a missing, short, or example secret.
 
 ### 3. Set up the database
 
@@ -66,9 +78,9 @@ CLIENT_URL="http://localhost:5173"
 # Create the database
 createdb our_sweet_family
 
-# Run migrations
+# Apply migrations (production uses `prisma migrate deploy`)
 cd server
-npx prisma migrate dev --name init
+npx prisma migrate deploy
 
 # Seed with demo data
 npm run db:seed
@@ -159,6 +171,13 @@ our-sweet-family/
 | POST | /api/auth/signup | Register new user |
 | POST | /api/auth/login | Login, returns JWT |
 | GET | /api/auth/me | Get current user |
+| PATCH | /api/auth/me | Update display name |
+| POST | /api/auth/change-password | Change password (verifies current) |
+
+### Contact
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | /api/contact | Public contact form → persists + emails `CONTACT_TO` |
 
 ### Families
 | Method | Path | Description |
