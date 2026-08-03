@@ -1,7 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { format, differenceInYears, differenceInMonths } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+import { AuthedImage } from '../components/AuthedMedia';
 import api from '../lib/api';
+
+// Placeholder emoji changes with the child's age: baby → kid → teen. When a
+// gender is set, the kid stage uses the matching figure.
+function childEmoji(child) {
+  const years = differenceInYears(new Date(), new Date(child.dateOfBirth));
+  if (years < 1) return '👶';
+  if (years < 13) {
+    if (child.gender === 'male') return '👦';
+    if (child.gender === 'female') return '👧';
+    return '🧒';
+  }
+  return '🧑';
+}
+
+// Placeholder background: blue for boys, the app's reddish-pink for girls,
+// neutral gray when gender is unset.
+function avatarTone(gender) {
+  if (gender === 'male') return 'from-blue-100 to-blue-200';
+  if (gender === 'female') return 'from-brand-100 to-brand-200';
+  return 'from-gray-100 to-gray-200';
+}
+
+function ChildAvatar({ child, className = 'w-12 h-12' }) {
+  const external = /^https?:\/\//i.test(child.avatarUrl || '');
+  // Private avatars are streamed by the API; the ?v= key busts the blob cache
+  // when a new photo is uploaded. External seed URLs render directly.
+  const src = child.avatarUrl
+    ? external
+      ? child.avatarUrl
+      : `/children/${child.id}/avatar?v=${encodeURIComponent(child.avatarUrl)}`
+    : null;
+  return (
+    <div className={`${className} rounded-2xl bg-gradient-to-br ${avatarTone(child.gender)} flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden`}>
+      {src ? (
+        <AuthedImage src={src} alt={child.name} className="w-full h-full rounded-2xl object-cover" />
+      ) : (
+        childEmoji(child)
+      )}
+    </div>
+  );
+}
 
 function GenderSelect({ value, onChange }) {
   return (
@@ -49,8 +91,39 @@ export default function Children() {
   const [editForm, setEditForm] = useState({ name: '', dateOfBirth: '', gender: '' });
   const [editError, setEditError] = useState('');
   const [editSubmitting, setEditSubmitting] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(null); // id of child mid upload/remove
 
   const isOwner = user?.role === 'owner';
+
+  const handleAvatarUpload = async (childId, file) => {
+    if (!file) return;
+    setEditError('');
+    setAvatarBusy(childId);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      // Let the browser set the multipart Content-Type (with boundary) itself.
+      const { data } = await api.post(`/children/${childId}/avatar`, fd);
+      setChildren((prev) => prev.map((c) => (c.id === childId ? data.child : c)));
+    } catch (err) {
+      setEditError(err.response?.data?.error || 'Failed to upload photo');
+    } finally {
+      setAvatarBusy(null);
+    }
+  };
+
+  const handleAvatarRemove = async (childId) => {
+    setEditError('');
+    setAvatarBusy(childId);
+    try {
+      const { data } = await api.delete(`/children/${childId}/avatar`);
+      setChildren((prev) => prev.map((c) => (c.id === childId ? data.child : c)));
+    } catch (err) {
+      setEditError(err.response?.data?.error || 'Failed to remove photo');
+    } finally {
+      setAvatarBusy(null);
+    }
+  };
 
   useEffect(() => {
     if (!family) return;
@@ -175,6 +248,33 @@ export default function Children() {
                 {editError && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">{editError}</div>}
                 <form onSubmit={(e) => handleEdit(e, child.id)} className="space-y-3">
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Photo</label>
+                    <div className="flex items-center gap-4">
+                      <ChildAvatar child={child} className="w-16 h-16" />
+                      <div className="flex items-center gap-3">
+                        <label className={`btn-secondary cursor-pointer ${avatarBusy === child.id ? 'opacity-60 pointer-events-none' : ''}`}>
+                          {avatarBusy === child.id ? 'Uploading…' : child.avatarUrl ? 'Change photo' : 'Upload photo'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => { handleAvatarUpload(child.id, e.target.files[0]); e.target.value = ''; }}
+                          />
+                        </label>
+                        {child.avatarUrl && (
+                          <button
+                            type="button"
+                            className="text-sm font-medium text-red-500 hover:text-red-700 disabled:opacity-50"
+                            disabled={avatarBusy === child.id}
+                            onClick={() => handleAvatarRemove(child.id)}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
                     <input type="text" className="input" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required />
                   </div>
@@ -191,11 +291,7 @@ export default function Children() {
               </div>
             ) : (
               <div key={child.id} className="card p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-2xl flex-shrink-0">
-                  {child.avatarUrl ? (
-                    <img src={child.avatarUrl} alt={child.name} className="w-full h-full rounded-2xl object-cover" />
-                  ) : '👶'}
-                </div>
+                <ChildAvatar child={child} />
                 <div className="flex-1">
                   <h3 className="font-bold text-gray-900">{child.name}</h3>
                   <p className="text-sm text-gray-500">

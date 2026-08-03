@@ -1,9 +1,26 @@
 const express = require('express');
+const multer = require('multer');
+const sharp = require('sharp');
+const path = require('path');
 const { body, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
+const { uploadFile, deleteFile, readFile, isAbsoluteUrl } = require('../lib/storage');
 
 const router = express.Router();
+
+// Avatars are small images; keep them in memory for processing, cap the size,
+// and only accept image types.
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|gif|webp/;
+    const ext = path.extname(file.originalname).toLowerCase().slice(1);
+    if (allowed.test(ext)) cb(null, true);
+    else cb(new Error('Unsupported file type'));
+  },
+});
 
 async function getFamilyAndCheckAccess(familyId, userId) {
   const family = await prisma.family.findUnique({
@@ -104,6 +121,104 @@ router.put(
     }
   }
 );
+
+// POST /api/children/:id/avatar — owner uploads a profile image for a child.
+// Stored as a private key (like memories) and served via GET below.
+router.post('/:id/avatar', authenticate, avatarUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const child = await prisma.child.findUnique({
+      where: { id: req.params.id },
+      include: { family: true },
+    });
+    if (!child) return res.status(404).json({ error: 'Child not found' });
+    if (child.family.ownerId !== req.user.id)
+      return res.status(403).json({ error: 'Only owner can update child' });
+
+    // Normalize to a square JPEG; fall back to the raw upload if it can't be processed.
+    let buffer = req.file.buffer;
+    let mimeType = req.file.mimetype;
+    let name = req.file.originalname;
+    try {
+      buffer = await sharp(req.file.buffer).rotate().resize(512, 512, { fit: 'cover' }).jpeg({ quality: 82 }).toBuffer();
+      mimeType = 'image/jpeg';
+      name = 'avatar.jpg';
+    } catch {
+      // keep the original bytes
+    }
+
+    const key = await uploadFile(buffer, name, mimeType, 'avatars');
+    const updated = await prisma.child.update({
+      where: { id: req.params.id },
+      data: { avatarUrl: key },
+    });
+
+    // Best-effort cleanup of the previous avatar file (skip external seed URLs).
+    if (child.avatarUrl && !isAbsoluteUrl(child.avatarUrl)) await deleteFile(child.avatarUrl);
+
+    res.json({ child: updated });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/children/:id/avatar — authenticated streaming of a child's avatar,
+// gated to family members (avatars are private media, like memories).
+router.get('/:id/avatar', authenticate, async (req, res) => {
+  try {
+    const child = await prisma.child.findUnique({
+      where: { id: req.params.id },
+      include: { family: { include: { members: true } } },
+    });
+    if (!child) return res.status(404).json({ error: 'Child not found' });
+
+    const isMember =
+      child.family.ownerId === req.user.id ||
+      child.family.members.some((m) => m.userId === req.user.id);
+    if (!isMember) return res.status(403).json({ error: 'Access denied' });
+    if (!child.avatarUrl) return res.status(404).json({ error: 'No avatar' });
+    if (isAbsoluteUrl(child.avatarUrl)) return res.redirect(302, child.avatarUrl);
+
+    const { stream, contentType } = await readFile(child.avatarUrl);
+    res.set('Content-Type', contentType);
+    res.set('Cache-Control', 'private, max-age=3600');
+    stream.on('error', (err) => {
+      console.error('avatar stream error:', err.message);
+      if (!res.headersSent) res.status(404).json({ error: 'Avatar not found' });
+      else res.destroy();
+    });
+    stream.pipe(res);
+  } catch (err) {
+    console.error(err);
+    if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// DELETE /api/children/:id/avatar — owner removes a child's profile image.
+router.delete('/:id/avatar', authenticate, async (req, res) => {
+  try {
+    const child = await prisma.child.findUnique({
+      where: { id: req.params.id },
+      include: { family: true },
+    });
+    if (!child) return res.status(404).json({ error: 'Child not found' });
+    if (child.family.ownerId !== req.user.id)
+      return res.status(403).json({ error: 'Only owner can update child' });
+
+    const updated = await prisma.child.update({
+      where: { id: req.params.id },
+      data: { avatarUrl: null },
+    });
+    if (child.avatarUrl && !isAbsoluteUrl(child.avatarUrl)) await deleteFile(child.avatarUrl);
+
+    res.json({ child: updated });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // DELETE /api/children/:id
 router.delete('/:id', authenticate, async (req, res) => {

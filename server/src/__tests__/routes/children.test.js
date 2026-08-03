@@ -1,9 +1,12 @@
 jest.mock('../../lib/prisma');
+jest.mock('../../lib/storage');
 
+const { Readable } = require('stream');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const app = require('../../app');
 const prisma = require('../../lib/prisma');
+const storage = require('../../lib/storage');
 
 const ownerUser = { id: 'owner1', email: 'owner@test.com', name: 'Owner', role: 'owner', plan: 'free', avatarUrl: null };
 const memberUser = { id: 'member1', email: 'member@test.com', name: 'Member', role: 'loved_one', plan: 'free', avatarUrl: null };
@@ -189,6 +192,101 @@ describe('PUT /api/children/:id', () => {
       .put('/api/children/child1')
       .set('x-clerk-user-id', 'clerk-test')
       .send({ name: 'Hacked' });
+
+    expect(res.status).toBe(403);
+  });
+});
+
+describe('POST /api/children/:id/avatar', () => {
+  const childWithFamily = { ...mockChild, family: { ownerId: 'owner1' } };
+
+  it('uploads and sets the avatar when called by owner', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.child.findUnique.mockResolvedValue(childWithFamily);
+    storage.uploadFile.mockResolvedValue('avatars/abc.jpg');
+    prisma.child.update.mockResolvedValue({ ...mockChild, avatarUrl: 'avatars/abc.jpg' });
+
+    const res = await request(app)
+      .post('/api/children/child1/avatar')
+      .set('x-clerk-user-id', 'clerk-test')
+      .attach('file', Buffer.from('fake-image-bytes'), 'photo.jpg');
+
+    expect(res.status).toBe(200);
+    expect(res.body.child.avatarUrl).toBe('avatars/abc.jpg');
+    expect(storage.uploadFile).toHaveBeenCalled();
+    expect(prisma.child.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ avatarUrl: 'avatars/abc.jpg' }) })
+    );
+  });
+
+  it('returns 403 when a non-owner tries to upload an avatar', async () => {
+    prisma.user.findUnique.mockResolvedValue(memberUser);
+    prisma.child.findUnique.mockResolvedValue(childWithFamily);
+
+    const res = await request(app)
+      .post('/api/children/child1/avatar')
+      .set('x-clerk-user-id', 'clerk-test')
+      .attach('file', Buffer.from('fake-image-bytes'), 'photo.jpg');
+
+    expect(res.status).toBe(403);
+    expect(storage.uploadFile).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when no file is attached', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.child.findUnique.mockResolvedValue(childWithFamily);
+
+    const res = await request(app)
+      .post('/api/children/child1/avatar')
+      .set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('GET /api/children/:id/avatar', () => {
+  it('streams the avatar for a family member', async () => {
+    prisma.user.findUnique.mockResolvedValue(memberUser);
+    prisma.child.findUnique.mockResolvedValue({
+      ...mockChild,
+      avatarUrl: 'avatars/abc.jpg',
+      family: { ownerId: 'owner1', members: [{ userId: 'member1' }] },
+    });
+    storage.readFile.mockResolvedValue({ stream: Readable.from([Buffer.from('img')]), contentType: 'image/jpeg' });
+
+    const res = await request(app)
+      .get('/api/children/child1/avatar')
+      .set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(200);
+  });
+
+  it('returns 404 when the child has no avatar', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.child.findUnique.mockResolvedValue({
+      ...mockChild,
+      avatarUrl: null,
+      family: { ownerId: 'owner1', members: [] },
+    });
+
+    const res = await request(app)
+      .get('/api/children/child1/avatar')
+      .set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 403 for a non-member', async () => {
+    prisma.user.findUnique.mockResolvedValue(otherUser);
+    prisma.child.findUnique.mockResolvedValue({
+      ...mockChild,
+      avatarUrl: 'avatars/abc.jpg',
+      family: { ownerId: 'owner1', members: [] },
+    });
+
+    const res = await request(app)
+      .get('/api/children/child1/avatar')
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
