@@ -5,23 +5,17 @@ const api = axios.create({
   timeout: 30000,
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+// Attach the Clerk session token. `window.Clerk` is the global Clerk singleton
+// populated once <ClerkProvider> mounts; getToken() returns the current session JWT
+// (Clerk refreshes it automatically), which the API verifies with @clerk/express.
+api.interceptors.request.use(async (config) => {
+  try {
+    const token = await window.Clerk?.session?.getToken();
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  } catch {
+    // no active session — request proceeds unauthenticated
   }
   return config;
 });
-
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(err);
-  }
-);
 
 export default api;

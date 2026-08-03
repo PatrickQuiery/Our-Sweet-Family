@@ -100,22 +100,29 @@ profile/password, full invite-flow, and media access-control regression tests.
 
 ## 3. Still open before launch ⚠️
 
-_The two former HIGH blockers (loved-one invite flow and private media access) are
-now shipped — see section 2. Remaining items:_
+_The former HIGH blockers (invite flow, private media) shipped; authentication has
+been migrated to **Clerk** (email/password with strength + breach detection, Google/
+Apple/Facebook, MFA-ready). Remaining items:_
+
+### Auth (needs owner action — see CLERK_SETUP.md)
+Auth requires a Clerk account: set `VITE_CLERK_PUBLISHABLE_KEY` (client) and
+`CLERK_SECRET_KEY` (server), and enable Google/Apple/Facebook + the password policy in
+the Clerk dashboard. Live end-to-end sign-in/up (incl. one social provider) must be
+validated with these keys before merge/launch.
 
 ### MEDIUM — recommended
-1. **JWT in `localStorage`** is XSS-exfiltratable. Consider httpOnly+Secure+SameSite
-   cookies, and/or shorter token TTL with refresh.
-2. **Multi-family support** — the client only ever uses `families[0]`; add a family
+1. **Multi-family support** — the client only ever uses `families[0]`; add a family
    switcher (data model already supports multiple).
-3. **Global `role` vs per-family role** — client owner-only UI shows for a user who
+2. **Global `role` vs per-family role** — client owner-only UI shows for a user who
    is a loved one in another family (server correctly rejects; UI is misleading).
-4. **Video is fetched as a full blob** (no HTTP range/seek). Add `Range` support to
+3. **Video is fetched as a full blob** (no HTTP range/seek). Add `Range` support to
    the media endpoint and serve video via a tokenized URL for large files.
 
 ### LOW
-5. Reels slideshow ignores video length / has no pause. 6. Onboarding family-name
-default uses the 2nd word of the name. 7. Signup reveals whether an email exists.
+4. Reels slideshow ignores video length / has no pause. 5. Onboarding family-name
+default uses the 2nd word of the name.
+
+_(JWT-in-localStorage is resolved — Clerk manages session tokens and refresh.)_
 
 ### Testing
 Both a fast mocked **unit** suite (134 tests) and a real-Postgres **integration**

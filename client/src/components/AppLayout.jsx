@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { UserButton } from '@clerk/clerk-react';
 import { useAuth } from '../context/AuthContext';
 
 const navItems = [
@@ -64,7 +65,7 @@ function CogIcon() {
 }
 
 export default function AppLayout() {
-  const { user, family, logout } = useAuth();
+  const { user, family } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -112,23 +113,16 @@ export default function AppLayout() {
           </ul>
         </nav>
 
-        {/* User */}
+        {/* User — Clerk UserButton handles profile, password, MFA, connected accounts & sign-out */}
         <div className="px-4 py-4 border-t border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-semibold text-sm flex-shrink-0">
-              {user?.name?.[0]?.toUpperCase()}
-            </div>
+            <UserButton afterSignOutUrl="/" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
               <span className={`badge text-xs ${planColors[user?.plan] || 'bg-gray-100 text-gray-600'}`}>
                 {user?.plan}
               </span>
             </div>
-            <button onClick={logout} className="text-gray-400 hover:text-gray-600 transition-colors" title="Logout">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
           </div>
         </div>
       </aside>

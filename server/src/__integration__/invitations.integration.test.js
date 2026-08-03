@@ -1,7 +1,7 @@
 const request = require('supertest');
 const app = require('../app');
 const appPrisma = require('../lib/prisma');
-const { prisma, truncateAll, makeUser, makeFamily, makeChild, tokenFor } = require('./helpers');
+const { prisma, truncateAll, makeUser, makeFamily, makeChild, makeMemory, authHeader } = require('./helpers');
 
 beforeEach(truncateAll);
 afterAll(async () => {
@@ -9,64 +9,69 @@ afterAll(async () => {
   await appPrisma.$disconnect();
 });
 
-describe('invite → accept → login (end to end, real DB)', () => {
-  it('lets an invited loved one set a password, join, and then sign in', async () => {
+describe('invite → claim (end to end, real DB)', () => {
+  it('an invited, signed-in user claims membership and then sees the family', async () => {
     const owner = await makeUser({ role: 'owner', plan: 'plus', name: 'Alex' });
     const family = await makeFamily(owner.id, { name: 'The Johnsons' });
     const emma = await makeChild(family.id, { name: 'Emma' });
-    await prisma.memory.create({
-      data: { familyId: family.id, uploadedById: owner.id, childIds: [emma.id], fileType: 'photo', capturedAt: new Date('2024-01-01'), fileUrl: 'memories/x.jpg', caption: 'Hi' },
-    });
+    await makeMemory(family.id, owner.id, { childIds: [emma.id], caption: 'Hi' });
 
     // 1. Owner invites a brand-new email → pending invitation + shareable link.
     const inviteRes = await request(app)
       .post('/api/members')
-      .set('Authorization', `Bearer ${tokenFor(owner.id)}`)
+      .set(...authHeader(owner))
       .send({ familyId: family.id, email: 'aunt@example.com', permissions: 'view_only' });
-
     expect(inviteRes.status).toBe(201);
     expect(inviteRes.body.inviteUrl).toMatch(/\/accept-invite\?token=/);
     const token = inviteRes.body.inviteUrl.split('token=')[1];
 
-    // No real user exists yet for the invited email.
-    expect(await prisma.user.findUnique({ where: { email: 'aunt@example.com' } })).toBeNull();
+    // 2. The invitee signs up via Clerk — simulated here as the local row that
+    //    authenticate would sync on their first request (matching email).
+    const aunt = await makeUser({ email: 'aunt@example.com', name: 'Aunt May', role: 'owner' });
 
-    // 2. Public info endpoint describes the invite.
+    // 3. Public info endpoint describes the invite.
     const info = await request(app).get(`/api/invitations/${token}`);
     expect(info.status).toBe(200);
     expect(info.body).toMatchObject({ email: 'aunt@example.com', familyName: 'The Johnsons', inviterName: 'Alex' });
 
-    // 3. Accept: set a password → real User + FamilyMember created, auto-login token.
-    const accept = await request(app)
-      .post(`/api/invitations/${token}/accept`)
-      .send({ name: 'Aunt May', password: 'auntpass123' });
-
-    expect(accept.status).toBe(201);
-    expect(accept.body.token).toBeDefined();
-    const created = await prisma.user.findUnique({ where: { email: 'aunt@example.com' } });
-    expect(created).not.toBeNull();
-    expect(created.role).toBe('loved_one');
-    const membership = await prisma.familyMember.findFirst({ where: { userId: created.id, familyId: family.id } });
+    // 4. Claim (authenticated) links membership.
+    const claim = await request(app)
+      .post(`/api/invitations/${token}/claim`)
+      .set(...authHeader(aunt));
+    expect(claim.status).toBe(200);
+    const membership = await prisma.familyMember.findFirst({ where: { userId: aunt.id, familyId: family.id } });
     expect(membership).not.toBeNull();
 
-    // 4. The new loved one can log in with the password they set …
-    const login = await request(app)
-      .post('/api/auth/login')
-      .send({ email: 'aunt@example.com', password: 'auntpass123' });
-    expect(login.status).toBe(200);
-    expect(login.body.token).toBeDefined();
-
-    // … and see the family's memories.
+    // 5. She can now see the family's memories.
     const feed = await request(app)
       .get(`/api/memories?familyId=${family.id}`)
-      .set('Authorization', `Bearer ${login.body.token}`);
+      .set(...authHeader(aunt));
     expect(feed.status).toBe(200);
     expect(feed.body.memories).toHaveLength(1);
 
-    // 5. The token is single-use.
+    // 6. The invite is single-use.
     const reuse = await request(app)
-      .post(`/api/invitations/${token}/accept`)
-      .send({ name: 'x', password: 'password123' });
+      .post(`/api/invitations/${token}/claim`)
+      .set(...authHeader(aunt));
     expect(reuse.status).toBe(410);
+  });
+
+  it('rejects a claim from a different email than was invited', async () => {
+    const owner = await makeUser({ role: 'owner', name: 'Alex' });
+    const family = await makeFamily(owner.id, { name: 'Fam' });
+    const inviteRes = await request(app)
+      .post('/api/members')
+      .set(...authHeader(owner))
+      .send({ familyId: family.id, email: 'invited@example.com', permissions: 'view_only' });
+    const token = inviteRes.body.inviteUrl.split('token=')[1];
+
+    const stranger = await makeUser({ email: 'stranger@example.com' });
+    const res = await request(app)
+      .post(`/api/invitations/${token}/claim`)
+      .set(...authHeader(stranger));
+
+    expect(res.status).toBe(403);
+    const membership = await prisma.familyMember.findFirst({ where: { userId: stranger.id } });
+    expect(membership).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { AuthProvider } from './context/AuthContext';
 
 import Landing from './pages/Landing';
 import Contact from './pages/Contact';
@@ -18,23 +19,25 @@ import Milestones from './pages/Milestones';
 import Settings from './pages/Settings';
 import AppLayout from './components/AppLayout';
 
+function Spinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500" />
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500" />
-      </div>
-    );
-  }
-  if (!user) return <Navigate to="/login" replace />;
+  const { isLoaded, isSignedIn } = useClerkAuth();
+  if (!isLoaded) return <Spinner />;
+  if (!isSignedIn) return <Navigate to="/login" replace />;
   return children;
 }
 
 function PublicRoute({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  if (user) return <Navigate to="/dashboard" replace />;
+  const { isLoaded, isSignedIn } = useClerkAuth();
+  if (!isLoaded) return null;
+  if (isSignedIn) return <Navigate to="/dashboard" replace />;
   return children;
 }
 

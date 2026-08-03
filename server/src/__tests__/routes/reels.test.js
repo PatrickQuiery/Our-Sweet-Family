@@ -33,7 +33,7 @@ describe('GET /api/reels', () => {
 
     const res = await request(app)
       .get('/api/reels')
-      .set('Authorization', `Bearer ${freeToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(400);
   });
@@ -44,7 +44,7 @@ describe('GET /api/reels', () => {
 
     const res = await request(app)
       .get('/api/reels?familyId=ghost')
-      .set('Authorization', `Bearer ${freeToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(404);
   });
@@ -60,7 +60,7 @@ describe('GET /api/reels', () => {
 
     const res = await request(app)
       .get('/api/reels?familyId=family1&type=annual')
-      .set('Authorization', `Bearer ${freeToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.reels).toHaveLength(2); // 2022 and 2023
@@ -76,7 +76,7 @@ describe('GET /api/reels', () => {
 
     const res = await request(app)
       .get('/api/reels?familyId=family1&type=monthly')
-      .set('Authorization', `Bearer ${freeToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
     expect(res.body.error).toMatch(/plus or premium/i);
@@ -93,7 +93,7 @@ describe('GET /api/reels', () => {
 
     const res = await request(app)
       .get('/api/reels?familyId=family1&type=monthly')
-      .set('Authorization', `Bearer ${plusToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.reels).toHaveLength(2); // Jan 2023 and Mar 2023
@@ -105,7 +105,7 @@ describe('GET /api/reels', () => {
 
     const res = await request(app)
       .get('/api/reels?familyId=family1&type=birthday')
-      .set('Authorization', `Bearer ${plusToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
     expect(res.body.error).toMatch(/premium/i);
@@ -122,7 +122,7 @@ describe('GET /api/reels', () => {
 
     const res = await request(app)
       .get('/api/reels?familyId=family1&type=birthday')
-      .set('Authorization', `Bearer ${premToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.reels).toHaveLength(2);
@@ -136,7 +136,7 @@ describe('GET /api/reels', () => {
 
     const res = await request(app)
       .get('/api/reels?familyId=family1&type=holiday')
-      .set('Authorization', `Bearer ${freeToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -152,7 +152,7 @@ describe('GET /api/reels', () => {
 
     const res = await request(app)
       .get('/api/reels?familyId=family1&type=holiday')
-      .set('Authorization', `Bearer ${premToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     const keys = res.body.reels.map((r) => r.key);

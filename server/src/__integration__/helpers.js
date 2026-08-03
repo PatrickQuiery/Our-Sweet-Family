@@ -1,6 +1,4 @@
 const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 
 // Real client bound to the test DB (DATABASE_URL is set by env.js setupFiles).
 const prisma = new PrismaClient();
@@ -14,12 +12,12 @@ async function truncateAll() {
   );
 }
 
-async function makeUser({ email, name, role = 'owner', plan = 'free', password = 'password123' } = {}) {
+async function makeUser({ email, name, role = 'owner', plan = 'free', clerkUserId } = {}) {
   const n = ++counters.user;
   return prisma.user.create({
     data: {
       email: email || `user${n}@test.com`,
-      passwordHash: await bcrypt.hash(password, 10),
+      clerkUserId: clerkUserId || `clerk_${n}`,
       name: name || `User ${n}`,
       role,
       plan,
@@ -71,8 +69,9 @@ async function makeMemory(
   });
 }
 
-function tokenFor(userId) {
-  return jwt.sign({ userId }, process.env.JWT_SECRET);
+// Header that authenticates as `user` (the mocked @clerk/express reads it).
+function authHeader(user) {
+  return ['x-clerk-user-id', user.clerkUserId];
 }
 
 module.exports = {
@@ -83,5 +82,5 @@ module.exports = {
   makeChild,
   makeMember,
   makeMemory,
-  tokenFor,
+  authHeader,
 };

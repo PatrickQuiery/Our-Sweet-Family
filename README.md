@@ -10,7 +10,7 @@ A private, secure family photo and video sharing platform focused on children's 
 | Backend | Node.js, Express |
 | Database | PostgreSQL + Prisma ORM |
 | File Storage | AWS S3 or local disk (configurable) |
-| Auth | JWT-based |
+| Auth | Clerk (email/password + Google/Apple/Facebook + MFA) |
 | Image Processing | Sharp (thumbnails + compression) |
 
 ---
@@ -138,7 +138,12 @@ are isolated and order-independent.
 
 ## Demo Accounts
 
-After seeding, these accounts are available:
+Authentication is via Clerk, so sign up (or sign in) through the app using one of the
+seeded emails below — on first sign-in the Clerk identity is **linked** to the seeded
+family and its memories (there is no password to migrate). Set up Clerk first
+([CLERK_SETUP.md](CLERK_SETUP.md)).
+
+Seeded family emails:
 
 | Role | Email | Password |
 |------|-------|----------|
@@ -201,13 +206,13 @@ our-sweet-family/
 ## API Endpoints
 
 ### Auth
+Authentication (email/password, Google, Apple, Facebook, MFA, breach detection) is
+handled by **[Clerk](https://clerk.com)** on the client. The API verifies Clerk
+session tokens and syncs a local user row. See [CLERK_SETUP.md](CLERK_SETUP.md).
+
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | /api/auth/signup | Register new user |
-| POST | /api/auth/login | Login, returns JWT |
-| GET | /api/auth/me | Get current user |
-| PATCH | /api/auth/me | Update display name |
-| POST | /api/auth/change-password | Change password (verifies current) |
+| GET | /api/auth/me | Current user (created/linked from Clerk on first request) |
 
 ### Contact
 | Method | Path | Description |
@@ -257,7 +262,7 @@ our-sweet-family/
 |--------|------|-------------|
 | GET | /api/invitations?familyId= | Owner: list pending invitations |
 | GET | /api/invitations/:token | Public: invite info for the accept page |
-| POST | /api/invitations/:token/accept | Public: set password, create account, join family |
+| POST | /api/invitations/:token/claim | Clerk-authenticated: link the signed-in invitee to the family |
 | DELETE | /api/invitations/:id | Owner: revoke a pending invitation |
 
 ### Milestones (Plus+)

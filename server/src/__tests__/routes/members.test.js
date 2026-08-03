@@ -31,7 +31,7 @@ describe('GET /api/members', () => {
 
     const res = await request(app)
       .get('/api/members?familyId=family1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.members).toHaveLength(1);
@@ -43,7 +43,7 @@ describe('GET /api/members', () => {
 
     const res = await request(app)
       .get('/api/members?familyId=family1')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -53,7 +53,7 @@ describe('GET /api/members', () => {
 
     const res = await request(app)
       .get('/api/members')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(400);
   });
@@ -70,7 +70,7 @@ describe('POST /api/members', () => {
 
     const res = await request(app)
       .post('/api/members')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ familyId: 'family1', email: 'member@test.com', permissions: 'view_only' });
 
     expect(res.status).toBe(201);
@@ -90,7 +90,7 @@ describe('POST /api/members', () => {
 
     const res = await request(app)
       .post('/api/members')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ familyId: 'family1', email: 'newbie@test.com', permissions: 'view_only' });
 
     expect(res.status).toBe(201);
@@ -110,7 +110,7 @@ describe('POST /api/members', () => {
 
     const res = await request(app)
       .post('/api/members')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ familyId: 'family1', email: 'member@test.com', permissions: 'view_only' });
 
     expect(res.status).toBe(409);
@@ -121,7 +121,7 @@ describe('POST /api/members', () => {
 
     const res = await request(app)
       .post('/api/members')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ familyId: 'family1', email: 'member@test.com', permissions: 'invalid_perm' });
 
     expect(res.status).toBe(400);
@@ -133,7 +133,7 @@ describe('POST /api/members', () => {
 
     const res = await request(app)
       .post('/api/members')
-      .set('Authorization', `Bearer ${memberToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ familyId: 'family1', email: 'new@test.com', permissions: 'view_only' });
 
     expect(res.status).toBe(403);
@@ -150,7 +150,7 @@ describe('PUT /api/members/:id', () => {
 
     const res = await request(app)
       .put('/api/members/fm1')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ permissions: 'upload' });
 
     expect(res.status).toBe(200);
@@ -163,7 +163,7 @@ describe('PUT /api/members/:id', () => {
 
     const res = await request(app)
       .put('/api/members/fm1')
-      .set('Authorization', `Bearer ${memberToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ permissions: 'all' });
 
     expect(res.status).toBe(403);
@@ -180,7 +180,7 @@ describe('DELETE /api/members/:id', () => {
 
     const res = await request(app)
       .delete('/api/members/fm1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -192,7 +192,7 @@ describe('DELETE /api/members/:id', () => {
 
     const res = await request(app)
       .delete('/api/members/fm1')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });

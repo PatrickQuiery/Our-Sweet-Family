@@ -38,7 +38,7 @@ describe('GET /api/milestones', () => {
 
     const res = await request(app)
       .get('/api/milestones?childId=child1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
     expect(res.body.error).toMatch(/plus or premium/i);
@@ -51,7 +51,7 @@ describe('GET /api/milestones', () => {
 
     const res = await request(app)
       .get('/api/milestones?childId=child1')
-      .set('Authorization', `Bearer ${plusToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.milestones).toHaveLength(1);
@@ -62,7 +62,7 @@ describe('GET /api/milestones', () => {
 
     const res = await request(app)
       .get('/api/milestones')
-      .set('Authorization', `Bearer ${plusToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(400);
   });
@@ -76,7 +76,7 @@ describe('GET /api/milestones', () => {
 
     const res = await request(app)
       .get('/api/milestones?childId=child1')
-      .set('Authorization', `Bearer ${nonMemberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -88,7 +88,7 @@ describe('POST /api/milestones', () => {
 
     const res = await request(app)
       .post('/api/milestones')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ childId: 'child1', type: 'height', value: '75', date: '2022-06-01' });
 
     expect(res.status).toBe(403);
@@ -104,7 +104,7 @@ describe('POST /api/milestones', () => {
 
     const res = await request(app)
       .post('/api/milestones')
-      .set('Authorization', `Bearer ${plusToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ childId: 'child1', type: 'height', value: '75', unit: 'cm', date: '2022-06-01' });
 
     expect(res.status).toBe(201);
@@ -116,7 +116,7 @@ describe('POST /api/milestones', () => {
 
     const res = await request(app)
       .post('/api/milestones')
-      .set('Authorization', `Bearer ${plusToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ childId: 'child1', type: 'height' }); // missing value and date
 
     expect(res.status).toBe(400);
@@ -134,7 +134,7 @@ describe('POST /api/milestones', () => {
 
     const res = await request(app)
       .post('/api/milestones')
-      .set('Authorization', `Bearer ${plusMemberToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ childId: 'child1', type: 'height', value: '75', date: '2022-06-01' });
 
     expect(res.status).toBe(403);
@@ -154,7 +154,7 @@ describe('DELETE /api/milestones/:id', () => {
 
     const res = await request(app)
       .delete('/api/milestones/ms1')
-      .set('Authorization', `Bearer ${plusToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -166,7 +166,7 @@ describe('DELETE /api/milestones/:id', () => {
 
     const res = await request(app)
       .delete('/api/milestones/ghost')
-      .set('Authorization', `Bearer ${plusToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(404);
   });

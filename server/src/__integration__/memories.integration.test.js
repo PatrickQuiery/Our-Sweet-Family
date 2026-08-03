@@ -2,7 +2,7 @@ const request = require('supertest');
 const app = require('../app');
 const appPrisma = require('../lib/prisma');
 const {
-  prisma, truncateAll, makeUser, makeFamily, makeChild, makeMember, makeMemory, tokenFor,
+  prisma, truncateAll, makeUser, makeFamily, makeChild, makeMember, makeMemory, authHeader,
 } = require('./helpers');
 
 beforeEach(truncateAll);
@@ -27,17 +27,16 @@ async function seedFamily() {
 describe('childId filter (real array_contains query)', () => {
   it('returns only memories tagged with the requested child', async () => {
     const { owner, family, emma, liam } = await seedFamily();
-    const token = tokenFor(owner.id);
 
     const emmaRes = await request(app)
       .get(`/api/memories?familyId=${family.id}&childId=${emma.id}`)
-      .set('Authorization', `Bearer ${token}`);
+      .set(...authHeader(owner));
     expect(emmaRes.status).toBe(200);
     expect(emmaRes.body.memories.map((m) => m.caption).sort()).toEqual(['Both', 'Emma solo']);
 
     const liamRes = await request(app)
       .get(`/api/memories?familyId=${family.id}&childId=${liam.id}`)
-      .set('Authorization', `Bearer ${token}`);
+      .set(...authHeader(owner));
     expect(liamRes.status).toBe(200);
     expect(liamRes.body.memories.map((m) => m.caption).sort()).toEqual(['Both', 'Liam solo']);
   });
@@ -51,7 +50,7 @@ describe('per-child access for a restricted loved one', () => {
 
     const res = await request(app)
       .get(`/api/memories?familyId=${family.id}`)
-      .set('Authorization', `Bearer ${tokenFor(grandma.id)}`);
+      .set(...authHeader(grandma));
 
     expect(res.status).toBe(200);
     // Only memories tagged with Liam — the Emma-solo memory must be absent.
@@ -67,7 +66,7 @@ describe('reels enforce per-child access', () => {
 
     const res = await request(app)
       .get(`/api/reels?familyId=${family.id}&type=annual`)
-      .set('Authorization', `Bearer ${tokenFor(grandma.id)}`);
+      .set(...authHeader(grandma));
 
     expect(res.status).toBe(200);
     const captions = res.body.reels.flatMap((r) => r.memories.map((m) => m.caption));
@@ -87,12 +86,12 @@ describe('classified memories in the real query', () => {
 
     const ownerRes = await request(app)
       .get(`/api/memories?familyId=${family.id}`)
-      .set('Authorization', `Bearer ${tokenFor(owner.id)}`);
+      .set(...authHeader(owner));
     expect(ownerRes.body.memories.map((m) => m.caption).sort()).toEqual(['Public', 'Secret']);
 
     const memberRes = await request(app)
       .get(`/api/memories?familyId=${family.id}`)
-      .set('Authorization', `Bearer ${tokenFor(member.id)}`);
+      .set(...authHeader(member));
     expect(memberRes.body.memories.map((m) => m.caption)).toEqual(['Public']);
   });
 });
@@ -104,17 +103,15 @@ describe('pagination against real rows', () => {
     for (let i = 0; i < 25; i++) {
       await makeMemory(family.id, owner.id, { caption: `M${i}`, capturedAt: `2024-01-${String(i + 1).padStart(2, '0')}` });
     }
-    const token = tokenFor(owner.id);
-
     const page1 = await request(app)
       .get(`/api/memories?familyId=${family.id}&page=1&limit=10`)
-      .set('Authorization', `Bearer ${token}`);
+      .set(...authHeader(owner));
     expect(page1.body.memories).toHaveLength(10);
     expect(page1.body.pagination).toMatchObject({ total: 25, page: 1, limit: 10, pages: 3 });
 
     const page3 = await request(app)
       .get(`/api/memories?familyId=${family.id}&page=3&limit=10`)
-      .set('Authorization', `Bearer ${token}`);
+      .set(...authHeader(owner));
     expect(page3.body.memories).toHaveLength(5);
   });
 });
