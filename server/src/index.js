@@ -2,13 +2,18 @@ require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
 
-// Fail fast on insecure configuration before accepting any traffic. Clerk verifies
-// session tokens with the secret key; without it, authentication cannot work.
-if (!process.env.CLERK_SECRET_KEY) {
+// Fail fast before accepting any traffic. clerkMiddleware() authenticates EVERY
+// request and needs BOTH keys — a missing publishable key makes it throw on every
+// request (including public ones), so require both here rather than 500 silently.
+const missingClerkEnv = ['CLERK_SECRET_KEY', 'CLERK_PUBLISHABLE_KEY'].filter(
+  (k) => !process.env[k]
+);
+if (missingClerkEnv.length) {
   console.error(
-    'FATAL: CLERK_SECRET_KEY is not set. Create a Clerk application and set ' +
-    'CLERK_SECRET_KEY (and CLERK_PUBLISHABLE_KEY on the client) before starting. ' +
-    'See CLERK_SETUP.md.'
+    `FATAL: missing required Clerk env var(s): ${missingClerkEnv.join(', ')}. ` +
+    'Both the secret and publishable keys must be set on the server (clerkMiddleware ' +
+    'requires the publishable key on every request). Get them from your Clerk ' +
+    'dashboard. See CLERK_SETUP.md.'
   );
   process.exit(1);
 }

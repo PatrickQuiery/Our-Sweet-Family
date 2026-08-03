@@ -108,16 +108,7 @@ app.use((err, req, res, next) => {
   // to clients in production. Known 4xx errors may carry a safe message.
   const message =
     status < 500 && err.message ? err.message : 'Internal server error';
-  const body = { error: isProd ? message : err.message || 'Internal server error' };
-  // TEMPORARY DIAGNOSTIC — surfaces the real error to debug production 500s.
-  // REMOVE this block once the production issue is identified.
-  body._diagnostic = {
-    name: err.name,
-    message: err.message,
-    code: err.code,
-    stack: (err.stack || '').split('\n').slice(0, 8),
-  };
-  res.status(status).json(body);
+  res.status(status).json({ error: isProd ? message : err.message || 'Internal server error' });
 });
 
 module.exports = app;
