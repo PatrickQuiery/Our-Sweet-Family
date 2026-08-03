@@ -41,20 +41,44 @@ function getTransport() {
   return { transport: cachedTransport, configured: cachedConfigured };
 }
 
+// Send via Resend's HTTP API (port 443). Preferred on hosts like Railway that
+// block outbound SMTP ports. Throws on a non-2xx response.
+async function sendViaResend({ from, to, replyTo, subject, text, html }) {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from, to: [to], reply_to: replyTo, subject, text, html }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Resend API responded ${res.status}: ${detail.slice(0, 300)}`);
+  }
+  return { sent: true };
+}
+
 /**
- * Send an email. Returns { sent: boolean }. Never throws for a "not configured"
- * transport — only a real send failure rejects.
+ * Send an email. Returns { sent: boolean }. Prefers the Resend HTTP API when
+ * RESEND_API_KEY is set; otherwise falls back to SMTP (any provider), or a no-op
+ * JSON transport when nothing is configured. Real send failures reject.
  */
 async function sendMail({ to, replyTo, subject, text, html }) {
+  const from = process.env.SMTP_FROM || process.env.RESEND_FROM || 'no-reply@oursweetfamily.com';
+
+  // Preferred path: Resend HTTP API (immune to SMTP egress blocking).
+  if (process.env.RESEND_API_KEY) {
+    return sendViaResend({ from, to, replyTo, subject, text, html });
+  }
+
+  // Fallback: SMTP (or no-op if unconfigured).
   const { transport, configured } = getTransport();
-  const from = process.env.SMTP_FROM || 'no-reply@oursweetfamily.com';
-
   const info = await transport.sendMail({ from, to, replyTo, subject, text, html });
-
   if (!configured) {
     console.warn(
-      '[mailer] SMTP not configured — email NOT delivered. Set SMTP_HOST/SMTP_PORT ' +
-      '(and SMTP_USER/SMTP_PASS/SMTP_FROM) to enable delivery. Message preview:',
+      '[mailer] No email transport configured — email NOT delivered. Set RESEND_API_KEY ' +
+      '(recommended) or SMTP_HOST/SMTP_PORT. Message preview:',
       info.message ? info.message.toString().slice(0, 200) : '(no preview)'
     );
     return { sent: false };
