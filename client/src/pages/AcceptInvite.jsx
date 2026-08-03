@@ -28,7 +28,10 @@ export default function AcceptInvite() {
     if (state !== 'ready' || !isLoaded || !isSignedIn || claiming.current) return;
     claiming.current = true;
     api.post(`/invitations/${token}/claim`)
-      .then(() => navigate('/dashboard'))
+      // Full navigation (not SPA) so AuthContext re-initializes and re-fetches the
+      // families list — the membership was just created, and the in-memory family
+      // state predates it (otherwise the dashboard shows "set up your family").
+      .then(() => { window.location.href = '/dashboard'; })
       .catch((err) => {
         claiming.current = false;
         setState('invalid');
