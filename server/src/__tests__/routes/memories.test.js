@@ -63,6 +63,22 @@ describe('GET /api/memories', () => {
     expect(res.body.pagination.total).toBe(1);
   });
 
+  it('never includes photo location in the feed (even for the owner)', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.family.findUnique.mockResolvedValue(mockFamily);
+    prisma.memory.count.mockResolvedValue(1);
+    prisma.memory.findMany.mockResolvedValue([{ ...mockMemory, latitude: 40.1785, longitude: -73.9442 }]);
+    prisma.child.findMany.mockResolvedValue(mockFamily.children);
+
+    const res = await request(app)
+      .get('/api/memories?familyId=family1')
+      .set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(200);
+    expect(res.body.memories[0].latitude).toBeUndefined();
+    expect(res.body.memories[0].longitude).toBeUndefined();
+  });
+
   it('returns 400 when familyId is missing', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
 
@@ -185,6 +201,32 @@ describe('GET /api/memories/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.memory.id).toBe('mem1');
+  });
+
+  it('exposes photo location to the family owner', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue({ ...memoryWithFamily, latitude: 40.1785, longitude: -73.9442 });
+
+    const res = await request(app)
+      .get('/api/memories/mem1')
+      .set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(200);
+    expect(res.body.memory.latitude).toBe(40.1785);
+    expect(res.body.memory.longitude).toBe(-73.9442);
+  });
+
+  it('hides photo location from an invited member (non-owner)', async () => {
+    prisma.user.findUnique.mockResolvedValue(memberUser);
+    prisma.memory.findUnique.mockResolvedValue({ ...memoryWithFamily, latitude: 40.1785, longitude: -73.9442 });
+
+    const res = await request(app)
+      .get('/api/memories/mem1')
+      .set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(200);
+    expect(res.body.memory.latitude).toBeUndefined();
+    expect(res.body.memory.longitude).toBeUndefined();
   });
 
   it('returns 403 for classified memory when viewed by non-owner', async () => {

@@ -39,6 +39,24 @@ async function extractExifDate(buffer, mimetype) {
   return null;
 }
 
+// Pull GPS coordinates from a photo's EXIF, if present. Returns null for videos
+// (exifr doesn't read container metadata) and for photos without/with stripped
+// location. Coordinates are sensitive and only ever surfaced to the family owner.
+async function extractExifGps(buffer, mimetype) {
+  try {
+    if (mimetype.startsWith('image/')) {
+      const exifr = require('exifr');
+      const gps = await exifr.gps(buffer);
+      if (gps && Number.isFinite(gps.latitude) && Number.isFinite(gps.longitude)) {
+        return { latitude: gps.latitude, longitude: gps.longitude };
+      }
+    }
+  } catch (e) {
+    // ignore EXIF errors
+  }
+  return null;
+}
+
 async function generateThumbnail(buffer, mimetype, originalName) {
   if (!mimetype.startsWith('image/')) return null;
 
@@ -152,7 +170,12 @@ router.get('/', authenticate, async (req, res) => {
         };
       }).filter(Boolean);
 
-      return mediaRefs({ ...m, childIds, ageLabels });
+      const shaped = mediaRefs({ ...m, childIds, ageLabels });
+      // The feed never carries location — it only ever appears on the owner's
+      // single-memory view.
+      delete shaped.latitude;
+      delete shaped.longitude;
+      return shaped;
     });
 
     res.json({
@@ -220,7 +243,13 @@ router.get('/:id', authenticate, async (req, res) => {
       };
     }).filter(Boolean);
 
-    res.json({ memory: mediaRefs({ ...memory, childIds, ageLabels }) });
+    const shaped = mediaRefs({ ...memory, childIds, ageLabels });
+    // Location is owner-only: never reveal a photo's GPS to invited members.
+    if (!isOwner) {
+      delete shaped.latitude;
+      delete shaped.longitude;
+    }
+    res.json({ memory: shaped });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -293,6 +322,9 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
       capturedAt = exifDate ? new Date(exifDate) : new Date();
     }
 
+    // Extract EXIF GPS (photos only). Stored, but only ever shown to the owner.
+    const gps = await extractExifGps(req.file.buffer, req.file.mimetype);
+
     // Upload original
     const fileUrl = await uploadFile(
       req.file.buffer,
@@ -339,6 +371,8 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
         capturedAt,
         isClassified: canClassify && isClassified === 'true',
         caption: caption || null,
+        latitude: gps?.latitude ?? null,
+        longitude: gps?.longitude ?? null,
       },
       include: {
         uploadedBy: { select: { id: true, name: true, avatarUrl: true } },

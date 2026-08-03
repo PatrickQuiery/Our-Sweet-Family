@@ -124,6 +124,11 @@ model Memory {
   capturedAt      DateTime
   isClassified    Boolean  @default(false)
   caption         String?
+  // Location where the photo was taken, from EXIF GPS. SENSITIVE (can reveal a
+  // home/school) — only ever exposed to the family owner, never to invited
+  // members, never in the feed or a URL.
+  latitude        Float?
+  longitude       Float?
   createdAt       DateTime @default(now())
 
   family     Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)

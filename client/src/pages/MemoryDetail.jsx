@@ -186,6 +186,23 @@ export default function MemoryDetail() {
             )}
           </div>
 
+          {/* Photo location — owner-only (the API only sends coordinates to the
+              family owner; invited members never receive them). */}
+          {memory.latitude != null && memory.longitude != null && (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 mb-4">
+              <span>📍 Taken near {memory.latitude.toFixed(4)}, {memory.longitude.toFixed(4)}</span>
+              <a
+                href={`https://www.openstreetmap.org/?mlat=${memory.latitude}&mlon=${memory.longitude}#map=15/${memory.latitude}/${memory.longitude}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-brand-600 hover:text-brand-700 font-medium"
+              >
+                View on map
+              </a>
+              <span className="text-xs text-gray-400">· only visible to you</span>
+            </div>
+          )}
+
           {/* Age labels + edit affordance (read mode) */}
           {!editing && (
             <div className="mb-4">
