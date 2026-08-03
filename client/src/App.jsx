@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 
 import Landing from './pages/Landing';
 import Contact from './pages/Contact';
+import Privacy from './pages/Privacy';
 import AcceptInvite from './pages/AcceptInvite';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -46,6 +47,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/contact" element={<Contact />} />
+      <Route path="/privacy" element={<Privacy />} />
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />

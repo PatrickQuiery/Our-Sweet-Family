@@ -92,6 +92,25 @@ const plans = [
   },
 ];
 
+const faqs = [
+  {
+    q: 'How is this different from iCloud or Google Photos?',
+    a: "Our Sweet Family is built for sharing kids' memories with the people who love them — not for backing up your whole camera roll. You invite specific loved ones and control exactly which children and memories each person sees, every photo shows how old your child was, and there are never any ads or data-mining.",
+  },
+  {
+    q: 'Is it really private?',
+    a: "Yes. Photos and videos are stored privately and are only ever served to people you've invited to your family, after an access check. There are no public links, no ads, and we never sell your data.",
+  },
+  {
+    q: 'Can grandparents and relatives use it easily?',
+    a: 'Absolutely. You send a simple invite link; they create an account and instantly see the memories you’ve shared. You choose per person which children and memories they can view.',
+  },
+  {
+    q: 'What happens to my photos if I stop using it?',
+    a: 'Your memories are yours. Paid plans let you export and download your originals at any time, and you can delete your data whenever you want.',
+  },
+];
+
 export default function Landing() {
   return (
     <div className="min-h-screen bg-white">
@@ -101,7 +120,13 @@ export default function Landing() {
           <img src="/logo.svg" alt="Our Sweet Family" className="w-10 h-10" />
           <span className="font-bold text-gray-900 text-lg">Our Sweet Family</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          <a href="#pricing" className="hidden sm:inline text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+            Pricing
+          </a>
+          <a href="#faq" className="hidden sm:inline text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+            FAQ
+          </a>
           <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
             Sign in
           </Link>
@@ -232,6 +257,29 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section id="faq" className="px-6 py-16 bg-gray-50">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Frequently asked questions</h2>
+            <p className="text-gray-600">Everything you need to know before you start.</p>
+          </div>
+          <div className="space-y-3">
+            {faqs.map((f) => (
+              <details key={f.q} className="card p-5 group">
+                <summary className="flex items-center justify-between gap-4 cursor-pointer font-semibold text-gray-900 list-none">
+                  {f.q}
+                  <svg className="w-5 h-5 text-gray-400 flex-shrink-0 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </summary>
+                <p className="mt-3 text-gray-600 text-sm leading-relaxed">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="px-6 py-16 bg-gradient-to-br from-brand-500 to-brand-700 text-white text-center">
         <h2 className="text-3xl font-bold mb-4">Start saving your family's memories today</h2>
@@ -249,9 +297,10 @@ export default function Landing() {
         </div>
         <div className="flex items-center justify-center gap-4 mb-3">
           <Link to="/contact" className="text-gray-500 hover:text-brand-600 transition-colors">Contact us</Link>
+          <Link to="/privacy" className="text-gray-500 hover:text-brand-600 transition-colors">Privacy</Link>
           <Link to="/login" className="text-gray-500 hover:text-brand-600 transition-colors">Sign in</Link>
         </div>
-        <p>&copy; 2025 Our Sweet Family. All rights reserved. Built with love.</p>
+        <p>&copy; {new Date().getFullYear()} Our Sweet Family. All rights reserved. Built with love.</p>
       </footer>
     </div>
   );

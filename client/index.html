@@ -2,12 +2,96 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Our Sweet Family</title>
+    <meta name="theme-color" content="#f43f74" />
+
+    <!-- Primary SEO -->
+    <title>Our Sweet Family — Private Photo & Video Sharing for Your Kids</title>
+    <meta
+      name="description"
+      content="A private, ad-free home for your children's photos and videos. Share with the family you trust, with full control over who sees what — plus auto age labels and memory reels."
+    />
+    <link rel="canonical" href="https://oursweetfamily.com/" />
+
+    <!-- Open Graph (Facebook, iMessage, WhatsApp, Slack, LinkedIn) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Our Sweet Family" />
+    <meta property="og:url" content="https://oursweetfamily.com/" />
+    <meta property="og:title" content="Our Sweet Family — Private Photo & Video Sharing for Your Kids" />
+    <meta
+      property="og:description"
+      content="A private, ad-free home for your children's photos and videos. Share with the family you trust — with full control over who sees what."
+    />
+    <meta property="og:image" content="https://oursweetfamily.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Our Sweet Family — every precious moment, safe forever." />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Our Sweet Family — Private Photo & Video Sharing for Your Kids" />
+    <meta
+      name="twitter:description"
+      content="A private, ad-free home for your children's photos and videos. Share with the family you trust — with full control over who sees what."
+    />
+    <meta name="twitter:image" content="https://oursweetfamily.com/og-image.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Structured data: Organization + FAQ (eligible for FAQ rich results) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Our Sweet Family",
+        "url": "https://oursweetfamily.com/",
+        "logo": "https://oursweetfamily.com/logo.svg",
+        "description": "A private, ad-free home for your children's photos and videos."
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How is this different from iCloud or Google Photos?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Our Sweet Family is built for sharing kids' memories with the people who love them, not for backing up your whole camera roll. You invite specific loved ones and control exactly which children and memories each person can see, every photo shows how old your child was, and there are never any ads or data-mining."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is it really private?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Photos and videos are stored privately and are only ever served to people you've invited to your family, after an access check. There are no public links, no ads, and we never sell your data."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can grandparents and relatives use it easily?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Absolutely. You send a simple invite link; they create an account and instantly see the memories you've shared. You choose per person which children and memories they can view."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What happens to my photos if I stop using it?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Your memories are yours. Paid plans let you export and download your originals at any time, and you can delete your data whenever you want."
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

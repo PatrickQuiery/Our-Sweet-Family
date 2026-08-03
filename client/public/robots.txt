@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+# App routes require sign-in and hold no crawlable content
+Disallow: /dashboard
+Disallow: /upload
+Disallow: /children
+Disallow: /family
+Disallow: /reels
+Disallow: /milestones
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /memories/
+Disallow: /accept-invite
+
+Sitemap: https://oursweetfamily.com/sitemap.xml
