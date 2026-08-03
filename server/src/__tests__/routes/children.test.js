@@ -81,6 +81,36 @@ describe('POST /api/children', () => {
     expect(res.body.child.name).toBe('Alice');
   });
 
+  it('creates a child with a gender when provided', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.family.findUnique.mockResolvedValue(mockFamily);
+    prisma.child.create.mockResolvedValue({ ...mockChild, gender: 'female' });
+
+    const res = await request(app)
+      .post('/api/children')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ familyId: 'family1', name: 'Alice', dateOfBirth: '2020-03-15', gender: 'female' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.child.gender).toBe('female');
+    expect(prisma.child.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ gender: 'female' }) })
+    );
+  });
+
+  it('rejects an invalid gender value', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.family.findUnique.mockResolvedValue(mockFamily);
+
+    const res = await request(app)
+      .post('/api/children')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ familyId: 'family1', name: 'Alice', dateOfBirth: '2020-03-15', gender: 'other' });
+
+    expect(res.status).toBe(400);
+    expect(prisma.child.create).not.toHaveBeenCalled();
+  });
+
   it('returns 403 when a non-owner tries to add a child', async () => {
     prisma.user.findUnique.mockResolvedValue(memberUser);
     prisma.family.findUnique.mockResolvedValue(mockFamily);
@@ -132,6 +162,23 @@ describe('PUT /api/children/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.child.name).toBe('Alicia');
+  });
+
+  it('updates a child gender when called by owner', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.child.findUnique.mockResolvedValue(childWithFamily);
+    prisma.child.update.mockResolvedValue({ ...mockChild, gender: 'male' });
+
+    const res = await request(app)
+      .put('/api/children/child1')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ gender: 'male' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.child.gender).toBe('male');
+    expect(prisma.child.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ gender: 'male' }) })
+    );
   });
 
   it('returns 403 when non-owner tries to update', async () => {

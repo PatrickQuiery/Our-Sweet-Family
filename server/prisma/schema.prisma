@@ -70,6 +70,7 @@ model Child {
   familyId    String
   name        String
   dateOfBirth DateTime
+  gender      String?
   avatarUrl   String?
 
   family     Family           @relation(fields: [familyId], references: [id], onDelete: Cascade)

@@ -3,6 +3,30 @@ import { format, differenceInYears, differenceInMonths } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 
+function GenderSelect({ value, onChange }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">Gender</label>
+      <div className="flex gap-2">
+        {[['male', 'Male'], ['female', 'Female']].map(([val, label]) => (
+          <button
+            key={val}
+            type="button"
+            onClick={() => onChange(value === val ? '' : val)}
+            className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+              value === val
+                ? 'bg-brand-500 border-brand-500 text-white'
+                : 'border-gray-300 text-gray-600 hover:border-brand-300'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ageLabel(dob) {
   const now = new Date();
   const birth = new Date(dob);
@@ -18,11 +42,11 @@ export default function Children() {
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', dateOfBirth: '' });
+  const [form, setForm] = useState({ name: '', dateOfBirth: '', gender: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', dateOfBirth: '' });
+  const [editForm, setEditForm] = useState({ name: '', dateOfBirth: '', gender: '' });
   const [editError, setEditError] = useState('');
   const [editSubmitting, setEditSubmitting] = useState(false);
 
@@ -45,9 +69,10 @@ export default function Children() {
         familyId: family.id,
         name: form.name,
         dateOfBirth: form.dateOfBirth,
+        gender: form.gender,
       });
       setChildren((prev) => [...prev, data.child]);
-      setForm({ name: '', dateOfBirth: '' });
+      setForm({ name: '', dateOfBirth: '', gender: '' });
       setShowForm(false);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to add child');
@@ -62,6 +87,7 @@ export default function Children() {
     setEditForm({
       name: child.name,
       dateOfBirth: new Date(child.dateOfBirth).toISOString().split('T')[0],
+      gender: child.gender || '',
     });
   };
 
@@ -73,6 +99,7 @@ export default function Children() {
       const { data } = await api.put(`/children/${childId}`, {
         name: editForm.name,
         dateOfBirth: editForm.dateOfBirth,
+        gender: editForm.gender,
       });
       setChildren((prev) => prev.map((c) => (c.id === childId ? data.child : c)));
       setEditingId(null);
@@ -124,6 +151,7 @@ export default function Children() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of birth</label>
               <input type="date" className="input" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} max={new Date().toISOString().split('T')[0]} required />
             </div>
+            <GenderSelect value={form.gender} onChange={(gender) => setForm({ ...form, gender })} />
             <div className="flex gap-2">
               <button type="submit" className="btn-primary" disabled={submitting}>{submitting ? 'Adding...' : 'Add child'}</button>
               <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
@@ -154,6 +182,7 @@ export default function Children() {
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of birth</label>
                     <input type="date" className="input" value={editForm.dateOfBirth} onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })} max={new Date().toISOString().split('T')[0]} required />
                   </div>
+                  <GenderSelect value={editForm.gender} onChange={(gender) => setEditForm({ ...editForm, gender })} />
                   <div className="flex gap-2">
                     <button type="submit" className="btn-primary" disabled={editSubmitting}>{editSubmitting ? 'Saving...' : 'Save changes'}</button>
                     <button type="button" className="btn-secondary" onClick={() => setEditingId(null)}>Cancel</button>
@@ -169,7 +198,10 @@ export default function Children() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-gray-900">{child.name}</h3>
-                  <p className="text-sm text-gray-500">{format(new Date(child.dateOfBirth), 'MMMM d, yyyy')} · {ageLabel(child.dateOfBirth)} old</p>
+                  <p className="text-sm text-gray-500">
+                    {format(new Date(child.dateOfBirth), 'MMMM d, yyyy')} · {ageLabel(child.dateOfBirth)} old
+                    {child.gender && ` · ${child.gender === 'male' ? 'Male' : 'Female'}`}
+                  </p>
                 </div>
                 {isOwner && (
                   <div className="flex items-center gap-1 flex-shrink-0">
