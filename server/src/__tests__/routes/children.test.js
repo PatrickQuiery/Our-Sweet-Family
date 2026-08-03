@@ -24,7 +24,7 @@ describe('GET /api/children', () => {
 
     const res = await request(app)
       .get('/api/children?familyId=family1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.children).toHaveLength(1);
@@ -38,7 +38,7 @@ describe('GET /api/children', () => {
 
     const res = await request(app)
       .get('/api/children?familyId=family1')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.children).toHaveLength(1);
@@ -50,7 +50,7 @@ describe('GET /api/children', () => {
 
     const res = await request(app)
       .get('/api/children?familyId=family1')
-      .set('Authorization', `Bearer ${otherToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -60,7 +60,7 @@ describe('GET /api/children', () => {
 
     const res = await request(app)
       .get('/api/children')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(400);
   });
@@ -74,7 +74,7 @@ describe('POST /api/children', () => {
 
     const res = await request(app)
       .post('/api/children')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ familyId: 'family1', name: 'Alice', dateOfBirth: '2020-03-15' });
 
     expect(res.status).toBe(201);
@@ -87,7 +87,7 @@ describe('POST /api/children', () => {
 
     const res = await request(app)
       .post('/api/children')
-      .set('Authorization', `Bearer ${memberToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ familyId: 'family1', name: 'Bob', dateOfBirth: '2021-05-10' });
 
     expect(res.status).toBe(403);
@@ -98,7 +98,7 @@ describe('POST /api/children', () => {
 
     const res = await request(app)
       .post('/api/children')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ familyId: 'family1', name: 'Alice', dateOfBirth: 'not-a-date' });
 
     expect(res.status).toBe(400);
@@ -110,7 +110,7 @@ describe('POST /api/children', () => {
 
     const res = await request(app)
       .post('/api/children')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ familyId: 'ghost', name: 'Alice', dateOfBirth: '2020-03-15' });
 
     expect(res.status).toBe(404);
@@ -127,7 +127,7 @@ describe('PUT /api/children/:id', () => {
 
     const res = await request(app)
       .put('/api/children/child1')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ name: 'Alicia' });
 
     expect(res.status).toBe(200);
@@ -140,7 +140,7 @@ describe('PUT /api/children/:id', () => {
 
     const res = await request(app)
       .put('/api/children/child1')
-      .set('Authorization', `Bearer ${memberToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ name: 'Hacked' });
 
     expect(res.status).toBe(403);
@@ -159,7 +159,7 @@ describe('DELETE /api/children/:id', () => {
 
     const res = await request(app)
       .delete('/api/children/child1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -171,7 +171,7 @@ describe('DELETE /api/children/:id', () => {
 
     const res = await request(app)
       .delete('/api/children/child1')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -182,7 +182,7 @@ describe('DELETE /api/children/:id', () => {
 
     const res = await request(app)
       .delete('/api/children/ghost')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(404);
   });

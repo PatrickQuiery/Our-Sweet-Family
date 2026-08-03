@@ -10,6 +10,7 @@
     "lint": "eslint src --ext js,jsx"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.61.9",
     "axios": "^1.7.2",
     "date-fns": "^3.6.0",
     "react": "^18.3.1",

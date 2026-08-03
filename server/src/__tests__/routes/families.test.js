@@ -22,7 +22,7 @@ describe('GET /api/families', () => {
 
     const res = await request(app)
       .get('/api/families')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.families).toHaveLength(1);
@@ -37,7 +37,7 @@ describe('GET /api/families', () => {
 
     const res = await request(app)
       .get('/api/families')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.families).toHaveLength(1);
@@ -56,7 +56,7 @@ describe('POST /api/families', () => {
 
     const res = await request(app)
       .post('/api/families')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ name: 'Smith Family' });
 
     expect(res.status).toBe(201);
@@ -71,7 +71,7 @@ describe('POST /api/families', () => {
 
     const res = await request(app)
       .post('/api/families')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ name: '' });
     expect(res.status).toBe(400);
   });
@@ -84,7 +84,7 @@ describe('GET /api/families/:id', () => {
 
     const res = await request(app)
       .get('/api/families/family1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.family.id).toBe('family1');
@@ -96,7 +96,7 @@ describe('GET /api/families/:id', () => {
 
     const res = await request(app)
       .get('/api/families/family1')
-      .set('Authorization', `Bearer ${otherToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -107,7 +107,7 @@ describe('GET /api/families/:id', () => {
 
     const res = await request(app)
       .get('/api/families/nope')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(404);
   });
@@ -121,7 +121,7 @@ describe('PUT /api/families/:id', () => {
 
     const res = await request(app)
       .put('/api/families/family1')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ name: 'Jones Family' });
 
     expect(res.status).toBe(200);
@@ -134,7 +134,7 @@ describe('PUT /api/families/:id', () => {
 
     const res = await request(app)
       .put('/api/families/family1')
-      .set('Authorization', `Bearer ${otherToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ name: 'Hacked Name' });
 
     expect(res.status).toBe(403);

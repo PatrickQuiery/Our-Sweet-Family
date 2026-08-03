@@ -56,7 +56,7 @@ describe('GET /api/memories', () => {
 
     const res = await request(app)
       .get('/api/memories?familyId=family1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.memories).toHaveLength(1);
@@ -68,7 +68,7 @@ describe('GET /api/memories', () => {
 
     const res = await request(app)
       .get('/api/memories')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(400);
   });
@@ -85,7 +85,7 @@ describe('GET /api/memories', () => {
 
     const res = await request(app)
       .get('/api/memories?familyId=family1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     const keyed = res.body.memories.find((m) => m.id === 'keyed');
     const external = res.body.memories.find((m) => m.id === 'external');
@@ -101,7 +101,7 @@ describe('GET /api/memories', () => {
 
     const res = await request(app)
       .get('/api/memories?familyId=family1')
-      .set('Authorization', `Bearer ${otherToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -115,7 +115,7 @@ describe('GET /api/memories', () => {
 
     await request(app)
       .get('/api/memories?familyId=family1')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     const findManyArgs = prisma.memory.findMany.mock.calls[0][0];
     expect(findManyArgs.where.isClassified).toBe(false);
@@ -130,7 +130,7 @@ describe('GET /api/memories', () => {
 
     const res = await request(app)
       .get('/api/memories?familyId=family1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.body.memories[0].ageLabels).toBeDefined();
     expect(res.body.memories[0].ageLabels[0].childName).toBe('Alice');
@@ -157,7 +157,7 @@ describe('GET /api/memories', () => {
 
     await request(app)
       .get('/api/memories?familyId=family1')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     const findManyArgs = prisma.memory.findMany.mock.calls[0][0];
     // After fix: should use OR so individual child memories are visible
@@ -181,7 +181,7 @@ describe('GET /api/memories/:id', () => {
 
     const res = await request(app)
       .get('/api/memories/mem1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.memory.id).toBe('mem1');
@@ -196,7 +196,7 @@ describe('GET /api/memories/:id', () => {
 
     const res = await request(app)
       .get('/api/memories/mem1')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -207,7 +207,7 @@ describe('GET /api/memories/:id', () => {
 
     const res = await request(app)
       .get('/api/memories/mem1')
-      .set('Authorization', `Bearer ${otherToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -218,7 +218,7 @@ describe('GET /api/memories/:id', () => {
 
     const res = await request(app)
       .get('/api/memories/ghost')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(404);
   });
@@ -243,7 +243,7 @@ describe('GET /api/memories/:id', () => {
 
     const res = await request(app)
       .get('/api/memories/mem1')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     // Should be denied — member only has access to child1
     expect(res.status).toBe(403);
@@ -262,7 +262,7 @@ describe('DELETE /api/memories/:id', () => {
 
     const res = await request(app)
       .delete('/api/memories/mem1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -276,7 +276,7 @@ describe('DELETE /api/memories/:id', () => {
 
     const res = await request(app)
       .delete('/api/memories/mem1')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
   });
@@ -288,7 +288,7 @@ describe('DELETE /api/memories/:id', () => {
 
     const res = await request(app)
       .delete('/api/memories/mem1')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -310,7 +310,7 @@ describe('POST /api/memories/:id/reactions', () => {
 
     const res = await request(app)
       .post('/api/memories/mem1/reactions')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(201);
     expect(res.body.reaction.type).toBe('love');
@@ -324,7 +324,7 @@ describe('POST /api/memories/:id/reactions', () => {
 
     const res = await request(app)
       .post('/api/memories/mem1/reactions')
-      .set('Authorization', `Bearer ${otherToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
     expect(prisma.reaction.upsert).not.toHaveBeenCalled();
@@ -336,7 +336,7 @@ describe('POST /api/memories/:id/reactions', () => {
 
     const res = await request(app)
       .post('/api/memories/ghost/reactions')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(404);
   });
@@ -350,7 +350,7 @@ describe('DELETE /api/memories/:id/reactions', () => {
 
     const res = await request(app)
       .delete('/api/memories/mem1/reactions')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -370,7 +370,7 @@ describe('POST /api/memories/:id/comments', () => {
 
     const res = await request(app)
       .post('/api/memories/mem1/comments')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ text: 'So cute!' });
 
     expect(res.status).toBe(201);
@@ -382,7 +382,7 @@ describe('POST /api/memories/:id/comments', () => {
 
     const res = await request(app)
       .post('/api/memories/mem1/comments')
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ text: '   ' });
 
     expect(res.status).toBe(400);
@@ -395,7 +395,7 @@ describe('POST /api/memories/:id/comments', () => {
 
     const res = await request(app)
       .post('/api/memories/mem1/comments')
-      .set('Authorization', `Bearer ${otherToken}`)
+      .set('x-clerk-user-id', 'clerk-test')
       .send({ text: 'intruder' });
 
     expect(res.status).toBe(403);
@@ -411,7 +411,7 @@ describe('DELETE /api/memories/:memoryId/comments/:commentId', () => {
 
     const res = await request(app)
       .delete('/api/memories/mem1/comments/c1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
   });
@@ -422,7 +422,7 @@ describe('DELETE /api/memories/:memoryId/comments/:commentId', () => {
 
     const res = await request(app)
       .delete('/api/memories/mem1/comments/c1')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -445,7 +445,7 @@ describe('GET /api/memories/:id/file', () => {
 
     const res = await request(app)
       .get('/api/memories/mem1/file')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/image\/jpeg/);
@@ -458,7 +458,7 @@ describe('GET /api/memories/:id/file', () => {
 
     const res = await request(app)
       .get('/api/memories/mem1/file')
-      .set('Authorization', `Bearer ${otherToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -469,7 +469,7 @@ describe('GET /api/memories/:id/file', () => {
 
     const res = await request(app)
       .get('/api/memories/mem1/file')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -480,7 +480,7 @@ describe('GET /api/memories/:id/file', () => {
 
     const res = await request(app)
       .get('/api/memories/ghost/file')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(404);
   });
@@ -496,7 +496,7 @@ describe('GET /api/memories/:id/file', () => {
 
     const res = await request(app)
       .get('/api/memories/mem1/file')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(302);
     expect(res.headers.location).toBe('https://images.unsplash.com/x.jpg');
@@ -516,7 +516,7 @@ describe('GET /api/memories/:id/thumb', () => {
 
     const res = await request(app)
       .get('/api/memories/mem1/thumb')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/image\/jpeg/);

@@ -57,65 +57,59 @@ describe('GET /api/invitations/:token', () => {
   });
 });
 
-// ─── POST /api/invitations/:token/accept ──────────────────────────────────────
+// ─── POST /api/invitations/:token/claim (Clerk-authenticated) ─────────────────
 
-describe('POST /api/invitations/:token/accept', () => {
-  it('creates a user + member and returns a token for a valid invite', async () => {
+describe('POST /api/invitations/:token/claim', () => {
+  // The invitee has just signed up via Clerk; their local row is resolved by
+  // authenticate. Their email must match the invited address.
+  const invitee = { id: 'new1', email: 'newbie@test.com', clerkUserId: 'clerk_new', name: 'Newbie', role: 'owner', plan: 'free' };
+
+  it('links the signed-in invitee as a family member', async () => {
+    prisma.user.findUnique.mockResolvedValue(invitee); // authenticate → req.user
     prisma.invitation.findUnique.mockResolvedValue(pendingInvite);
-    prisma.user.findUnique.mockResolvedValue(null); // no existing account for the email
-    bcrypt.hash.mockResolvedValue('new_hash');
-    prisma.user.create.mockResolvedValue({ id: 'new1', email: 'newbie@test.com', name: 'Newbie', role: 'loved_one', plan: 'free', avatarUrl: null });
+    prisma.familyMember.findUnique.mockResolvedValue(null);
     prisma.familyMember.create.mockResolvedValue({ id: 'fm9', userId: 'new1' });
     prisma.invitation.update.mockResolvedValue({ ...pendingInvite, acceptedAt: future });
 
     const res = await request(app)
-      .post('/api/invitations/rawtoken123/accept')
-      .send({ name: 'Newbie', password: 'password123' });
+      .post('/api/invitations/rawtoken123/claim')
+      .set('x-clerk-user-id', 'clerk_new');
 
-    expect(res.status).toBe(201);
-    expect(res.body).toHaveProperty('token');
-    expect(res.body.user.email).toBe('newbie@test.com');
-    expect(res.body.user.passwordHash).toBeUndefined();
-    expect(prisma.user.create).toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
     expect(prisma.familyMember.create).toHaveBeenCalled();
     expect(prisma.invitation.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ acceptedAt: expect.anything() }) })
     );
   });
 
-  it('rejects a password shorter than 8 characters', async () => {
+  it('rejects a claim when the signed-in email differs from the invited email', async () => {
+    prisma.user.findUnique.mockResolvedValue({ ...invitee, email: 'someone-else@test.com' });
     prisma.invitation.findUnique.mockResolvedValue(pendingInvite);
+
     const res = await request(app)
-      .post('/api/invitations/rawtoken123/accept')
-      .send({ name: 'Newbie', password: 'short' });
-    expect(res.status).toBe(400);
-    expect(prisma.user.create).not.toHaveBeenCalled();
+      .post('/api/invitations/rawtoken123/claim')
+      .set('x-clerk-user-id', 'clerk_new');
+
+    expect(res.status).toBe(403);
+    expect(prisma.familyMember.create).not.toHaveBeenCalled();
   });
 
-  it('returns 410 for an expired invite and creates nothing', async () => {
+  it('returns 410 for an expired invitation and links nothing', async () => {
+    prisma.user.findUnique.mockResolvedValue(invitee);
     prisma.invitation.findUnique.mockResolvedValue({ ...pendingInvite, expiresAt: past });
+
     const res = await request(app)
-      .post('/api/invitations/rawtoken123/accept')
-      .send({ name: 'Newbie', password: 'password123' });
+      .post('/api/invitations/rawtoken123/claim')
+      .set('x-clerk-user-id', 'clerk_new');
+
     expect(res.status).toBe(410);
-    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.familyMember.create).not.toHaveBeenCalled();
   });
 
-  it('links membership to an existing account instead of creating a user', async () => {
-    prisma.invitation.findUnique.mockResolvedValue(pendingInvite);
-    prisma.user.findUnique.mockResolvedValue(memberUser); // email already registered
-    prisma.familyMember.findUnique.mockResolvedValue(null);
-    prisma.familyMember.create.mockResolvedValue({ id: 'fm9', userId: 'member1' });
-    prisma.invitation.update.mockResolvedValue({ ...pendingInvite, acceptedAt: future });
-
-    const res = await request(app)
-      .post('/api/invitations/rawtoken123/accept')
-      .send({ name: 'Ignored', password: 'password123' });
-
-    expect(res.status).toBe(200);
-    expect(res.body.existingAccount).toBe(true);
-    expect(prisma.user.create).not.toHaveBeenCalled();
-    expect(prisma.familyMember.create).toHaveBeenCalled();
+  it('requires authentication', async () => {
+    const res = await request(app).post('/api/invitations/rawtoken123/claim');
+    expect(res.status).toBe(401);
   });
 });
 
@@ -129,7 +123,7 @@ describe('GET /api/invitations', () => {
 
     const res = await request(app)
       .get('/api/invitations?familyId=family1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.invitations).toHaveLength(1);
@@ -141,7 +135,7 @@ describe('GET /api/invitations', () => {
 
     const res = await request(app)
       .get('/api/invitations?familyId=family1')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });
@@ -157,7 +151,7 @@ describe('DELETE /api/invitations/:id', () => {
 
     const res = await request(app)
       .delete('/api/invitations/inv1')
-      .set('Authorization', `Bearer ${ownerToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -169,7 +163,7 @@ describe('DELETE /api/invitations/:id', () => {
 
     const res = await request(app)
       .delete('/api/invitations/inv1')
-      .set('Authorization', `Bearer ${memberToken}`);
+      .set('x-clerk-user-id', 'clerk-test');
 
     expect(res.status).toBe(403);
   });

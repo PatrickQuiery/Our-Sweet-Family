@@ -37,7 +37,8 @@ enum ReactionType {
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
-  passwordHash String
+  clerkUserId  String?  @unique  // Clerk subject; credentials/social live in Clerk
+  passwordHash String?           // optional — Clerk owns passwords now
   name         String
   avatarUrl    String?
   role         Role     @default(loved_one)

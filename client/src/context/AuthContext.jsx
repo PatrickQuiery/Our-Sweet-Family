@@ -1,12 +1,19 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
 import api from '../lib/api';
 
 const AuthContext = createContext(null);
 
+// Clerk owns authentication (session, password, social, MFA). This context layers on
+// the app-specific identity: the local user row (role/plan) synced from Clerk, and the
+// active family. It keeps the previous interface (user, family, loading, refreshFamily,
+// logout) so the rest of the app is unchanged.
 export function AuthProvider({ children }) {
+  const { isLoaded, isSignedIn, signOut } = useClerkAuth();
+  const { user: clerkUser } = useUser();
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [family, setFamily] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const fetchMe = useCallback(async () => {
     try {
@@ -14,62 +21,41 @@ export function AuthProvider({ children }) {
       setUser(data.user);
     } catch {
       setUser(null);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   const fetchFamily = useCallback(async () => {
     try {
       const { data } = await api.get('/families');
-      if (data.families.length > 0) {
-        setFamily(data.families[0]);
-      }
+      setFamily(data.families.length > 0 ? data.families[0] : null);
     } catch {
-      // no family yet
+      setFamily(null);
     }
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetchMe();
-    } else {
-      setLoading(false);
+    if (!isLoaded) return;
+    if (isSignedIn) {
+      let active = true;
+      (async () => {
+        setLoading(true);
+        await fetchMe();
+        if (active) await fetchFamily();
+        if (active) setLoading(false);
+      })();
+      return () => { active = false; };
     }
-  }, [fetchMe]);
-
-  useEffect(() => {
-    if (user) fetchFamily();
-  }, [user, fetchFamily]);
-
-  const login = async (email, password) => {
-    const { data } = await api.post('/auth/login', { email, password });
-    localStorage.setItem('token', data.token);
-    setUser(data.user);
-    return data;
-  };
-
-  const signup = async (name, email, password) => {
-    const { data } = await api.post('/auth/signup', { name, email, password });
-    localStorage.setItem('token', data.token);
-    setUser(data.user);
-    return data;
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
     setUser(null);
     setFamily(null);
-    window.location.href = '/';
-  };
+    setLoading(false);
+  }, [isLoaded, isSignedIn, clerkUser?.id, fetchMe, fetchFamily]);
 
+  const logout = () => signOut({ redirectUrl: '/' });
   const refreshFamily = () => fetchFamily();
-
   const updateUser = (updates) => setUser((u) => ({ ...u, ...updates }));
 
   return (
-    <AuthContext.Provider value={{ user, loading, family, login, signup, logout, refreshFamily, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, family, logout, refreshFamily, updateUser, isSignedIn }}>
       {children}
     </AuthContext.Provider>
   );

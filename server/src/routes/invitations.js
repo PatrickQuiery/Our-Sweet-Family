@@ -1,18 +1,9 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { body, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
 const { hashInviteToken } = require('../lib/inviteToken');
 
 const router = express.Router();
-
-function signToken(userId) {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  });
-}
 
 // Load a pending invitation by its raw token, or return why it's unusable.
 async function loadPendingInvitation(rawToken, include) {
@@ -72,75 +63,46 @@ router.get('/:token', async (req, res) => {
   }
 });
 
-// POST /api/invitations/:token/accept — public: set password, join the family
-router.post(
-  '/:token/accept',
-  [
-    body('name').trim().notEmpty(),
-    body('password').isLength({ min: 8 }),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+// POST /api/invitations/:token/claim — the invitee has signed in via Clerk; link
+// their (now verified) account to the family. Their Clerk email must match the
+// address the invitation was sent to.
+router.post('/:token/claim', authenticate, async (req, res) => {
+  try {
+    const result = await loadPendingInvitation(req.params.token);
+    if (result.error) return res.status(result.status).json({ error: result.error });
+    const { invitation } = result;
 
-    try {
-      const result = await loadPendingInvitation(req.params.token);
-      if (result.error) return res.status(result.status).json({ error: result.error });
-      const { invitation } = result;
-
-      const { name, password } = req.body;
-
-      // If the email has since been registered, link the membership to that
-      // account rather than creating a new user or overwriting a password.
-      const existing = await prisma.user.findUnique({ where: { email: invitation.email } });
-      if (existing) {
-        const alreadyMember = await prisma.familyMember.findUnique({
-          where: { familyId_userId: { familyId: invitation.familyId, userId: existing.id } },
-        });
-        if (!alreadyMember) {
-          await prisma.familyMember.create({
-            data: {
-              familyId: invitation.familyId,
-              userId: existing.id,
-              permissions: invitation.permissions,
-              accessPerChild: invitation.accessPerChild,
-            },
-          });
-        }
-        await prisma.invitation.update({
-          where: { id: invitation.id },
-          data: { acceptedAt: new Date() },
-        });
-        return res.status(200).json({ existingAccount: true });
-      }
-
-      const passwordHash = await bcrypt.hash(password, 10);
-      const user = await prisma.user.create({
-        data: { email: invitation.email, passwordHash, name, role: 'loved_one' },
-        select: { id: true, email: true, name: true, role: true, plan: true, avatarUrl: true, createdAt: true },
+    if ((req.user.email || '').toLowerCase() !== invitation.email.toLowerCase()) {
+      return res.status(403).json({
+        error: 'This invitation was sent to a different email address. Sign in with that email to accept.',
       });
+    }
 
+    const alreadyMember = await prisma.familyMember.findUnique({
+      where: { familyId_userId: { familyId: invitation.familyId, userId: req.user.id } },
+    });
+    if (!alreadyMember) {
       await prisma.familyMember.create({
         data: {
           familyId: invitation.familyId,
-          userId: user.id,
+          userId: req.user.id,
           permissions: invitation.permissions,
           accessPerChild: invitation.accessPerChild,
         },
       });
-
-      await prisma.invitation.update({
-        where: { id: invitation.id },
-        data: { acceptedAt: new Date() },
-      });
-
-      res.status(201).json({ token: signToken(user.id), user });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Server error' });
     }
+
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: { acceptedAt: new Date() },
+    });
+
+    res.json({ success: true, familyId: invitation.familyId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
   }
-);
+});
 
 // DELETE /api/invitations/:id — owner revokes a pending invitation
 router.delete('/:id', authenticate, async (req, res) => {

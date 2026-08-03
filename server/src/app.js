@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const path = require('path');
+const { clerkMiddleware } = require('@clerk/express');
 
 const authRoutes = require('./routes/auth');
 const familyRoutes = require('./routes/families');
@@ -82,6 +82,9 @@ if (!isTest) {
   app.use('/api/contact', contactLimiter);
   app.use('/api', globalLimiter);
 }
+
+// Populates Clerk auth context from the session token; routes enforce via authenticate.
+app.use(clerkMiddleware());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/families', familyRoutes);
