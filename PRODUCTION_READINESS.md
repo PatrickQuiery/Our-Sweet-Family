@@ -108,17 +108,21 @@ now shipped — see section 2. Remaining items:_
    cookies, and/or shorter token TTL with refresh.
 2. **Multi-family support** — the client only ever uses `families[0]`; add a family
    switcher (data model already supports multiple).
-3. **Integration tests against a real Postgres.** The unit suite mocks Prisma, so it
-   **cannot catch query-syntax bugs** (that's how the `path:'$'` bug shipped green).
-   Add a small Testcontainers/CI-Postgres suite for the query paths.
-4. **Global `role` vs per-family role** — client owner-only UI shows for a user who
+3. **Global `role` vs per-family role** — client owner-only UI shows for a user who
    is a loved one in another family (server correctly rejects; UI is misleading).
-5. **Video is fetched as a full blob** (no HTTP range/seek). Add `Range` support to
+4. **Video is fetched as a full blob** (no HTTP range/seek). Add `Range` support to
    the media endpoint and serve video via a tokenized URL for large files.
 
 ### LOW
-6. Reels slideshow ignores video length / has no pause. 7. Onboarding family-name
-default uses the 2nd word of the name. 8. Signup reveals whether an email exists.
+5. Reels slideshow ignores video length / has no pause. 6. Onboarding family-name
+default uses the 2nd word of the name. 7. Signup reveals whether an email exists.
+
+### Testing
+Both a fast mocked **unit** suite (134 tests) and a real-Postgres **integration**
+suite (6 tests, run via `npm run test:integration`) now exist. The integration suite
+executes real SQL — it catches the query-layer bugs the mocked unit tests cannot
+(and was verified to fail on the reintroduced `path:'$'` bug). Wiring both into CI is
+recommended; see "Testing" in the README.
 
 ---
 
