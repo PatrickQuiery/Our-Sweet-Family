@@ -101,6 +101,41 @@ Open http://localhost:5173
 
 ---
 
+## Testing
+
+Two suites:
+
+```bash
+cd server
+
+# Unit tests — fast, Prisma is mocked. No database required.
+npm test
+
+# Integration tests — run against a REAL Postgres (the test database), so they
+# exercise actual SQL (JSON array_contains filters, access control, pagination).
+npm run test:integration
+
+# Both
+npm run test:all
+```
+
+Integration tests need a Postgres database. Locally, create it once:
+
+```bash
+createdb our_sweet_family_test
+```
+
+By default they connect to `postgresql://postgres@localhost:5432/our_sweet_family_test`.
+Override with `DATABASE_URL_TEST` (e.g. point it at a CI Postgres service). Migrations
+are applied automatically before the run, and every test truncates the tables so runs
+are isolated and order-independent.
+
+> Why both? The unit suite mocks the database, so it can't catch query-layer bugs
+> (a MySQL-vs-Postgres JSON filter once shipped green). The integration suite runs
+> real queries and would have caught it.
+
+---
+
 ## Demo Accounts
 
 After seeding, these accounts are available:
