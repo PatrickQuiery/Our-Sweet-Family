@@ -21,6 +21,10 @@ export default function Children() {
   const [form, setForm] = useState({ name: '', dateOfBirth: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', dateOfBirth: '' });
+  const [editError, setEditError] = useState('');
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   const isOwner = user?.role === 'owner';
 
@@ -49,6 +53,33 @@ export default function Children() {
       setError(err.response?.data?.error || 'Failed to add child');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const startEdit = (child) => {
+    setEditError('');
+    setEditingId(child.id);
+    setEditForm({
+      name: child.name,
+      dateOfBirth: new Date(child.dateOfBirth).toISOString().split('T')[0],
+    });
+  };
+
+  const handleEdit = async (e, childId) => {
+    e.preventDefault();
+    setEditError('');
+    setEditSubmitting(true);
+    try {
+      const { data } = await api.put(`/children/${childId}`, {
+        name: editForm.name,
+        dateOfBirth: editForm.dateOfBirth,
+      });
+      setChildren((prev) => prev.map((c) => (c.id === childId ? data.child : c)));
+      setEditingId(null);
+    } catch (err) {
+      setEditError(err.response?.data?.error || 'Failed to update child');
+    } finally {
+      setEditSubmitting(false);
     }
   };
 
@@ -110,28 +141,60 @@ export default function Children() {
       ) : (
         <div className="space-y-3">
           {children.map((child) => (
-            <div key={child.id} className="card p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-2xl flex-shrink-0">
-                {child.avatarUrl ? (
-                  <img src={child.avatarUrl} alt={child.name} className="w-full h-full rounded-2xl object-cover" />
-                ) : '👶'}
+            editingId === child.id ? (
+              <div key={child.id} className="card p-5">
+                <h3 className="font-semibold text-gray-900 mb-4">Edit {child.name}</h3>
+                {editError && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">{editError}</div>}
+                <form onSubmit={(e) => handleEdit(e, child.id)} className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
+                    <input type="text" className="input" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of birth</label>
+                    <input type="date" className="input" value={editForm.dateOfBirth} onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })} max={new Date().toISOString().split('T')[0]} required />
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="submit" className="btn-primary" disabled={editSubmitting}>{editSubmitting ? 'Saving...' : 'Save changes'}</button>
+                    <button type="button" className="btn-secondary" onClick={() => setEditingId(null)}>Cancel</button>
+                  </div>
+                </form>
               </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-gray-900">{child.name}</h3>
-                <p className="text-sm text-gray-500">{format(new Date(child.dateOfBirth), 'MMMM d, yyyy')} · {ageLabel(child.dateOfBirth)} old</p>
+            ) : (
+              <div key={child.id} className="card p-5 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-2xl flex-shrink-0">
+                  {child.avatarUrl ? (
+                    <img src={child.avatarUrl} alt={child.name} className="w-full h-full rounded-2xl object-cover" />
+                  ) : '👶'}
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900">{child.name}</h3>
+                  <p className="text-sm text-gray-500">{format(new Date(child.dateOfBirth), 'MMMM d, yyyy')} · {ageLabel(child.dateOfBirth)} old</p>
+                </div>
+                {isOwner && (
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => startEdit(child)}
+                      className="p-2 text-gray-400 hover:text-brand-600 transition-colors"
+                      title="Edit child"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(child.id)}
+                      className="p-2 text-red-400 hover:text-red-600 transition-colors"
+                      title="Remove child"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
-              {isOwner && (
-                <button
-                  onClick={() => handleDelete(child.id)}
-                  className="text-red-400 hover:text-red-600 transition-colors"
-                  title="Remove child"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              )}
-            </div>
+            )
           ))}
         </div>
       )}
