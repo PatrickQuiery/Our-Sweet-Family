@@ -26,6 +26,11 @@ function getTransport() {
       port: parseInt(SMTP_PORT, 10),
       secure: SMTP_SECURE === 'true' || parseInt(SMTP_PORT, 10) === 465,
       auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+      // Bounded timeouts so a bad port/TLS combo fails fast (and logs a clear
+      // error) instead of hanging the request until the socket eventually dies.
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
   } else {
     cachedConfigured = false;
