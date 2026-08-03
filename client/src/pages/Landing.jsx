@@ -127,6 +127,9 @@ export default function Landing() {
           <a href="#faq" className="hidden sm:inline text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
             FAQ
           </a>
+          <a href="/blog" className="hidden sm:inline text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+            Blog
+          </a>
           <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
             Sign in
           </Link>
@@ -176,12 +179,12 @@ export default function Landing() {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=300',
-                  'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=300',
-                  'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300',
-                  'https://images.unsplash.com/photo-1471286174890-9c112ffca5b4?w=300',
-                  'https://images.unsplash.com/photo-1489710437720-ebb67ec84dd2?w=300',
-                  'https://images.unsplash.com/photo-1529698657625-c83b3f905726?w=300',
+                  '/hero/tile-1.webp',
+                  '/hero/tile-2.webp',
+                  '/hero/tile-3.webp',
+                  '/hero/tile-4.webp',
+                  '/hero/tile-5.webp',
+                  '/hero/tile-6.webp',
                 ].map((src, i) => (
                   <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-200">
                     <img src={src} alt="" className="w-full h-full object-cover" />
@@ -297,6 +300,7 @@ export default function Landing() {
         </div>
         <div className="flex items-center justify-center gap-4 mb-3">
           <Link to="/contact" className="text-gray-500 hover:text-brand-600 transition-colors">Contact us</Link>
+          <a href="/blog" className="text-gray-500 hover:text-brand-600 transition-colors">Blog</a>
           <Link to="/privacy" className="text-gray-500 hover:text-brand-600 transition-colors">Privacy</Link>
           <Link to="/login" className="text-gray-500 hover:text-brand-600 transition-colors">Sign in</Link>
         </div>
