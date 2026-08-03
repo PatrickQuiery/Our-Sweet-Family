@@ -3,14 +3,23 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
 import { useAuth } from '../context/AuthContext';
 
-const navItems = [
-  { to: '/dashboard', label: 'Timeline', icon: HomeIcon },
-  { to: '/upload', label: 'Upload', icon: UploadIcon },
-  { to: '/children', label: 'Children', icon: ChildIcon },
-  { to: '/family', label: 'Family', icon: UsersIcon },
-  { to: '/reels', label: 'Reels', icon: FilmIcon },
-  { to: '/milestones', label: 'Milestones', icon: StarIcon },
-  { to: '/settings', label: 'Settings', icon: CogIcon },
+const navSections = [
+  {
+    items: [
+      { to: '/dashboard', label: 'Timeline', icon: HomeIcon },
+      { to: '/upload', label: 'Upload', icon: UploadIcon },
+      { to: '/reels', label: 'Reels', icon: FilmIcon },
+      { to: '/milestones', label: 'Milestones', icon: StarIcon },
+    ],
+  },
+  {
+    heading: 'Manage',
+    items: [
+      { to: '/family', label: 'Family', icon: UsersIcon },
+      { to: '/children', label: 'Children', icon: ChildIcon },
+      { to: '/settings', label: 'Settings', icon: CogIcon },
+    ],
+  },
 ];
 
 function HomeIcon() {
@@ -90,27 +99,36 @@ export default function AppLayout() {
         )}
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <ul className="space-y-1">
-            {navItems.map(({ to, label, icon: Icon }) => (
-              <li key={to}>
-                <NavLink
-                  to={to}
-                  onClick={() => setMobileOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-brand-50 text-brand-700'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                    }`
-                  }
-                >
-                  <Icon />
-                  {label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+        <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
+          {navSections.map((section, i) => (
+            <div key={section.heading || i}>
+              {section.heading && (
+                <p className="px-3 mb-1 text-xs text-gray-500 uppercase tracking-wide font-medium">
+                  {section.heading}
+                </p>
+              )}
+              <ul className="space-y-1">
+                {section.items.map(({ to, label, icon: Icon }) => (
+                  <li key={to}>
+                    <NavLink
+                      to={to}
+                      onClick={() => setMobileOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                          isActive
+                            ? 'bg-brand-50 text-brand-700'
+                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                        }`
+                      }
+                    >
+                      <Icon />
+                      {label}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </nav>
 
         {/* User — Clerk UserButton handles profile, password, MFA, connected accounts & sign-out */}
