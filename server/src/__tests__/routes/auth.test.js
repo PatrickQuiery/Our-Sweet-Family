@@ -76,4 +76,27 @@ describe('local user sync on first authenticated request', () => {
     );
     expect(prisma.user.create).not.toHaveBeenCalled();
   });
+
+  it('recovers from a create race (concurrent first-request) instead of 401ing', async () => {
+    // findUnique(clerkUserId)=null, findUnique(email)=null, create THROWS (another
+    // request created it first), then re-fetch by clerkUserId finds the row.
+    const raced = { ...dbUser, id: 'u3', clerkUserId: 'clerk_race' };
+    prisma.user.findUnique
+      .mockResolvedValueOnce(null)   // authenticate: by clerkUserId
+      .mockResolvedValueOnce(null)   // syncUser: by email
+      .mockResolvedValueOnce(raced); // catch: re-fetch by clerkUserId
+    clerkClient.users.getUser.mockResolvedValue({
+      primaryEmailAddressId: 'e1',
+      emailAddresses: [{ id: 'e1', emailAddress: 'raced@example.com' }],
+      firstName: 'Raced', lastName: 'User',
+    });
+    const dupErr = new Error('Unique constraint failed');
+    dupErr.code = 'P2002';
+    prisma.user.create.mockRejectedValue(dupErr);
+
+    const res = await request(app).get('/api/auth/me').set('x-clerk-user-id', 'clerk_race');
+
+    expect(res.status).toBe(200); // not 401
+    expect(res.body.user.id).toBe('u3');
+  });
 });

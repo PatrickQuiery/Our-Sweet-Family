@@ -17,16 +17,33 @@ async function syncUser(clerkUserId) {
     [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') ||
     (email ? email.split('@')[0] : 'Member');
 
-  if (email) {
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return prisma.user.update({
-        where: { id: existing.id },
-        data: { clerkUserId, name: existing.name || name },
-      });
+  try {
+    if (email) {
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        return await prisma.user.update({
+          where: { id: existing.id },
+          data: { clerkUserId, name: existing.name || name },
+        });
+      }
     }
+    return await prisma.user.create({ data: { clerkUserId, email, name, role: 'owner' } });
+  } catch (err) {
+    // On a user's first sign-in, concurrent authenticated requests (e.g. /auth/me
+    // firing alongside an invite claim) can both try to create this row, and one
+    // hits a unique-constraint race. Re-fetch the now-existing row instead of failing.
+    const byClerk = await prisma.user.findUnique({ where: { clerkUserId } });
+    if (byClerk) return byClerk;
+    if (email) {
+      const byEmail = await prisma.user.findUnique({ where: { email } });
+      if (byEmail) {
+        return byEmail.clerkUserId
+          ? byEmail
+          : prisma.user.update({ where: { id: byEmail.id }, data: { clerkUserId } });
+      }
+    }
+    throw err;
   }
-  return prisma.user.create({ data: { clerkUserId, email, name, role: 'owner' } });
 }
 
 // Authenticate via Clerk, then resolve the local User onto req.user so existing
