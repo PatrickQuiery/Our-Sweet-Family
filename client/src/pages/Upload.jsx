@@ -101,8 +101,10 @@ export default function Upload() {
 
       try {
         setUploadProgress((p) => ({ ...p, [file.name]: 0 }));
+        // Let the browser set Content-Type itself so the multipart boundary is
+        // included — hardcoding 'multipart/form-data' omits the boundary, and the
+        // server then silently drops every field (childIds, caption, familyId).
         await api.post('/memories', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (e) => {
             const pct = Math.round((e.loaded * 100) / e.total);
             setUploadProgress((p) => ({ ...p, [file.name]: pct }));
