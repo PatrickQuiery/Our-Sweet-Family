@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
+import { AuthedImage, AuthedVideo } from '../components/AuthedMedia';
 
 const REEL_TYPES = [
   { value: 'annual', label: 'Annual', plans: ['free', 'plus', 'premium'] },
@@ -129,7 +130,7 @@ export default function Reels() {
               <button key={reel.key} onClick={() => openReel(reel)} className="card overflow-hidden text-left hover:shadow-md transition-shadow group">
                 <div className="relative aspect-video bg-gray-900 overflow-hidden">
                   {cover ? (
-                    <img
+                    <AuthedImage
                       src={cover.thumbnailUrl || cover.fileUrl}
                       alt={reel.label}
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-105 duration-300"
@@ -166,14 +167,16 @@ export default function Reels() {
             {activeReel.memories[slideIndex] && (
               <>
                 {activeReel.memories[slideIndex].fileType === 'video' ? (
-                  <video
+                  <AuthedVideo
+                    key={activeReel.memories[slideIndex].id}
                     src={activeReel.memories[slideIndex].fileUrl}
                     className="max-w-full max-h-full object-contain"
                     autoPlay
                     muted
                   />
                 ) : (
-                  <img
+                  <AuthedImage
+                    key={activeReel.memories[slideIndex].id}
                     src={activeReel.memories[slideIndex].fileUrl}
                     alt=""
                     className="max-w-full max-h-full object-contain"

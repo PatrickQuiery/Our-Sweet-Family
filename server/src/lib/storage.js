@@ -4,34 +4,30 @@ const { v4: uuidv4 } = require('uuid');
 
 const STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || 'local';
 
-async function uploadFile(buffer, originalName, mimeType, folder = 'memories') {
-  if (STORAGE_PROVIDER === 's3') {
-    return uploadToS3(buffer, originalName, mimeType, folder);
-  }
-  return uploadToLocal(buffer, originalName, folder);
+// Media is stored under an opaque KEY (e.g. "memories/<uuid>.jpg"). Keys — not
+// public URLs — are persisted, and bytes are only served through the
+// access-controlled streaming endpoint. In production the S3 bucket should be
+// PRIVATE; the server proxies the bytes after checking access.
+
+const CONTENT_TYPES = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.mp4': 'video/mp4',
+  '.m4v': 'video/mp4',
+  '.mov': 'video/quicktime',
+  '.avi': 'video/x-msvideo',
+  '.mkv': 'video/x-matroska',
+};
+
+function contentTypeForKey(key) {
+  return CONTENT_TYPES[path.extname(key).toLowerCase()] || 'application/octet-stream';
 }
 
-async function uploadToLocal(buffer, originalName, folder) {
-  const ext = path.extname(originalName);
-  const filename = `${uuidv4()}${ext}`;
-  const dir = path.join(__dirname, '../../uploads', folder);
-
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
-  const filepath = path.join(dir, filename);
-  fs.writeFileSync(filepath, buffer);
-
-  const baseUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 3001}`;
-  return `${baseUrl}/uploads/${folder}/${filename}`;
-}
-
-async function uploadToS3(buffer, originalName, mimeType, folder) {
-  const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-  const { v4: uuidv4 } = require('uuid');
-
-  const s3Config = {
+function s3Config() {
+  const config = {
     region: process.env.AWS_REGION || 'auto',
     credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY,
@@ -39,57 +35,67 @@ async function uploadToS3(buffer, originalName, mimeType, folder) {
     },
   };
   if (process.env.AWS_ENDPOINT) {
-    s3Config.endpoint = process.env.AWS_ENDPOINT;
-    s3Config.forcePathStyle = true;
+    config.endpoint = process.env.AWS_ENDPOINT;
+    config.forcePathStyle = true;
   }
+  return config;
+}
 
-  const s3 = new S3Client(s3Config);
-
+// Returns the storage KEY for the uploaded file.
+async function uploadFile(buffer, originalName, mimeType, folder = 'memories') {
   const ext = path.extname(originalName);
   const key = `${folder}/${uuidv4()}${ext}`;
 
-  await s3.send(new PutObjectCommand({
-    Bucket: process.env.AWS_BUCKET,
-    Key: key,
-    Body: buffer,
-    ContentType: mimeType,
-  }));
+  if (STORAGE_PROVIDER === 's3') {
+    const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+    const s3 = new S3Client(s3Config());
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.AWS_BUCKET,
+      Key: key,
+      Body: buffer,
+      ContentType: mimeType,
+    }));
+    return key;
+  }
 
-  const baseUrl = process.env.AWS_PUBLIC_URL
-    || `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com`;
-  return `${baseUrl}/${key}`;
+  const dir = path.join(__dirname, '../../uploads', folder);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(__dirname, '../../uploads', key), buffer);
+  return key;
+}
+
+// Returns { stream, contentType } for a stored key. Caller is responsible for
+// piping/handling errors (e.g. a missing local file emits 'error' on the stream).
+async function readFile(key) {
+  if (STORAGE_PROVIDER === 's3') {
+    const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+    const s3 = new S3Client(s3Config());
+    const out = await s3.send(new GetObjectCommand({ Bucket: process.env.AWS_BUCKET, Key: key }));
+    return { stream: out.Body, contentType: out.ContentType || contentTypeForKey(key) };
+  }
+  const filepath = path.join(__dirname, '../../uploads', key);
+  return { stream: fs.createReadStream(filepath), contentType: contentTypeForKey(key) };
+}
+
+// True for values that are already absolute URLs (legacy/external, e.g. seed
+// images) rather than storage keys.
+function isAbsoluteUrl(value) {
+  return typeof value === 'string' && /^https?:\/\//i.test(value);
 }
 
 /**
- * Best-effort delete of a previously uploaded file. Never throws — a failed
- * cleanup should not fail the user-facing operation (the DB row is already gone).
- * Safely ignores external URLs (e.g. seed images) that aren't ours.
+ * Best-effort delete of a stored file by key. Never throws — a failed cleanup must
+ * not fail the user-facing operation. Ignores absolute external URLs (not ours).
  */
-async function deleteFile(fileUrl) {
-  if (!fileUrl) return;
+async function deleteFile(key) {
+  if (!key || isAbsoluteUrl(key)) return;
   try {
     if (STORAGE_PROVIDER === 's3') {
       const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
-      const key = new URL(fileUrl).pathname.replace(/^\//, '');
-      const s3Config = {
-        region: process.env.AWS_REGION || 'auto',
-        credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY,
-          secretAccessKey: process.env.AWS_SECRET_KEY,
-        },
-      };
-      if (process.env.AWS_ENDPOINT) {
-        s3Config.endpoint = process.env.AWS_ENDPOINT;
-        s3Config.forcePathStyle = true;
-      }
-      const s3 = new S3Client(s3Config);
+      const s3 = new S3Client(s3Config());
       await s3.send(new DeleteObjectCommand({ Bucket: process.env.AWS_BUCKET, Key: key }));
     } else {
-      const marker = '/uploads/';
-      const idx = fileUrl.indexOf(marker);
-      if (idx === -1) return; // not a locally-stored file
-      const rel = fileUrl.slice(idx + marker.length);
-      const filepath = path.join(__dirname, '../../uploads', rel);
+      const filepath = path.join(__dirname, '../../uploads', key);
       if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
     }
   } catch (e) {
@@ -97,4 +103,4 @@ async function deleteFile(fileUrl) {
   }
 }
 
-module.exports = { uploadFile, deleteFile };
+module.exports = { uploadFile, readFile, deleteFile, isAbsoluteUrl, contentTypeForKey };

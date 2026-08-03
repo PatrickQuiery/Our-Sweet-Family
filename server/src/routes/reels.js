@@ -1,6 +1,7 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
+const { mediaRefs } = require('../lib/mediaRef');
 
 const router = express.Router();
 
@@ -55,10 +56,11 @@ router.get('/', authenticate, async (req, res) => {
       where.AND = [{ childIds: { array_contains: [childId] } }];
     }
 
-    const memories = await prisma.memory.findMany({
+    const rawMemories = await prisma.memory.findMany({
       where,
       orderBy: { capturedAt: 'asc' },
     });
+    const memories = rawMemories.map(mediaRefs);
 
     // Group memories into reels
     const reels = generateReels(memories, type);

@@ -50,6 +50,10 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
+// NOTE: media is intentionally NOT served via express.static. Private photos/videos
+// are streamed only through the authenticated, access-checked endpoints
+// GET /api/memories/:id/file and /thumb.
+
 // Rate limiting. Strict on auth (brute-force / enumeration) and contact (spam);
 // a looser global limiter as a backstop. Disabled under test to keep the
 // supertest suite deterministic.
@@ -78,9 +82,6 @@ if (!isTest) {
   app.use('/api/contact', contactLimiter);
   app.use('/api', globalLimiter);
 }
-
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-app.use('/uploads', express.static(uploadsDir));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/families', familyRoutes);

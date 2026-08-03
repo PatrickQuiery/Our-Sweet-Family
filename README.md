@@ -201,6 +201,8 @@ our-sweet-family/
 | GET | /api/memories?familyId=&childId=&page=&type= | Paginated feed |
 | POST | /api/memories | Upload photo/video (multipart) |
 | GET | /api/memories/:id | Single memory with comments/reactions |
+| GET | /api/memories/:id/file | Authenticated media stream (original) — access-checked |
+| GET | /api/memories/:id/thumb | Authenticated media stream (thumbnail) — access-checked |
 | DELETE | /api/memories/:id | Delete memory |
 | POST | /api/memories/:id/reactions | Toggle love reaction |
 | DELETE | /api/memories/:id/reactions | Remove reaction |
@@ -261,3 +263,7 @@ our-sweet-family/
 - **Per-child access**: Loved ones only see memories tagged to children they're allowed to see
 - **Classified memories**: Only visible to users with `role = owner`; hidden from all loved ones (Premium)
 - **Thumbnail generation**: Sharp creates 400×400 JPEG thumbnails for all photo uploads
+- **Private media**: files are stored under opaque keys and served only through the
+  authenticated, access-checked `/api/memories/:id/file` and `/thumb` endpoints (the
+  client fetches them with its bearer token). In production the S3/R2 bucket must be
+  **private** — there is no public/static media path.

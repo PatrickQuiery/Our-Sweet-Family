@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
+import { AuthedImage, AuthedVideo } from '../components/AuthedMedia';
 
 export default function MemoryDetail() {
   const { id } = useParams();
@@ -111,13 +112,13 @@ export default function MemoryDetail() {
         {/* Media */}
         <div className="bg-black flex items-center justify-center min-h-64 max-h-[600px] overflow-hidden">
           {memory.fileType === 'video' ? (
-            <video
+            <AuthedVideo
               src={memory.fileUrl}
               controls
               className="max-w-full max-h-[600px] w-full"
             />
           ) : (
-            <img
+            <AuthedImage
               src={memory.fileUrl}
               alt={memory.caption || 'Memory'}
               className="max-w-full max-h-[600px] object-contain"

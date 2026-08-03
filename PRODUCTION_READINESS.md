@@ -82,35 +82,43 @@ contact-form submissions. Schema-to-DB is now managed by **migrations**
   `DELETE /api/invitations/:id`. See
   `docs/superpowers/specs/2026-08-02-loved-one-invite-flow-design.md`.
 
-**Tests:** 126 passing (was 99/101 with 2 failing). Added IDOR, contact,
-profile/password, and full invite-flow regression tests.
+### Private media access (was the top data-exposure risk) — now shipped
+- Media is stored under opaque **keys** (not public URLs); `express.static('/uploads')`
+  is removed. Nothing serves media unauthenticated.
+- Photos/videos are streamed only by authenticated endpoints
+  `GET /api/memories/:id/file` and `/thumb`, which run the same access gate as the
+  memory (owner/member + classified + per-child).
+- The client fetches media with its bearer token and renders it from a blob
+  (`AuthedImage` / `AuthedVideo`); external seed/stock URLs still render directly.
+- In production the **S3 bucket must be private** — the server proxies the bytes.
+- See `docs/superpowers/specs/2026-08-03-private-media-access-design.md`.
+
+**Tests:** 134 passing (was 99/101 with 2 failing). Added IDOR, contact,
+profile/password, full invite-flow, and media access-control regression tests.
 
 ---
 
 ## 3. Still open before launch ⚠️
 
-### HIGH — must address
-1. **Private media is served unauthenticated.** `/uploads` (local) and a public
-   bucket (S3) let anyone with a file URL download any photo — including classified
-   / per-child-restricted media — bypassing all API access control. **Fix:** private
-   bucket + short-lived **presigned URLs** generated after an access check (the S3
-   presigner dependency is already installed), or an authenticated media proxy
-   route. This is the top data-exposure risk for a privacy product.
+_The two former HIGH blockers (loved-one invite flow and private media access) are
+now shipped — see section 2. Remaining items:_
 
 ### MEDIUM — recommended
-2. **JWT in `localStorage`** is XSS-exfiltratable. Consider httpOnly+Secure+SameSite
+1. **JWT in `localStorage`** is XSS-exfiltratable. Consider httpOnly+Secure+SameSite
    cookies, and/or shorter token TTL with refresh.
-3. **Multi-family support** — the client only ever uses `families[0]`; add a family
+2. **Multi-family support** — the client only ever uses `families[0]`; add a family
    switcher (data model already supports multiple).
-4. **Integration tests against a real Postgres.** The unit suite mocks Prisma, so it
+3. **Integration tests against a real Postgres.** The unit suite mocks Prisma, so it
    **cannot catch query-syntax bugs** (that's how the `path:'$'` bug shipped green).
    Add a small Testcontainers/CI-Postgres suite for the query paths.
-5. **Global `role` vs per-family role** — client owner-only UI shows for a user who
+4. **Global `role` vs per-family role** — client owner-only UI shows for a user who
    is a loved one in another family (server correctly rejects; UI is misleading).
+5. **Video is fetched as a full blob** (no HTTP range/seek). Add `Range` support to
+   the media endpoint and serve video via a tokenized URL for large files.
 
 ### LOW
-7. Reels slideshow ignores video length / has no pause. 8. Onboarding family-name
-default uses the 2nd word of the name. 9. Signup reveals whether an email exists.
+6. Reels slideshow ignores video length / has no pause. 7. Onboarding family-name
+default uses the 2nd word of the name. 8. Signup reveals whether an email exists.
 
 ---
 

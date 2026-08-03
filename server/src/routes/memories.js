@@ -4,9 +4,10 @@ const sharp = require('sharp');
 const path = require('path');
 const { authenticate } = require('../middleware/auth');
 const prisma = require('../lib/prisma');
-const { uploadFile, deleteFile } = require('../lib/storage');
+const { uploadFile, deleteFile, readFile, isAbsoluteUrl } = require('../lib/storage');
 const { calculateAgeLabel } = require('../lib/ageLabel');
 const { loadAccessibleMemory } = require('../lib/memoryAccess');
+const { mediaRefs } = require('../lib/mediaRef');
 
 const router = express.Router();
 
@@ -150,7 +151,7 @@ router.get('/', authenticate, async (req, res) => {
         };
       }).filter(Boolean);
 
-      return { ...m, childIds, ageLabels };
+      return mediaRefs({ ...m, childIds, ageLabels });
     });
 
     res.json({
@@ -218,12 +219,45 @@ router.get('/:id', authenticate, async (req, res) => {
       };
     }).filter(Boolean);
 
-    res.json({ memory: { ...memory, childIds, ageLabels } });
+    res.json({ memory: mediaRefs({ ...memory, childIds, ageLabels }) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// GET /api/memories/:id/file  and  /:id/thumb — authenticated media streaming.
+// Runs the same access gate as the memory itself, then streams the bytes. There is
+// no unauthenticated path to media any more.
+async function streamMedia(req, res, variant) {
+  try {
+    const access = await loadAccessibleMemory(req.params.id, req.user);
+    if (access.error) return res.status(access.status).json({ error: access.error });
+    const { memory } = access;
+
+    const key = variant === 'thumb' ? (memory.thumbnailUrl || memory.fileUrl) : memory.fileUrl;
+    if (!key) return res.status(404).json({ error: 'Media not found' });
+
+    // Legacy/external absolute URLs: redirect rather than proxy.
+    if (isAbsoluteUrl(key)) return res.redirect(302, key);
+
+    const { stream, contentType } = await readFile(key);
+    res.set('Content-Type', contentType);
+    res.set('Cache-Control', 'private, max-age=3600');
+    stream.on('error', (err) => {
+      console.error('media stream error:', err.message);
+      if (!res.headersSent) res.status(404).json({ error: 'Media not found' });
+      else res.destroy();
+    });
+    stream.pipe(res);
+  } catch (err) {
+    console.error(err);
+    if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+  }
+}
+
+router.get('/:id/file', authenticate, (req, res) => streamMedia(req, res, 'file'));
+router.get('/:id/thumb', authenticate, (req, res) => streamMedia(req, res, 'thumb'));
 
 // POST /api/memories — upload a photo or video
 router.post('/', authenticate, upload.single('file'), async (req, res) => {
@@ -310,7 +344,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
       },
     });
 
-    res.status(201).json({ memory });
+    res.status(201).json({ memory: mediaRefs(memory) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

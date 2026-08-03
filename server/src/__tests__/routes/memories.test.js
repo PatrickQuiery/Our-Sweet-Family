@@ -1,10 +1,20 @@
 jest.mock('../../lib/prisma');
 jest.mock('../../lib/storage');
 
+const { Readable } = require('stream');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const app = require('../../app');
 const prisma = require('../../lib/prisma');
+const storage = require('../../lib/storage');
+
+// jest.config has resetMocks:true, so mock return values are set per-test.
+function mockReadFile(contentType = 'image/jpeg') {
+  storage.readFile.mockResolvedValue({
+    stream: Readable.from([Buffer.from('fake-bytes')]),
+    contentType,
+  });
+}
 
 const ownerUser = { id: 'owner1', email: 'owner@test.com', name: 'Owner', role: 'owner', plan: 'free', avatarUrl: null };
 const memberUser = { id: 'member1', email: 'member@test.com', name: 'Member', role: 'loved_one', plan: 'free', avatarUrl: null };
@@ -61,6 +71,28 @@ describe('GET /api/memories', () => {
       .set('Authorization', `Bearer ${ownerToken}`);
 
     expect(res.status).toBe(400);
+  });
+
+  it('rewrites stored media keys to authenticated endpoints, leaving external URLs alone', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.family.findUnique.mockResolvedValue(mockFamily);
+    prisma.memory.count.mockResolvedValue(2);
+    prisma.memory.findMany.mockResolvedValue([
+      { ...mockMemory, id: 'keyed', fileUrl: 'memories/abc.jpg', thumbnailUrl: 'thumbnails/abc_thumb.jpg' },
+      { ...mockMemory, id: 'external', fileUrl: 'https://images.unsplash.com/x.jpg', thumbnailUrl: null },
+    ]);
+    prisma.child.findMany.mockResolvedValue(mockFamily.children);
+
+    const res = await request(app)
+      .get('/api/memories?familyId=family1')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    const keyed = res.body.memories.find((m) => m.id === 'keyed');
+    const external = res.body.memories.find((m) => m.id === 'external');
+    expect(keyed.fileUrl).toBe('/memories/keyed/file');
+    expect(keyed.thumbnailUrl).toBe('/memories/keyed/thumb');
+    expect(external.fileUrl).toBe('https://images.unsplash.com/x.jpg');
+    expect(external.thumbnailUrl).toBeNull();
   });
 
   it('returns 403 for non-member user', async () => {
@@ -393,5 +425,100 @@ describe('DELETE /api/memories/:memoryId/comments/:commentId', () => {
       .set('Authorization', `Bearer ${memberToken}`);
 
     expect(res.status).toBe(403);
+  });
+});
+
+// ─── Authenticated media streaming ────────────────────────────────────────────
+
+describe('GET /api/memories/:id/file', () => {
+  const mediaMemory = {
+    ...mockMemory,
+    fileUrl: 'memories/abc.jpg',
+    thumbnailUrl: 'thumbnails/abc_thumb.jpg',
+    family: { ownerId: 'owner1', members: mockFamily.members },
+  };
+
+  it('streams the file for the owner with the right content-type', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(mediaMemory);
+    mockReadFile('image/jpeg');
+
+    const res = await request(app)
+      .get('/api/memories/mem1/file')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/image\/jpeg/);
+    expect(res.headers['cache-control']).toMatch(/private/);
+  });
+
+  it('denies a user outside the family', async () => {
+    prisma.user.findUnique.mockResolvedValue(otherUser);
+    prisma.memory.findUnique.mockResolvedValue(mediaMemory);
+
+    const res = await request(app)
+      .get('/api/memories/mem1/file')
+      .set('Authorization', `Bearer ${otherToken}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('denies a classified memory to a non-owner', async () => {
+    prisma.user.findUnique.mockResolvedValue(memberUser);
+    prisma.memory.findUnique.mockResolvedValue({ ...mediaMemory, isClassified: true });
+
+    const res = await request(app)
+      .get('/api/memories/mem1/file')
+      .set('Authorization', `Bearer ${memberToken}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('returns 404 for an unknown memory', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(null);
+
+    const res = await request(app)
+      .get('/api/memories/ghost/file')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('requires authentication', async () => {
+    const res = await request(app).get('/api/memories/mem1/file');
+    expect(res.status).toBe(401);
+  });
+
+  it('redirects to an absolute external URL (legacy/seed images)', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue({ ...mediaMemory, fileUrl: 'https://images.unsplash.com/x.jpg' });
+
+    const res = await request(app)
+      .get('/api/memories/mem1/file')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe('https://images.unsplash.com/x.jpg');
+  });
+});
+
+describe('GET /api/memories/:id/thumb', () => {
+  it('streams the thumbnail for an authorized viewer', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue({
+      ...mockMemory,
+      fileUrl: 'memories/abc.jpg',
+      thumbnailUrl: 'thumbnails/abc_thumb.jpg',
+      family: { ownerId: 'owner1', members: mockFamily.members },
+    });
+    mockReadFile('image/jpeg');
+
+    const res = await request(app)
+      .get('/api/memories/mem1/thumb')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/image\/jpeg/);
   });
 });

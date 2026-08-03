@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import api from '../lib/api';
+import { AuthedImage } from './AuthedMedia';
 
 export default function MemoryCard({ memory, onReactionChange }) {
   const [liked, setLiked] = useState(
@@ -46,11 +47,10 @@ export default function MemoryCard({ memory, onReactionChange }) {
         <div className="relative aspect-square bg-gray-100 overflow-hidden">
           {memory.fileType === 'video' ? (
             <div className="w-full h-full flex items-center justify-center bg-gray-900">
-              <video
-                src={memory.fileUrl}
-                className="w-full h-full object-cover"
-                preload="metadata"
-              />
+              {/* Card shows a play affordance only — the full video loads on the detail page */}
+              {memory.thumbnailUrl && (
+                <AuthedImage src={memory.thumbnailUrl} alt={memory.caption || 'Memory'} className="absolute inset-0 w-full h-full object-cover opacity-80" />
+              )}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-12 h-12 rounded-full bg-white/80 flex items-center justify-center backdrop-blur-sm">
                   <svg className="w-6 h-6 text-gray-900 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
@@ -60,11 +60,10 @@ export default function MemoryCard({ memory, onReactionChange }) {
               </div>
             </div>
           ) : (
-            <img
+            <AuthedImage
               src={imageUrl}
               alt={memory.caption || 'Memory'}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
             />
           )}
 
