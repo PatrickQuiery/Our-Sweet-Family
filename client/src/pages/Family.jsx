@@ -19,6 +19,9 @@ const PERMISSION_COLORS = {
 export default function Family() {
   const { user, family, refreshFamily } = useAuth();
   const [members, setMembers] = useState([]);
+  const [invitations, setInvitations] = useState([]);
+  const [inviteLink, setInviteLink] = useState('');
+  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: '', permissions: 'view_only' });
@@ -30,8 +33,12 @@ export default function Family() {
 
   useEffect(() => {
     if (!family || !isOwner) { setLoading(false); return; }
-    api.get(`/members?familyId=${family.id}`).then(({ data }) => {
-      setMembers(data.members);
+    Promise.all([
+      api.get(`/members?familyId=${family.id}`),
+      api.get(`/invitations?familyId=${family.id}`),
+    ]).then(([mRes, iRes]) => {
+      setMembers(mRes.data.members);
+      setInvitations(iRes.data.invitations);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [family, isOwner]);
@@ -40,6 +47,8 @@ export default function Family() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setInviteLink('');
+    setCopied(false);
     setSubmitting(true);
     try {
       const { data } = await api.post('/members', {
@@ -47,14 +56,42 @@ export default function Family() {
         email: inviteForm.email,
         permissions: inviteForm.permissions,
       });
-      setMembers((prev) => [...prev, data.member]);
-      setSuccess(`Invited ${inviteForm.email} successfully!`);
+      if (data.member) {
+        // Existing user — added directly.
+        setMembers((prev) => [...prev, data.member]);
+        setSuccess(`${inviteForm.email} already has an account and was added.`);
+      } else if (data.invitation) {
+        // New email — pending invitation with a shareable link.
+        setInvitations((prev) => [data.invitation, ...prev]);
+        setInviteLink(data.inviteUrl);
+        setSuccess(`Invitation created for ${inviteForm.email}. Share the link below.`);
+      }
       setInviteForm({ email: '', permissions: 'view_only' });
       setShowInvite(false);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to invite');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const copyInviteLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  const handleRevokeInvite = async (id) => {
+    if (!window.confirm('Revoke this pending invitation?')) return;
+    try {
+      await api.delete(`/invitations/${id}`);
+      setInvitations((prev) => prev.filter((i) => i.id !== id));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to revoke');
     }
   };
 
@@ -99,6 +136,19 @@ export default function Family() {
         <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl px-4 py-3 mb-4">{success}</div>
       )}
 
+      {inviteLink && (
+        <div className="card p-4 mb-4 bg-brand-50 border-brand-200">
+          <p className="text-sm font-medium text-gray-700 mb-2">Invite link — share it with your loved one:</p>
+          <div className="flex gap-2">
+            <input readOnly value={inviteLink} onFocus={(e) => e.target.select()} className="input flex-1 text-xs bg-white" />
+            <button onClick={copyInviteLink} className="btn-primary text-sm whitespace-nowrap">
+              {copied ? 'Copied!' : 'Copy link'}
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">We also emailed this link. It expires in 7 days.</p>
+        </div>
+      )}
+
       {showInvite && isOwner && (
         <div className="card p-5 mb-6">
           <h3 className="font-semibold text-gray-900 mb-4">Invite a loved one</h3>
@@ -132,6 +182,33 @@ export default function Family() {
               <button type="button" className="btn-secondary" onClick={() => setShowInvite(false)}>Cancel</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {isOwner && invitations.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Pending invitations</h2>
+          <div className="space-y-2">
+            {invitations.map((inv) => (
+              <div key={inv.id} className="card p-4 flex items-center gap-4 border-dashed">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 text-sm truncate">{inv.email}</p>
+                  <p className="text-xs text-gray-500">Invited · awaiting acceptance</p>
+                </div>
+                <button
+                  onClick={() => handleRevokeInvite(inv.id)}
+                  className="text-red-400 hover:text-red-600 transition-colors flex-shrink-0 text-sm font-medium"
+                >
+                  Revoke
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

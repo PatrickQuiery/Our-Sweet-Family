@@ -13,9 +13,9 @@ const freeToken = jwt.sign({ userId: 'user1' }, 'test-jwt-secret-key');
 const plusToken = jwt.sign({ userId: 'user2' }, 'test-jwt-secret-key');
 const premToken = jwt.sign({ userId: 'user3' }, 'test-jwt-secret-key');
 
-const mockFamily = { id: 'family1', name: 'Smith', ownerId: 'user1', members: [] };
-const mockFamilyForPlus = { ...mockFamily, ownerId: 'user2' };
-const mockFamilyForPrem = { ...mockFamily, ownerId: 'user3' };
+const mockFamily = { id: 'family1', name: 'Smith', ownerId: 'user1', members: [], owner: { plan: 'free' } };
+const mockFamilyForPlus = { ...mockFamily, ownerId: 'user2', owner: { plan: 'plus' } };
+const mockFamilyForPrem = { ...mockFamily, ownerId: 'user3', owner: { plan: 'premium' } };
 
 function makeMemory(year, month, day) {
   return {

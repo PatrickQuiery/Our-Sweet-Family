@@ -8,8 +8,11 @@ function calculateAgeLabel(dateOfBirth, capturedAt) {
 
   if (cap < dob) return null;
 
-  let years = cap.getFullYear() - dob.getFullYear();
-  let months = cap.getMonth() - dob.getMonth();
+  // Read the date parts in UTC. Date-only values (e.g. "2023-01-31") are parsed
+  // as UTC midnight, so using local getters would shift the day/month backward in
+  // negative-offset timezones and produce the wrong age near month boundaries.
+  let years = cap.getUTCFullYear() - dob.getUTCFullYear();
+  let months = cap.getUTCMonth() - dob.getUTCMonth();
 
   if (months < 0) {
     years -= 1;
@@ -19,7 +22,7 @@ function calculateAgeLabel(dateOfBirth, capturedAt) {
   // If the photo was taken before the birth-day-of-month in this month,
   // the child hasn't yet completed that month (e.g. born Jan 31, photo Mar 1
   // is only ~29 days past the 1-month mark, not 2 months).
-  if (cap.getDate() < dob.getDate()) {
+  if (cap.getUTCDate() < dob.getUTCDate()) {
     months -= 1;
     if (months < 0) {
       years -= 1;

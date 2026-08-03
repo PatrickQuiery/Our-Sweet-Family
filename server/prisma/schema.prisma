@@ -57,10 +57,11 @@ model Family {
   ownerId   String
   createdAt DateTime @default(now())
 
-  owner    User           @relation("FamilyOwner", fields: [ownerId], references: [id])
-  children Child[]
-  members  FamilyMember[]
-  memories Memory[]
+  owner       User           @relation("FamilyOwner", fields: [ownerId], references: [id])
+  children    Child[]
+  members     FamilyMember[]
+  memories    Memory[]
+  invitations Invitation[]
 }
 
 model Child {
@@ -143,4 +144,37 @@ model Milestone {
   createdAt DateTime @default(now())
 
   child Child @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+// Pending invitations for loved ones who don't yet have an account. A real User
+// is only created when the invitee accepts and sets their own password.
+model Invitation {
+  id             String     @id @default(uuid())
+  familyId       String
+  email          String
+  permissions    Permission @default(view_only)
+  accessPerChild Json       @default("\"all\"")
+  tokenHash      String     @unique
+  invitedById    String
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime   @default(now())
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([email])
+}
+
+// Contact form submissions. Persisted so no message is lost even if the outbound
+// email transport is misconfigured or temporarily unavailable.
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  userId    String?
+  emailSent Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

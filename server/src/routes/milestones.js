@@ -13,7 +13,7 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const child = await prisma.child.findUnique({
       where: { id: childId },
-      include: { family: { include: { members: true } } },
+      include: { family: { include: { members: true, owner: { select: { plan: true } } } } },
     });
     if (!child) return res.status(404).json({ error: 'Child not found' });
 
@@ -21,7 +21,10 @@ router.get('/', authenticate, async (req, res) => {
     const isMember = child.family.members.some((m) => m.userId === req.user.id);
     if (!isOwner && !isMember) return res.status(403).json({ error: 'Access denied' });
 
-    const plan = req.user.plan;
+    // Feature access is determined by the family OWNER's plan (they hold the
+    // subscription), not the viewer's — otherwise invited loved ones, who are
+    // always on the free plan, could never see paid features.
+    const plan = child.family.owner.plan;
     if (plan === 'free') return res.status(403).json({ error: 'Milestones require Plus or Premium plan' });
 
     const milestones = await prisma.milestone.findMany({

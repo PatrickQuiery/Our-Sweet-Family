@@ -58,7 +58,19 @@ AWS_SECRET_KEY="..."
 PORT=3001
 NODE_ENV="development"
 CLIENT_URL="http://localhost:5173"
+
+# Contact form (email delivery is optional locally — messages are still saved to the DB)
+CONTACT_TO="Contact@oursweetfamily.com"
+SMTP_HOST=""
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER=""
+SMTP_PASS=""
+SMTP_FROM="no-reply@oursweetfamily.com"
 ```
+
+> **Security:** `JWT_SECRET` must be a strong, unique value of at least 16
+> characters. The server refuses to start with a missing, short, or example secret.
 
 ### 3. Set up the database
 
@@ -66,9 +78,9 @@ CLIENT_URL="http://localhost:5173"
 # Create the database
 createdb our_sweet_family
 
-# Run migrations
+# Apply migrations (production uses `prisma migrate deploy`)
 cd server
-npx prisma migrate dev --name init
+npx prisma migrate deploy
 
 # Seed with demo data
 npm run db:seed
@@ -159,6 +171,13 @@ our-sweet-family/
 | POST | /api/auth/signup | Register new user |
 | POST | /api/auth/login | Login, returns JWT |
 | GET | /api/auth/me | Get current user |
+| PATCH | /api/auth/me | Update display name |
+| POST | /api/auth/change-password | Change password (verifies current) |
+
+### Contact
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | /api/contact | Public contact form → persists + emails `CONTACT_TO` |
 
 ### Families
 | Method | Path | Description |
@@ -182,6 +201,8 @@ our-sweet-family/
 | GET | /api/memories?familyId=&childId=&page=&type= | Paginated feed |
 | POST | /api/memories | Upload photo/video (multipart) |
 | GET | /api/memories/:id | Single memory with comments/reactions |
+| GET | /api/memories/:id/file | Authenticated media stream (original) — access-checked |
+| GET | /api/memories/:id/thumb | Authenticated media stream (thumbnail) — access-checked |
 | DELETE | /api/memories/:id | Delete memory |
 | POST | /api/memories/:id/reactions | Toggle love reaction |
 | DELETE | /api/memories/:id/reactions | Remove reaction |
@@ -192,9 +213,17 @@ our-sweet-family/
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | /api/members?familyId= | List members |
-| POST | /api/members | Invite by email |
+| POST | /api/members | Invite by email (existing user → added directly; new email → pending invitation + link) |
 | PUT | /api/members/:id | Update permissions |
 | DELETE | /api/members/:id | Revoke access |
+
+### Invitations
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/invitations?familyId= | Owner: list pending invitations |
+| GET | /api/invitations/:token | Public: invite info for the accept page |
+| POST | /api/invitations/:token/accept | Public: set password, create account, join family |
+| DELETE | /api/invitations/:id | Owner: revoke a pending invitation |
 
 ### Milestones (Plus+)
 | Method | Path | Description |
@@ -234,3 +263,7 @@ our-sweet-family/
 - **Per-child access**: Loved ones only see memories tagged to children they're allowed to see
 - **Classified memories**: Only visible to users with `role = owner`; hidden from all loved ones (Premium)
 - **Thumbnail generation**: Sharp creates 400×400 JPEG thumbnails for all photo uploads
+- **Private media**: files are stored under opaque keys and served only through the
+  authenticated, access-checked `/api/memories/:id/file` and `/thumb` endpoints (the
+  client fetches them with its bearer token). In production the S3/R2 bucket must be
+  **private** — there is no public/static media path.

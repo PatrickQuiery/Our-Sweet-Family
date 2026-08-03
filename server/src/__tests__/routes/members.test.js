@@ -77,15 +77,16 @@ describe('POST /api/members', () => {
     expect(res.body.member.userId).toBe('member1');
   });
 
-  it('creates a placeholder account when inviting an unknown email', async () => {
-    bcrypt.hash.mockResolvedValue('temp_hash');
+  it('creates a pending invitation (not a user) when inviting an unknown email', async () => {
     prisma.user.findUnique
       .mockResolvedValueOnce(ownerUser)  // authenticate
       .mockResolvedValueOnce(null);      // invitee not found
-    prisma.user.create.mockResolvedValue({ ...memberUser, id: 'new1', email: 'newbie@test.com' });
     prisma.family.findUnique.mockResolvedValue(mockFamily);
-    prisma.familyMember.findUnique.mockResolvedValue(null);
-    prisma.familyMember.create.mockResolvedValue({ ...mockMember, userId: 'new1' });
+    prisma.invitation.deleteMany.mockResolvedValue({ count: 0 });
+    prisma.invitation.create.mockResolvedValue({
+      id: 'inv1', familyId: 'family1', email: 'newbie@test.com',
+      permissions: 'view_only', expiresAt: new Date(Date.now() + 1).toISOString(),
+    });
 
     const res = await request(app)
       .post('/api/members')
@@ -93,7 +94,11 @@ describe('POST /api/members', () => {
       .send({ familyId: 'family1', email: 'newbie@test.com', permissions: 'view_only' });
 
     expect(res.status).toBe(201);
-    expect(prisma.user.create).toHaveBeenCalled();
+    // No placeholder user is created for an unverified email.
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.invitation.create).toHaveBeenCalled();
+    // The owner gets a shareable link so they can send it even without SMTP.
+    expect(res.body.inviteUrl).toMatch(/\/accept-invite\?token=/);
   });
 
   it('returns 409 when user is already a member', async () => {

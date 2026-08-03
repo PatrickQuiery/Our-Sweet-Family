@@ -92,4 +92,54 @@ router.get('/me', authenticate, async (req, res) => {
   res.json({ user: safeUser });
 });
 
+// PATCH /api/auth/me — update own profile (display name)
+router.patch(
+  '/me',
+  authenticate,
+  [body('name').trim().notEmpty()],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    try {
+      const user = await prisma.user.update({
+        where: { id: req.user.id },
+        data: { name: req.body.name },
+        select: { id: true, email: true, name: true, role: true, plan: true, avatarUrl: true, createdAt: true },
+      });
+      res.json({ user });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
+
+// POST /api/auth/change-password — verify current password, set a new one
+router.post(
+  '/change-password',
+  authenticate,
+  [
+    body('currentPassword').notEmpty(),
+    body('newPassword').isLength({ min: 8 }),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { currentPassword, newPassword } = req.body;
+    try {
+      const valid = await bcrypt.compare(currentPassword, req.user.passwordHash);
+      if (!valid) return res.status(401).json({ error: 'Current password is incorrect' });
+
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      await prisma.user.update({ where: { id: req.user.id }, data: { passwordHash } });
+      res.json({ success: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
+
 module.exports = router;

@@ -66,8 +66,10 @@ export function AuthProvider({ children }) {
 
   const refreshFamily = () => fetchFamily();
 
+  const updateUser = (updates) => setUser((u) => ({ ...u, ...updates }));
+
   return (
-    <AuthContext.Provider value={{ user, loading, family, login, signup, logout, refreshFamily }}>
+    <AuthContext.Provider value={{ user, loading, family, login, signup, logout, refreshFamily, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

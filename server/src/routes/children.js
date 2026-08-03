@@ -109,6 +109,21 @@ router.delete('/:id', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Only owner can remove child' });
 
     await prisma.child.delete({ where: { id: req.params.id } });
+
+    // childIds is a JSON array (no FK), so removal isn't cascaded. Strip the
+    // deleted child's id from any memory it was tagged on to avoid dangling tags.
+    const tagged = await prisma.memory.findMany({
+      where: { familyId: child.familyId, childIds: { array_contains: [req.params.id] } },
+      select: { id: true, childIds: true },
+    });
+    for (const m of tagged) {
+      const ids = Array.isArray(m.childIds) ? m.childIds : [];
+      await prisma.memory.update({
+        where: { id: m.id },
+        data: { childIds: ids.filter((c) => c !== req.params.id) },
+      });
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error(err);
