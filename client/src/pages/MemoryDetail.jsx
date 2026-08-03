@@ -15,6 +15,12 @@ export default function MemoryDetail() {
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [familyChildren, setFamilyChildren] = useState([]);
+  const [editing, setEditing] = useState(false);
+  const [editChildIds, setEditChildIds] = useState([]);
+  const [editCaption, setEditCaption] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editErr, setEditErr] = useState('');
 
   const fetchMemory = async () => {
     try {
@@ -29,6 +35,42 @@ export default function MemoryDetail() {
   };
 
   useEffect(() => { fetchMemory(); }, [id]);
+
+  // Load the family's children so tags can be edited (which child chips to show).
+  useEffect(() => {
+    if (!memory?.familyId) return;
+    api.get(`/children?familyId=${memory.familyId}`)
+      .then(({ data }) => setFamilyChildren(data.children))
+      .catch(() => {});
+  }, [memory?.familyId]);
+
+  const startEdit = () => {
+    setEditErr('');
+    setEditChildIds(memory.childIds || (memory.ageLabels || []).map((a) => a.childId));
+    setEditCaption(memory.caption || '');
+    setEditing(true);
+  };
+
+  const toggleEditChild = (cid) => {
+    setEditChildIds((prev) => (prev.includes(cid) ? prev.filter((c) => c !== cid) : [...prev, cid]));
+  };
+
+  const handleSaveEdit = async () => {
+    setSavingEdit(true);
+    setEditErr('');
+    try {
+      const { data } = await api.patch(`/memories/${id}`, {
+        childIds: editChildIds,
+        caption: editCaption,
+      });
+      setMemory((m) => ({ ...m, ...data.memory }));
+      setEditing(false);
+    } catch (err) {
+      setEditErr(err.response?.data?.error || 'Could not save changes');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const handleLike = async () => {
     try {
@@ -98,6 +140,7 @@ export default function MemoryDetail() {
   }
 
   const canDelete = user?.role === 'owner' || memory.uploadedById === user?.id;
+  const canEdit = canDelete;
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -128,7 +171,7 @@ export default function MemoryDetail() {
 
         <div className="p-5">
           {/* Caption */}
-          {memory.caption && (
+          {!editing && memory.caption && (
             <p className="text-gray-900 font-medium text-base mb-3">{memory.caption}</p>
           )}
 
@@ -143,16 +186,78 @@ export default function MemoryDetail() {
             )}
           </div>
 
-          {/* Age labels */}
-          {memory.ageLabels?.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {memory.ageLabels.map((al) => (
-                <div key={al.childId} className="flex items-center gap-1.5 bg-brand-50 text-brand-700 rounded-full px-3 py-1 text-sm">
-                  <span className="font-semibold">{al.childName}</span>
-                  <span className="text-brand-500">·</span>
-                  <span>{al.ageLabel}</span>
+          {/* Age labels + edit affordance (read mode) */}
+          {!editing && (
+            <div className="mb-4">
+              {memory.ageLabels?.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {memory.ageLabels.map((al) => (
+                    <div key={al.childId} className="flex items-center gap-1.5 bg-brand-50 text-brand-700 rounded-full px-3 py-1 text-sm">
+                      <span className="font-semibold">{al.childName}</span>
+                      <span className="text-brand-500">·</span>
+                      <span>{al.ageLabel}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+              {canEdit && (
+                <button
+                  onClick={startEdit}
+                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  {memory.ageLabels?.length > 0 ? 'Edit tags & caption' : 'Tag children & add a caption'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Edit mode */}
+          {editing && (
+            <div className="mb-4 rounded-xl border border-gray-200 p-4">
+              {editErr && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-3">{editErr}</div>
+              )}
+              {familyChildren.length > 0 ? (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tag children</label>
+                  <div className="flex flex-wrap gap-2">
+                    {familyChildren.map((child) => (
+                      <button
+                        key={child.id}
+                        onClick={() => toggleEditChild(child.id)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                          editChildIds.includes(child.id)
+                            ? 'bg-brand-500 border-brand-500 text-white'
+                            : 'border-gray-300 text-gray-600 hover:border-brand-300'
+                        }`}
+                      >
+                        {child.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 mb-4">No children to tag yet — add one on the Children page first.</p>
+              )}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Caption</label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="Add a caption..."
+                  value={editCaption}
+                  onChange={(e) => setEditCaption(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleSaveEdit} disabled={savingEdit} className="btn-primary">
+                  {savingEdit ? 'Saving...' : 'Save changes'}
+                </button>
+                <button onClick={() => setEditing(false)} className="btn-secondary" disabled={savingEdit}>Cancel</button>
+              </div>
             </div>
           )}
 

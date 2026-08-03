@@ -294,6 +294,96 @@ describe('DELETE /api/memories/:id', () => {
   });
 });
 
+// ─── PATCH /api/memories/:id ──────────────────────────────────────────────────
+
+describe('PATCH /api/memories/:id', () => {
+  // findUnique for the edit endpoint includes the family's children (for tag
+  // validation + recomputed age labels).
+  const editableMemory = {
+    ...mockMemory,
+    family: { ownerId: 'owner1', children: mockFamily.children },
+  };
+
+  it('updates child tags and caption when called by owner', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(editableMemory);
+    prisma.memory.update.mockResolvedValue({
+      ...editableMemory,
+      childIds: ['child1', 'child2'],
+      caption: 'Beach day',
+      uploadedBy: mockMemory.uploadedBy,
+    });
+
+    const res = await request(app)
+      .patch('/api/memories/mem1')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ childIds: ['child1', 'child2'], caption: 'Beach day' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.memory.childIds).toEqual(['child1', 'child2']);
+    expect(res.body.memory.caption).toBe('Beach day');
+    expect(prisma.memory.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'mem1' },
+        data: expect.objectContaining({ childIds: ['child1', 'child2'], caption: 'Beach day' }),
+      })
+    );
+  });
+
+  it('lets the original uploader retag their own memory', async () => {
+    const uploaderMemory = { ...editableMemory, uploadedById: 'member1' };
+    prisma.user.findUnique.mockResolvedValue(memberUser);
+    prisma.memory.findUnique.mockResolvedValue(uploaderMemory);
+    prisma.memory.update.mockResolvedValue({ ...uploaderMemory, childIds: ['child2'], uploadedBy: mockMemory.uploadedBy });
+
+    const res = await request(app)
+      .patch('/api/memories/mem1')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ childIds: ['child2'] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.memory.childIds).toEqual(['child2']);
+  });
+
+  it('returns 403 for a family member who is not owner or uploader', async () => {
+    prisma.user.findUnique.mockResolvedValue(memberUser);
+    prisma.memory.findUnique.mockResolvedValue({ ...editableMemory, uploadedById: 'owner1' });
+
+    const res = await request(app)
+      .patch('/api/memories/mem1')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ childIds: ['child1'] });
+
+    expect(res.status).toBe(403);
+    expect(prisma.memory.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects childIds that do not belong to the family', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(editableMemory);
+
+    const res = await request(app)
+      .patch('/api/memories/mem1')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ childIds: ['child1', 'not-in-family'] });
+
+    expect(res.status).toBe(400);
+    expect(prisma.memory.update).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 for a missing memory', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(null);
+
+    const res = await request(app)
+      .patch('/api/memories/does-not-exist')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ childIds: [] });
+
+    expect(res.status).toBe(404);
+  });
+});
+
 // ─── POST /api/memories/:id/reactions ────────────────────────────────────────
 
 // Memory shaped for the loadAccessibleMemory gate (family + members).

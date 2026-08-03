@@ -376,6 +376,73 @@ router.delete('/:id', authenticate, async (req, res) => {
   }
 });
 
+// PATCH /api/memories/:id — edit an existing memory's child tags and/or caption.
+// This is how a memory uploaded without tags (or tagged incorrectly) gets fixed
+// after the fact; without it, an untagged memory never surfaces under a child
+// filter. Only the family owner or the original uploader may edit, mirroring
+// the delete authorization.
+router.patch('/:id', authenticate, async (req, res) => {
+  try {
+    const memory = await prisma.memory.findUnique({
+      where: { id: req.params.id },
+      include: { family: { include: { children: true } } },
+    });
+    if (!memory) return res.status(404).json({ error: 'Memory not found' });
+
+    const isOwner = memory.family.ownerId === req.user.id;
+    const isUploader = memory.uploadedById === req.user.id;
+    if (!isOwner && !isUploader) return res.status(403).json({ error: 'Access denied' });
+
+    const data = {};
+
+    if (req.body.childIds !== undefined) {
+      const { childIds } = req.body;
+      if (!Array.isArray(childIds)) {
+        return res.status(400).json({ error: 'childIds must be an array' });
+      }
+      const validIds = new Set(memory.family.children.map((c) => c.id));
+      if (!childIds.every((cid) => validIds.has(cid))) {
+        return res.status(400).json({ error: 'childIds must reference children in this family' });
+      }
+      data.childIds = childIds;
+    }
+
+    if (req.body.caption !== undefined) {
+      data.caption = req.body.caption || null;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'Nothing to update' });
+    }
+
+    const updated = await prisma.memory.update({
+      where: { id: req.params.id },
+      data,
+      include: { uploadedBy: { select: { id: true, name: true, avatarUrl: true } } },
+    });
+
+    const childIds = Array.isArray(updated.childIds)
+      ? updated.childIds
+      : JSON.parse(updated.childIds || '[]');
+    const ageLabels = childIds
+      .map((cid) => {
+        const child = memory.family.children.find((c) => c.id === cid);
+        if (!child) return null;
+        return {
+          childId: cid,
+          childName: child.name,
+          ageLabel: calculateAgeLabel(child.dateOfBirth, updated.capturedAt),
+        };
+      })
+      .filter(Boolean);
+
+    res.json({ memory: mediaRefs({ ...updated, childIds, ageLabels }) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST /api/memories/:id/reactions
 router.post('/:id/reactions', authenticate, async (req, res) => {
   try {
