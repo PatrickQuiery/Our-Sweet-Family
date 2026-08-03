@@ -7,6 +7,7 @@ const { clerkMiddleware } = require('@clerk/express');
 
 const authRoutes = require('./routes/auth');
 const familyRoutes = require('./routes/families');
+const referralRoutes = require('./routes/referrals');
 const childrenRoutes = require('./routes/children');
 const memoriesRoutes = require('./routes/memories');
 const membersRoutes = require('./routes/members');
@@ -88,6 +89,7 @@ app.use(clerkMiddleware());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/families', familyRoutes);
+app.use('/api/referrals', referralRoutes);
 app.use('/api/children', childrenRoutes);
 app.use('/api/memories', memoriesRoutes);
 app.use('/api/members', membersRoutes);

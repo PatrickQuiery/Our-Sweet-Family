@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
+const { effectivePlan } = require('../lib/plan');
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const child = await prisma.child.findUnique({
       where: { id: childId },
-      include: { family: { include: { members: true, owner: { select: { plan: true } } } } },
+      include: { family: { include: { members: true, owner: { select: { plan: true, planBoostUntil: true } } } } },
     });
     if (!child) return res.status(404).json({ error: 'Child not found' });
 
@@ -24,7 +25,7 @@ router.get('/', authenticate, async (req, res) => {
     // Feature access is determined by the family OWNER's plan (they hold the
     // subscription), not the viewer's — otherwise invited loved ones, who are
     // always on the free plan, could never see paid features.
-    const plan = child.family.owner.plan;
+    const plan = effectivePlan(child.family.owner);
     if (plan === 'free') return res.status(403).json({ error: 'Milestones require Plus or Premium plan' });
 
     const milestones = await prisma.milestone.findMany({
@@ -52,7 +53,7 @@ router.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    if (req.user.plan === 'free')
+    if (effectivePlan(req.user) === 'free')
       return res.status(403).json({ error: 'Milestones require Plus or Premium plan' });
 
     const { childId, type, value, unit, note, date } = req.body;

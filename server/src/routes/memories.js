@@ -8,6 +8,7 @@ const { uploadFile, deleteFile, readFile, isAbsoluteUrl } = require('../lib/stor
 const { calculateAgeLabel } = require('../lib/ageLabel');
 const { loadAccessibleMemory } = require('../lib/memoryAccess');
 const { mediaRefs } = require('../lib/mediaRef');
+const { effectivePlan } = require('../lib/plan');
 
 const router = express.Router();
 
@@ -270,7 +271,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
     // Check ownership
     const family = await prisma.family.findUnique({
       where: { id: familyId },
-      include: { members: true, owner: { select: { plan: true } } },
+      include: { members: true, owner: { select: { plan: true, planBoostUntil: true } } },
     });
     if (!family) return res.status(404).json({ error: 'Family not found' });
 
@@ -323,7 +324,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
 
     // Storage tier and classified access follow the family OWNER's plan (the
     // subscription holder), so a relative's contribution keeps the family's tier.
-    const ownerPlan = family.owner.plan;
+    const ownerPlan = effectivePlan(family.owner);
     const canClassify = ownerPlan === 'premium' && isOwner;
 
     const memory = await prisma.memory.create({

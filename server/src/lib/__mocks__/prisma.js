@@ -9,6 +9,12 @@ const prisma = {
     findMany: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    count: jest.fn(),
+  },
+  referral: {
+    findUnique: jest.fn(),
+    count: jest.fn(),
+    create: jest.fn(),
   },
   child: {
     findUnique: jest.fn(),

@@ -2,6 +2,7 @@ const express = require('express');
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
 const { mediaRefs } = require('../lib/mediaRef');
+const { effectivePlan } = require('../lib/plan');
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const family = await prisma.family.findUnique({
       where: { id: familyId },
-      include: { members: true, owner: { select: { plan: true } } },
+      include: { members: true, owner: { select: { plan: true, planBoostUntil: true } } },
     });
     if (!family) return res.status(404).json({ error: 'Family not found' });
 
@@ -23,7 +24,7 @@ router.get('/', authenticate, async (req, res) => {
 
     // Reel tiers are gated on the family OWNER's plan (the subscription holder),
     // not the viewer's — a loved one is always on the free plan.
-    const plan = family.owner.plan;
+    const plan = effectivePlan(family.owner);
 
     // Plan validation for reel types
     if (type === 'annual' && plan === 'free') {

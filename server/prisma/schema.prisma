@@ -43,6 +43,10 @@ model User {
   avatarUrl    String?
   role         Role     @default(loved_one)
   plan         Plan     @default(free)
+  // A temporary plan boost (the referral reward grants Plus for 90 days). While
+  // planBoostUntil is in the future, the user's EFFECTIVE plan is at least Plus.
+  planBoostUntil DateTime?
+  referralCode   String?  @unique  // this user's own share code
   createdAt    DateTime @default(now())
 
   ownedFamilies  Family[]       @relation("FamilyOwner")
@@ -50,6 +54,23 @@ model User {
   memories       Memory[]
   reactions      Reaction[]
   comments       Comment[]
+  referralsMade    Referral[] @relation("ReferralsMade")
+  referralReceived Referral?  @relation("ReferralReceived")
+}
+
+// One row per successful referral. refereeId is unique, so each new user can be
+// credited to at most one referrer.
+model Referral {
+  id         String   @id @default(uuid())
+  referrerId String
+  refereeId  String   @unique
+  status     String   @default("completed")
+  createdAt  DateTime @default(now())
+
+  referrer User @relation("ReferralsMade", fields: [referrerId], references: [id], onDelete: Cascade)
+  referee  User @relation("ReferralReceived", fields: [refereeId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
 }
 
 model Family {

@@ -1,5 +1,6 @@
 const express = require('express');
 const { authenticate } = require('../middleware/auth');
+const { effectivePlan } = require('../lib/plan');
 
 const router = express.Router();
 
@@ -10,7 +11,9 @@ const router = express.Router();
 // GET /api/auth/me — current user (created/linked on first authenticated request)
 router.get('/me', authenticate, async (req, res) => {
   const { passwordHash: _ph, ...safeUser } = req.user;
-  res.json({ user: safeUser });
+  // Expose the EFFECTIVE plan (base plan, upgraded while a referral boost is
+  // active) so the whole app reflects the reward. Keep the boost expiry for UI.
+  res.json({ user: { ...safeUser, plan: effectivePlan(req.user) } });
 });
 
 module.exports = router;

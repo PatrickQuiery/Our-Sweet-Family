@@ -18,6 +18,7 @@ import Family from './pages/Family';
 import Reels from './pages/Reels';
 import Milestones from './pages/Milestones';
 import Settings from './pages/Settings';
+import Referrals from './pages/Referrals';
 import AppLayout from './components/AppLayout';
 
 function Spinner() {
@@ -64,6 +65,7 @@ function AppRoutes() {
         <Route path="/reels" element={<Reels />} />
         <Route path="/milestones" element={<Milestones />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/refer" element={<Referrals />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

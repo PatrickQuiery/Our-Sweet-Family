@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
+import { completeReferralIfPending } from '../lib/referral';
 
 const STEPS = ['Family', 'Child', 'Invite'];
 
@@ -24,6 +25,9 @@ export default function Onboarding() {
     try {
       const { data } = await api.post('/families', { name: familyName });
       setFamilyId(data.family.id);
+      // Now that a family exists, redeem any pending referral (grants both sides
+      // Plus for 90 days). Best-effort — never blocks onboarding.
+      completeReferralIfPending();
       setStep(1);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create family');
