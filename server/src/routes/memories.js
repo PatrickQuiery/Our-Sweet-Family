@@ -11,6 +11,7 @@ const { mediaRefs } = require('../lib/mediaRef');
 const { effectivePlan } = require('../lib/plan');
 const { reverseGeocode } = require('../lib/geocode');
 const { isParent } = require('../lib/familyAccess');
+const { compressVideoInBackground } = require('../lib/videoCompress');
 
 const router = express.Router();
 
@@ -409,6 +410,8 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
     // (Video transcoding needs a separate pipeline, so videos are stored as-is.)
     const ownerPlan = effectivePlan(family.owner);
     const isPaid = ['plus', 'premium'].includes(ownerPlan);
+    // Free-plan videos are compressed in the background after upload to save storage.
+    const needsVideoCompression = fileType === 'video' && !isPaid;
 
     let uploadBuffer = req.file.buffer;
     let uploadName = req.file.originalname;
@@ -472,6 +475,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
         fileType,
         size: uploadBuffer.length, // bytes actually stored (compressed for free-plan photos)
         originalQuality: isPaid,
+        processing: needsVideoCompression,
         capturedAt,
         isClassified: canClassify && isClassified === 'true',
         caption: caption || null,
@@ -486,6 +490,15 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
     });
 
     res.status(201).json({ memory: mediaRefs(memory) });
+
+    // Kick off free-plan video compression AFTER responding (the original video is
+    // already stored and playable; this swaps in a smaller version and reclaims the
+    // original's storage). Fire-and-forget — failures keep the original.
+    if (needsVideoCompression) {
+      compressVideoInBackground(memory.id, req.file.buffer, fileUrl).catch((e) =>
+        console.error('background video compression error:', e.message)
+      );
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

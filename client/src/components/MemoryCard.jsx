@@ -87,6 +87,14 @@ export default function MemoryCard({ memory, onReactionChange, onTagClick }) {
               Private
             </div>
           )}
+
+          {/* Video optimizing (background compression) */}
+          {memory.processing && (
+            <div className="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
+              Optimizing
+            </div>
+          )}
         </div>
 
         {/* Bottom info */}
