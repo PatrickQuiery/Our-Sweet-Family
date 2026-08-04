@@ -10,6 +10,7 @@ const { loadAccessibleMemory } = require('../lib/memoryAccess');
 const { mediaRefs } = require('../lib/mediaRef');
 const { effectivePlan } = require('../lib/plan');
 const { reverseGeocode } = require('../lib/geocode');
+const { isParent } = require('../lib/familyAccess');
 
 const router = express.Router();
 
@@ -89,7 +90,7 @@ router.get('/', authenticate, async (req, res) => {
     });
     if (!family) return res.status(404).json({ error: 'Family not found' });
 
-    const isOwner = family.ownerId === req.user.id;
+    const isOwner = isParent(family, req.user.id);
     const membership = family.members.find((m) => m.userId === req.user.id);
 
     if (!isOwner && !membership) {
@@ -214,7 +215,7 @@ router.get('/:id', authenticate, async (req, res) => {
 
     if (!memory) return res.status(404).json({ error: 'Memory not found' });
 
-    const isOwner = memory.family.ownerId === req.user.id;
+    const isOwner = isParent(memory.family, req.user.id);
     const membership = memory.family.members.find((m) => m.userId === req.user.id);
 
     if (!isOwner && !membership) return res.status(403).json({ error: 'Access denied' });
@@ -312,7 +313,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
     });
     if (!family) return res.status(404).json({ error: 'Family not found' });
 
-    const isOwner = family.ownerId === req.user.id;
+    const isOwner = isParent(family, req.user.id);
     const membership = family.members.find((m) => m.userId === req.user.id);
     if (!isOwner && !membership) return res.status(403).json({ error: 'Access denied' });
 
@@ -405,10 +406,10 @@ router.delete('/:id', authenticate, async (req, res) => {
   try {
     const memory = await prisma.memory.findUnique({
       where: { id: req.params.id },
-      include: { family: true },
+      include: { family: { include: { members: true } } },
     });
     if (!memory) return res.status(404).json({ error: 'Memory not found' });
-    if (memory.family.ownerId !== req.user.id && memory.uploadedById !== req.user.id) {
+    if (!isParent(memory.family, req.user.id) && memory.uploadedById !== req.user.id) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -434,11 +435,11 @@ router.patch('/:id', authenticate, async (req, res) => {
   try {
     const memory = await prisma.memory.findUnique({
       where: { id: req.params.id },
-      include: { family: { include: { children: true } } },
+      include: { family: { include: { children: true, members: true } } },
     });
     if (!memory) return res.status(404).json({ error: 'Memory not found' });
 
-    const isOwner = memory.family.ownerId === req.user.id;
+    const isOwner = isParent(memory.family, req.user.id);
     const isUploader = memory.uploadedById === req.user.id;
     if (!isOwner && !isUploader) return res.status(403).json({ error: 'Access denied' });
 

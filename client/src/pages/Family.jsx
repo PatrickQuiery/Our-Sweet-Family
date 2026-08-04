@@ -6,14 +6,14 @@ const PERMISSION_LABELS = {
   view_only: 'View only',
   upload: 'Can upload',
   share_download: 'Can share & download',
-  all: 'Full access',
+  all: 'Parent (full access)',
 };
 
 const PERMISSION_COLORS = {
   view_only: 'bg-gray-100 text-gray-700',
   upload: 'bg-blue-100 text-blue-700',
   share_download: 'bg-green-100 text-green-700',
-  all: 'bg-purple-100 text-purple-700',
+  all: 'bg-brand-100 text-brand-700',
 };
 
 export default function Family() {

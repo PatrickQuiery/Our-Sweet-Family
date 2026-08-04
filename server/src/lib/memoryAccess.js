@@ -1,4 +1,5 @@
 const prisma = require('./prisma');
+const { isParent } = require('./familyAccess');
 
 /**
  * Safely parse a value that may be a JSON array string or already an array.
@@ -35,13 +36,14 @@ async function loadAccessibleMemory(memoryId, user) {
   });
   if (!memory) return { status: 404, error: 'Memory not found' };
 
-  const isOwner = memory.family.ownerId === user.id;
+  // A parent (owner or Full Access member) has full control — sees everything.
+  const parent = isParent(memory.family, user.id);
   const membership = memory.family.members.find((m) => m.userId === user.id);
 
-  if (!isOwner && !membership) return { status: 403, error: 'Access denied' };
-  if (!isOwner && memory.isClassified) return { status: 403, error: 'Access denied' };
+  if (!parent && !membership) return { status: 403, error: 'Access denied' };
+  if (!parent && memory.isClassified) return { status: 403, error: 'Access denied' };
 
-  if (!isOwner && membership && membership.accessPerChild !== 'all') {
+  if (!parent && membership && membership.accessPerChild !== 'all') {
     const allowed = toArray(membership.accessPerChild);
     const childIds = toArray(memory.childIds);
     const hasAccess =
@@ -49,7 +51,7 @@ async function loadAccessibleMemory(memoryId, user) {
     if (!hasAccess) return { status: 403, error: 'Access denied' };
   }
 
-  return { memory, isOwner, membership };
+  return { memory, isOwner: parent, membership };
 }
 
 module.exports = { loadAccessibleMemory, toArray };

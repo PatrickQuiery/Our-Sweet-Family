@@ -1,6 +1,7 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
+const { isParent } = require('../lib/familyAccess');
 const { mediaRefs } = require('../lib/mediaRef');
 const { effectivePlan } = require('../lib/plan');
 
@@ -18,7 +19,7 @@ router.get('/', authenticate, async (req, res) => {
     });
     if (!family) return res.status(404).json({ error: 'Family not found' });
 
-    const isOwner = family.ownerId === req.user.id;
+    const isOwner = isParent(family, req.user.id);
     const membership = family.members.find((m) => m.userId === req.user.id);
     if (!isOwner && !membership) return res.status(403).json({ error: 'Access denied' });
 

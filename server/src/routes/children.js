@@ -6,6 +6,7 @@ const { body, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
 const { uploadFile, deleteFile, readFile, isAbsoluteUrl } = require('../lib/storage');
+const { isParent } = require('../lib/familyAccess');
 
 const router = express.Router();
 
@@ -67,9 +68,9 @@ router.post(
     const { familyId, name, dateOfBirth, gender } = req.body;
 
     try {
-      const family = await prisma.family.findUnique({ where: { id: familyId } });
+      const family = await prisma.family.findUnique({ where: { id: familyId }, include: { members: true } });
       if (!family) return res.status(404).json({ error: 'Family not found' });
-      if (family.ownerId !== req.user.id)
+      if (!isParent(family, req.user.id))
         return res.status(403).json({ error: 'Only owner can add children' });
 
       const child = await prisma.child.create({
@@ -98,10 +99,10 @@ router.put(
     try {
       const child = await prisma.child.findUnique({
         where: { id: req.params.id },
-        include: { family: true },
+        include: { family: { include: { members: true } } },
       });
       if (!child) return res.status(404).json({ error: 'Child not found' });
-      if (child.family.ownerId !== req.user.id)
+      if (!isParent(child.family, req.user.id))
         return res.status(403).json({ error: 'Only owner can update child' });
 
       const { name, dateOfBirth, gender, avatarUrl } = req.body;
@@ -130,10 +131,10 @@ router.post('/:id/avatar', authenticate, avatarUpload.single('file'), async (req
 
     const child = await prisma.child.findUnique({
       where: { id: req.params.id },
-      include: { family: true },
+      include: { family: { include: { members: true } } },
     });
     if (!child) return res.status(404).json({ error: 'Child not found' });
-    if (child.family.ownerId !== req.user.id)
+    if (!isParent(child.family, req.user.id))
       return res.status(403).json({ error: 'Only owner can update child' });
 
     // Normalize to a square JPEG; fall back to the raw upload if it can't be processed.
@@ -201,10 +202,10 @@ router.delete('/:id/avatar', authenticate, async (req, res) => {
   try {
     const child = await prisma.child.findUnique({
       where: { id: req.params.id },
-      include: { family: true },
+      include: { family: { include: { members: true } } },
     });
     if (!child) return res.status(404).json({ error: 'Child not found' });
-    if (child.family.ownerId !== req.user.id)
+    if (!isParent(child.family, req.user.id))
       return res.status(403).json({ error: 'Only owner can update child' });
 
     const updated = await prisma.child.update({
@@ -225,10 +226,10 @@ router.delete('/:id', authenticate, async (req, res) => {
   try {
     const child = await prisma.child.findUnique({
       where: { id: req.params.id },
-      include: { family: true },
+      include: { family: { include: { members: true } } },
     });
     if (!child) return res.status(404).json({ error: 'Child not found' });
-    if (child.family.ownerId !== req.user.id)
+    if (!isParent(child.family, req.user.id))
       return res.status(403).json({ error: 'Only owner can remove child' });
 
     await prisma.child.delete({ where: { id: req.params.id } });

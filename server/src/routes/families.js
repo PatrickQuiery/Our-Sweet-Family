@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
 const { effectivePlan } = require('../lib/plan');
+const { isParent } = require('../lib/familyAccess');
 
 const router = express.Router();
 
@@ -98,9 +99,9 @@ router.put(
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     try {
-      const family = await prisma.family.findUnique({ where: { id: req.params.id } });
+      const family = await prisma.family.findUnique({ where: { id: req.params.id }, include: { members: true } });
       if (!family) return res.status(404).json({ error: 'Family not found' });
-      if (family.ownerId !== req.user.id) return res.status(403).json({ error: 'Only owner can update' });
+      if (!isParent(family, req.user.id)) return res.status(403).json({ error: "Only a parent can update" });
 
       const updated = await prisma.family.update({
         where: { id: req.params.id },
@@ -119,9 +120,9 @@ router.put(
 // Currently: showPhotoLocation (opt-in to display photo GPS, owner-only).
 router.patch('/:id/settings', authenticate, async (req, res) => {
   try {
-    const family = await prisma.family.findUnique({ where: { id: req.params.id } });
+    const family = await prisma.family.findUnique({ where: { id: req.params.id }, include: { members: true } });
     if (!family) return res.status(404).json({ error: 'Family not found' });
-    if (family.ownerId !== req.user.id) return res.status(403).json({ error: 'Only owner can update' });
+    if (!isParent(family, req.user.id)) return res.status(403).json({ error: "Only a parent can update" });
 
     const data = {};
     if (typeof req.body.showPhotoLocation === 'boolean') data.showPhotoLocation = req.body.showPhotoLocation;

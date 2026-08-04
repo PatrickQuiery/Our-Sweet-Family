@@ -1,6 +1,7 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
+const { isParent } = require('../lib/familyAccess');
 const { hashInviteToken } = require('../lib/inviteToken');
 
 const router = express.Router();
@@ -25,9 +26,9 @@ router.get('/', authenticate, async (req, res) => {
   if (!familyId) return res.status(400).json({ error: 'familyId required' });
 
   try {
-    const family = await prisma.family.findUnique({ where: { id: familyId } });
+    const family = await prisma.family.findUnique({ where: { id: familyId }, include: { members: true } });
     if (!family) return res.status(404).json({ error: 'Family not found' });
-    if (family.ownerId !== req.user.id) {
+    if (!isParent(family, req.user.id)) {
       return res.status(403).json({ error: 'Only owner can view invitations' });
     }
 
@@ -109,10 +110,10 @@ router.delete('/:id', authenticate, async (req, res) => {
   try {
     const invitation = await prisma.invitation.findUnique({
       where: { id: req.params.id },
-      include: { family: true },
+      include: { family: { include: { members: true } } },
     });
     if (!invitation) return res.status(404).json({ error: 'Invitation not found' });
-    if (invitation.family.ownerId !== req.user.id) {
+    if (!isParent(invitation.family, req.user.id)) {
       return res.status(403).json({ error: 'Only owner can revoke invitations' });
     }
 

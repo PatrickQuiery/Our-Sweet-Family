@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
+const { isParent } = require('../lib/familyAccess');
 const { effectivePlan } = require('../lib/plan');
 
 const router = express.Router();
@@ -61,10 +62,10 @@ router.post(
     try {
       const child = await prisma.child.findUnique({
         where: { id: childId },
-        include: { family: true },
+        include: { family: { include: { members: true } } },
       });
       if (!child) return res.status(404).json({ error: 'Child not found' });
-      if (child.family.ownerId !== req.user.id)
+      if (!isParent(child.family, req.user.id))
         return res.status(403).json({ error: 'Only owner can add milestones' });
 
       const milestone = await prisma.milestone.create({
@@ -83,10 +84,10 @@ router.delete('/:id', authenticate, async (req, res) => {
   try {
     const milestone = await prisma.milestone.findUnique({
       where: { id: req.params.id },
-      include: { child: { include: { family: true } } },
+      include: { child: { include: { family: { include: { members: true } } } } },
     });
     if (!milestone) return res.status(404).json({ error: 'Milestone not found' });
-    if (milestone.child.family.ownerId !== req.user.id)
+    if (!isParent(milestone.child.family, req.user.id))
       return res.status(403).json({ error: 'Access denied' });
 
     await prisma.milestone.delete({ where: { id: req.params.id } });

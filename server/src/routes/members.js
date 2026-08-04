@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
+const { isParent } = require('../lib/familyAccess');
 const { generateInviteToken, inviteExpiry } = require('../lib/inviteToken');
 const { sendMail } = require('../lib/mailer');
 
@@ -28,9 +29,9 @@ router.get('/', authenticate, async (req, res) => {
   if (!familyId) return res.status(400).json({ error: 'familyId required' });
 
   try {
-    const family = await prisma.family.findUnique({ where: { id: familyId } });
+    const family = await prisma.family.findUnique({ where: { id: familyId }, include: { members: true } });
     if (!family) return res.status(404).json({ error: 'Family not found' });
-    if (family.ownerId !== req.user.id)
+    if (!isParent(family, req.user.id))
       return res.status(403).json({ error: 'Only owner can view members' });
 
     const members = await prisma.familyMember.findMany({
@@ -61,9 +62,9 @@ router.post(
     const { familyId, email, permissions, accessPerChild } = req.body;
 
     try {
-      const family = await prisma.family.findUnique({ where: { id: familyId } });
+      const family = await prisma.family.findUnique({ where: { id: familyId }, include: { members: true } });
       if (!family) return res.status(404).json({ error: 'Family not found' });
-      if (family.ownerId !== req.user.id)
+      if (!isParent(family, req.user.id))
         return res.status(403).json({ error: 'Only owner can invite members' });
 
       const invitee = await prisma.user.findUnique({ where: { email } });
@@ -153,10 +154,10 @@ router.put(
     try {
       const member = await prisma.familyMember.findUnique({
         where: { id: req.params.id },
-        include: { family: true },
+        include: { family: { include: { members: true } } },
       });
       if (!member) return res.status(404).json({ error: 'Member not found' });
-      if (member.family.ownerId !== req.user.id)
+      if (!isParent(member.family, req.user.id))
         return res.status(403).json({ error: 'Only owner can update members' });
 
       const updated = await prisma.familyMember.update({
@@ -180,10 +181,10 @@ router.delete('/:id', authenticate, async (req, res) => {
   try {
     const member = await prisma.familyMember.findUnique({
       where: { id: req.params.id },
-      include: { family: true },
+      include: { family: { include: { members: true } } },
     });
     if (!member) return res.status(404).json({ error: 'Member not found' });
-    if (member.family.ownerId !== req.user.id)
+    if (!isParent(member.family, req.user.id))
       return res.status(403).json({ error: 'Only owner can remove members' });
 
     await prisma.familyMember.delete({ where: { id: req.params.id } });

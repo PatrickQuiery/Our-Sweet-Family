@@ -126,6 +126,19 @@ describe('POST /api/children', () => {
     expect(res.status).toBe(403);
   });
 
+  it('lets a Full Access (Parent) member add a child, like the owner', async () => {
+    prisma.user.findUnique.mockResolvedValue(memberUser);
+    prisma.family.findUnique.mockResolvedValue({ ...mockFamily, members: [{ userId: 'member1', permissions: 'all' }] });
+    prisma.child.create.mockResolvedValue(mockChild);
+
+    const res = await request(app)
+      .post('/api/children')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ familyId: 'family1', name: 'Bob', dateOfBirth: '2021-05-10' });
+
+    expect(res.status).toBe(201);
+  });
+
   it('returns 400 for invalid date format', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
 
