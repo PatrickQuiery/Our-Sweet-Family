@@ -121,6 +121,7 @@ model Memory {
   familyId        String
   childIds        Json     @default("[]")
   tags            Json     @default("[]") // free-text tags for search/filtering
+  tagsText        String?  // lowercased, space-joined tags for fuzzy (substring) search
   uploadedById    String
   fileUrl         String
   thumbnailUrl    String?

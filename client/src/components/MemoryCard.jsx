@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import api from '../lib/api';
 import { AuthedImage } from './AuthedMedia';
 
-export default function MemoryCard({ memory, onReactionChange }) {
+export default function MemoryCard({ memory, onReactionChange, onTagClick }) {
   const [liked, setLiked] = useState(
     memory.reactions?.some((r) => r.userId === memory._currentUserId)
   );
@@ -105,6 +105,24 @@ export default function MemoryCard({ memory, onReactionChange }) {
           </div>
           {memory.caption && (
             <p className="text-sm text-gray-700 mt-1 truncate">{memory.caption}</p>
+          )}
+          {memory.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {memory.tags.slice(0, 3).map((t) =>
+                onTagClick ? (
+                  <button
+                    key={t}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onTagClick(t); }}
+                    className="text-[10px] bg-gray-100 hover:bg-brand-100 text-gray-500 hover:text-brand-700 rounded-full px-2 py-0.5 transition-colors"
+                  >
+                    #{t}
+                  </button>
+                ) : (
+                  <span key={t} className="text-[10px] bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">#{t}</span>
+                )
+              )}
+              {memory.tags.length > 3 && <span className="text-[10px] text-gray-400 self-center">+{memory.tags.length - 3}</span>}
+            </div>
           )}
           {memory.comments?.length > 0 && (
             <p className="text-xs text-gray-400 mt-0.5">{memory.comments.length} comment{memory.comments.length !== 1 ? 's' : ''}</p>

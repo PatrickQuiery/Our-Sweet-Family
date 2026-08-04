@@ -124,15 +124,18 @@ router.get('/', authenticate, async (req, res) => {
       and.push({ childIds: { array_contains: [childId] } });
     }
 
-    // Search: match a caption substring OR an exact tag.
+    // Fuzzy search: each whitespace-separated term must match (substring,
+    // case-insensitive) either the caption or a tag (via the tagsText column).
     if (search && String(search).trim()) {
-      const term = String(search).trim();
-      and.push({
-        OR: [
-          { caption: { contains: term, mode: 'insensitive' } },
-          { tags: { array_contains: [term.toLowerCase()] } },
-        ],
-      });
+      const terms = String(search).trim().toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6);
+      for (const tm of terms) {
+        and.push({
+          OR: [
+            { caption: { contains: tm, mode: 'insensitive' } },
+            { tagsText: { contains: tm } },
+          ],
+        });
+      }
     }
 
     if (and.length) where.AND = and;
@@ -394,6 +397,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
         familyId,
         childIds: parsedChildIds,
         tags: parsedTags,
+        tagsText: parsedTags.length ? parsedTags.join(' ') : null,
         uploadedById: req.user.id,
         fileUrl,
         thumbnailUrl,
@@ -484,6 +488,7 @@ router.patch('/:id', authenticate, async (req, res) => {
       const raw = req.body.tags;
       if (!Array.isArray(raw)) return res.status(400).json({ error: 'tags must be an array' });
       data.tags = [...new Set(raw.map((t) => String(t).trim().toLowerCase().slice(0, 40)).filter(Boolean))].slice(0, 20);
+      data.tagsText = data.tags.length ? data.tags.join(' ') : null;
     }
 
     if (Object.keys(data).length === 0) {

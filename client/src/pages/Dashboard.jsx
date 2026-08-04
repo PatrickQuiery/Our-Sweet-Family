@@ -193,6 +193,7 @@ export default function Dashboard() {
               <MemoryCard
                 key={memory.id}
                 memory={{ ...memory, _currentUserId: user?.id }}
+                onTagClick={(t) => setSearch(t)}
               />
             ))}
           </div>
