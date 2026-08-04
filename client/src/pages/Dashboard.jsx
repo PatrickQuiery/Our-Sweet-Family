@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 import MemoryCard from '../components/MemoryCard';
+import DashboardTimeline from '../components/DashboardTimeline';
 
 export default function Dashboard() {
   const { user, family } = useAuth();
@@ -85,7 +86,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div>
+    <div className="flex gap-6 items-start">
+      <div className="flex-1 min-w-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
@@ -189,6 +191,13 @@ export default function Dashboard() {
           )}
         </>
       )}
+      </div>
+
+      {/* Right-hand time rail — dates on the left, each child's age on the right;
+          scroll through time and zoom to sharpen the resolution. */}
+      <aside className="hidden xl:block w-72 flex-shrink-0 sticky top-6">
+        <DashboardTimeline kids={children} memories={memories} />
+      </aside>
     </div>
   );
 }
