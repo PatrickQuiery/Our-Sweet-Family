@@ -205,6 +205,14 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
+// Download permission: original files are a paid-plan feature ("export & download
+// originals"), and among invited members only those granted share/download — or a
+// Parent — may download.
+function downloadAllowed({ isParent, membership, plan }) {
+  if (!['plus', 'premium'].includes(plan)) return false;
+  return isParent || (membership && ['share_download', 'all'].includes(membership.permissions));
+}
+
 // GET /api/memories/:id
 router.get('/:id', authenticate, async (req, res) => {
   try {
@@ -217,7 +225,7 @@ router.get('/:id', authenticate, async (req, res) => {
           include: { user: { select: { id: true, name: true, avatarUrl: true } } },
           orderBy: { createdAt: 'asc' },
         },
-        family: { include: { members: true, children: true } },
+        family: { include: { members: true, children: true, owner: { select: { plan: true, planBoostUntil: true } } } },
       },
     });
 
@@ -266,6 +274,12 @@ router.get('/:id', authenticate, async (req, res) => {
       delete shaped.locationCity;
       delete shaped.locationState;
     }
+    // Tell the client whether this viewer may download the original.
+    shaped.canDownload = downloadAllowed({
+      isParent: isOwner,
+      membership,
+      plan: effectivePlan(memory.family.owner),
+    });
     res.json({ memory: shaped });
   } catch (err) {
     console.error(err);
@@ -305,6 +319,48 @@ async function streamMedia(req, res, variant) {
 
 router.get('/:id/file', authenticate, (req, res) => streamMedia(req, res, 'file'));
 router.get('/:id/thumb', authenticate, (req, res) => streamMedia(req, res, 'thumb'));
+
+// GET /api/memories/:id/download — permission-gated download of the ORIGINAL file,
+// served with a Content-Disposition attachment so the browser saves it to the device.
+router.get('/:id/download', authenticate, async (req, res) => {
+  try {
+    const access = await loadAccessibleMemory(req.params.id, req.user); // view gate
+    if (access.error) return res.status(access.status).json({ error: access.error });
+    const { memory, isOwner, membership } = access;
+
+    const owner = await prisma.user.findUnique({
+      where: { id: memory.family.ownerId },
+      select: { plan: true, planBoostUntil: true },
+    });
+    const plan = effectivePlan(owner);
+    if (!downloadAllowed({ isParent: isOwner, membership, plan })) {
+      return res.status(403).json({
+        error: ['plus', 'premium'].includes(plan)
+          ? 'You do not have permission to download this'
+          : 'Downloading originals requires a Plus or Premium plan',
+      });
+    }
+
+    const key = memory.fileUrl;
+    if (isAbsoluteUrl(key)) return res.redirect(302, key);
+
+    const { stream, contentType } = await readFile(key);
+    const ext = path.extname(key) || (memory.fileType === 'video' ? '.mp4' : '.jpg');
+    const base = (memory.caption || 'memory').replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'memory';
+    res.set('Content-Type', contentType);
+    res.set('Content-Disposition', `attachment; filename="${base}${ext}"`);
+    res.set('Cache-Control', 'private, no-store');
+    stream.on('error', (err) => {
+      console.error('download stream error:', err.message);
+      if (!res.headersSent) res.status(404).json({ error: 'File not found' });
+      else res.destroy();
+    });
+    stream.pipe(res);
+  } catch (err) {
+    console.error(err);
+    if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // POST /api/memories — upload a photo or video
 router.post('/', authenticate, upload.single('file'), async (req, res) => {

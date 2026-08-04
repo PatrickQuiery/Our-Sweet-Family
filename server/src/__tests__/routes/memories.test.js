@@ -480,6 +480,56 @@ const accessibleMemory = {
   family: { ownerId: 'owner1', members: mockFamily.members },
 };
 
+describe('GET /api/memories/:id/download', () => {
+  it('lets the owner download on a paid plan (as an attachment)', async () => {
+    prisma.user.findUnique
+      .mockResolvedValueOnce(ownerUser)                                  // authenticate
+      .mockResolvedValueOnce({ plan: 'premium', planBoostUntil: null }); // owner plan lookup
+    prisma.memory.findUnique.mockResolvedValue({ ...accessibleMemory, fileUrl: 'memories/x.jpg' });
+    mockReadFile('image/jpeg');
+
+    const res = await request(app).get('/api/memories/mem1/download').set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-disposition']).toMatch(/attachment/);
+  });
+
+  it('blocks download on the free plan (paid feature)', async () => {
+    prisma.user.findUnique
+      .mockResolvedValueOnce(ownerUser)
+      .mockResolvedValueOnce({ plan: 'free', planBoostUntil: null });
+    prisma.memory.findUnique.mockResolvedValue(accessibleMemory);
+
+    const res = await request(app).get('/api/memories/mem1/download').set('x-clerk-user-id', 'clerk-test');
+    expect(res.status).toBe(403);
+  });
+
+  it('blocks a view-only member from downloading even on a paid plan', async () => {
+    prisma.user.findUnique
+      .mockResolvedValueOnce(memberUser)
+      .mockResolvedValueOnce({ plan: 'premium', planBoostUntil: null });
+    prisma.memory.findUnique.mockResolvedValue(accessibleMemory); // member1 is view_only
+
+    const res = await request(app).get('/api/memories/mem1/download').set('x-clerk-user-id', 'clerk-test');
+    expect(res.status).toBe(403);
+  });
+
+  it('lets a share_download member download on a paid plan', async () => {
+    prisma.user.findUnique
+      .mockResolvedValueOnce(memberUser)
+      .mockResolvedValueOnce({ plan: 'plus', planBoostUntil: null });
+    prisma.memory.findUnique.mockResolvedValue({
+      ...accessibleMemory,
+      fileUrl: 'memories/x.jpg',
+      family: { ownerId: 'owner1', members: [{ id: 'fm1', userId: 'member1', permissions: 'share_download', accessPerChild: 'all' }] },
+    });
+    mockReadFile('image/jpeg');
+
+    const res = await request(app).get('/api/memories/mem1/download').set('x-clerk-user-id', 'clerk-test');
+    expect(res.status).toBe(200);
+  });
+});
+
 describe('POST /api/memories/:id/reactions', () => {
   it('adds a love reaction', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);

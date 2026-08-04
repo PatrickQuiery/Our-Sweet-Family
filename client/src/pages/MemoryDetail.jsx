@@ -23,6 +23,7 @@ export default function MemoryDetail() {
   const [editTags, setEditTags] = useState([]);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editErr, setEditErr] = useState('');
+  const [downloading, setDownloading] = useState(false);
 
   const fetchMemory = async () => {
     try {
@@ -114,6 +115,33 @@ export default function MemoryDetail() {
       navigate('/dashboard');
     } catch (err) {
       alert(err.response?.data?.error || 'Delete failed');
+    }
+  };
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      // Fetch the original with the auth token, then save it via a temporary link.
+      const res = await api.get(`/memories/${id}/download`, { responseType: 'blob' });
+      const type = res.data.type || '';
+      const ext = type.includes('quicktime') ? '.mov'
+        : type.includes('video') ? '.mp4'
+        : type.includes('png') ? '.png'
+        : type.includes('webp') ? '.webp'
+        : type.includes('gif') ? '.gif' : '.jpg';
+      const base = (memory.caption || 'memory').replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'memory';
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${base}${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Download failed');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -309,11 +337,25 @@ export default function MemoryDetail() {
                 ? `${memory.reactions.length} ${memory.reactions.length === 1 ? 'love' : 'loves'}`
                 : 'Love'}
             </button>
-            {canDelete && (
-              <button onClick={handleDelete} className="text-red-400 hover:text-red-600 text-sm font-medium transition-colors">
-                Delete
-              </button>
-            )}
+            <div className="flex items-center gap-4">
+              {memory.canDownload && (
+                <button
+                  onClick={handleDownload}
+                  disabled={downloading}
+                  className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-brand-600 transition-colors disabled:opacity-50"
+                >
+                  <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: 18, height: 18 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                  </svg>
+                  {downloading ? 'Preparing…' : 'Download'}
+                </button>
+              )}
+              {canDelete && (
+                <button onClick={handleDelete} className="text-red-400 hover:text-red-600 text-sm font-medium transition-colors">
+                  Delete
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Comments */}
