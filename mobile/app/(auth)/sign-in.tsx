@@ -41,7 +41,7 @@ export default function SignInScreen() {
     try {
       const { createdSessionId, setActive: setActiveSSO } = await startSSOFlow({
         strategy: 'oauth_google',
-        redirectUrl: AuthSession.makeRedirectUri(),
+        redirectUrl: AuthSession.makeRedirectUri({ scheme: 'oursweetfamily', path: 'sso-callback' }),
       });
       if (createdSessionId && setActiveSSO) {
         await setActiveSSO({ session: createdSessionId });

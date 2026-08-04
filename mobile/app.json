@@ -30,7 +30,14 @@
       "expo-secure-store",
       "expo-web-browser",
       "expo-image",
-      "expo-video"
+      "expo-video",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Our Sweet Family to access your photos to share memories.",
+          "cameraPermission": "Allow Our Sweet Family to use the camera to capture memories."
+        }
+      ]
     ]
   }
 }
