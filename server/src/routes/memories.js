@@ -76,6 +76,22 @@ async function generateThumbnail(buffer, mimetype, originalName) {
   }
 }
 
+// A display-quality compressed photo (max 1600px, JPEG q72) — what free plans
+// store in place of the original, to save storage.
+async function compressPhoto(buffer) {
+  try {
+    const out = await sharp(buffer)
+      .rotate()
+      .resize(1600, 1600, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 72 })
+      .toBuffer();
+    return { buffer: out };
+  } catch (e) {
+    console.error('Photo compression failed:', e);
+    return null;
+  }
+}
+
 // GET /api/memories?familyId=&childId=&page=&limit=&type=
 router.get('/', authenticate, async (req, res) => {
   const { familyId, childId, page = 1, limit = 20, type, search } = req.query;
@@ -401,15 +417,26 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
     const gps = await extractExifGps(req.file.buffer, req.file.mimetype);
     const place = gps ? await reverseGeocode(gps.latitude, gps.longitude) : null;
 
-    // Upload original
-    const fileUrl = await uploadFile(
-      req.file.buffer,
-      req.file.originalname,
-      req.file.mimetype,
-      'memories'
-    );
+    // Storage tier follows the family OWNER's (effective) plan. Paid plans keep
+    // the ORIGINAL file; free plans store a COMPRESSED photo to save storage.
+    // (Video transcoding needs a separate pipeline, so videos are stored as-is.)
+    const ownerPlan = effectivePlan(family.owner);
+    const isPaid = ['plus', 'premium'].includes(ownerPlan);
 
-    // Generate & upload thumbnail (photos only)
+    let uploadBuffer = req.file.buffer;
+    let uploadName = req.file.originalname;
+    let uploadMime = req.file.mimetype;
+    if (fileType === 'photo' && !isPaid) {
+      const compressed = await compressPhoto(req.file.buffer);
+      if (compressed) {
+        uploadBuffer = compressed.buffer;
+        uploadName = 'compressed.jpg';
+        uploadMime = 'image/jpeg';
+      }
+    }
+    const fileUrl = await uploadFile(uploadBuffer, uploadName, uploadMime, 'memories');
+
+    // Generate & upload thumbnail (photos only) — always derived from the original.
     let thumbnailUrl = null;
     if (fileType === 'photo') {
       const thumb = await generateThumbnail(req.file.buffer, req.file.mimetype, req.file.originalname);
@@ -443,9 +470,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
       }
     }
 
-    // Storage tier and classified access follow the family OWNER's plan (the
-    // subscription holder), so a relative's contribution keeps the family's tier.
-    const ownerPlan = effectivePlan(family.owner);
+    // Classified access follows the family OWNER's plan (the subscription holder).
     const canClassify = ownerPlan === 'premium' && isOwner;
 
     const memory = await prisma.memory.create({
@@ -458,8 +483,8 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
         fileUrl,
         thumbnailUrl,
         fileType,
-        size: req.file.size ?? null,
-        originalQuality: ['plus', 'premium'].includes(ownerPlan),
+        size: uploadBuffer.length, // bytes actually stored (compressed for free-plan photos)
+        originalQuality: isPaid,
         capturedAt,
         isClassified: canClassify && isClassified === 'true',
         caption: caption || null,
