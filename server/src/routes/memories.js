@@ -378,6 +378,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
         fileUrl,
         thumbnailUrl,
         fileType,
+        size: req.file.size ?? null,
         originalQuality: ['plus', 'premium'].includes(ownerPlan),
         capturedAt,
         isClassified: canClassify && isClassified === 'true',

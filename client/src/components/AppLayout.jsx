@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
 import { useAuth } from '../context/AuthContext';
+import UsageMeter from './UsageMeter';
 
 const navSections = [
   {
@@ -139,6 +140,9 @@ export default function AppLayout() {
             </div>
           ))}
         </nav>
+
+        {/* Storage usage vs plan */}
+        <UsageMeter />
 
         {/* User — Clerk UserButton handles profile, password, MFA, connected accounts & sign-out */}
         <div className="px-4 py-4 border-t border-gray-100">

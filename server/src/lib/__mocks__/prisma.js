@@ -37,6 +37,7 @@ const prisma = {
     update: jest.fn(),
     delete: jest.fn(),
     count: jest.fn(),
+    aggregate: jest.fn(),
   },
   contactMessage: {
     create: jest.fn(),

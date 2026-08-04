@@ -2,8 +2,13 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
+const { effectivePlan } = require('../lib/plan');
 
 const router = express.Router();
+
+// Video storage limits by (effective) plan, in bytes. null = unlimited.
+const GB = 1024 * 1024 * 1024;
+const VIDEO_LIMIT = { free: 20 * GB, plus: 200 * GB, premium: null };
 
 // GET /api/families — list families for current user
 router.get('/', authenticate, async (req, res) => {
@@ -124,6 +129,40 @@ router.patch('/:id/settings', authenticate, async (req, res) => {
 
     const updated = await prisma.family.update({ where: { id: req.params.id }, data, include: { children: true } });
     res.json({ family: updated });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/families/:id/usage — storage usage vs the plan's video limit.
+router.get('/:id/usage', authenticate, async (req, res) => {
+  try {
+    const family = await prisma.family.findUnique({
+      where: { id: req.params.id },
+      include: { members: true, owner: { select: { plan: true, planBoostUntil: true } } },
+    });
+    if (!family) return res.status(404).json({ error: 'Family not found' });
+
+    const isMember = family.ownerId === req.user.id || family.members.some((m) => m.userId === req.user.id);
+    if (!isMember) return res.status(403).json({ error: 'Access denied' });
+
+    const plan = effectivePlan(family.owner);
+    const [videoAgg, videoCount, photoCount, totalAgg] = await Promise.all([
+      prisma.memory.aggregate({ where: { familyId: family.id, fileType: 'video' }, _sum: { size: true } }),
+      prisma.memory.count({ where: { familyId: family.id, fileType: 'video' } }),
+      prisma.memory.count({ where: { familyId: family.id, fileType: 'photo' } }),
+      prisma.memory.aggregate({ where: { familyId: family.id }, _sum: { size: true } }),
+    ]);
+
+    res.json({
+      plan,
+      usedVideoBytes: videoAgg._sum.size || 0,
+      videoLimitBytes: VIDEO_LIMIT[plan] ?? null,
+      usedTotalBytes: totalAgg._sum.size || 0,
+      videoCount,
+      photoCount,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

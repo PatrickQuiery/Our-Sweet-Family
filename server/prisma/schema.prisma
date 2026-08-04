@@ -125,6 +125,7 @@ model Memory {
   thumbnailUrl    String?
   fileType        FileType
   originalQuality Boolean  @default(false)
+  size            Int?     // bytes of the stored file (for plan usage metering)
   capturedAt      DateTime
   isClassified    Boolean  @default(false)
   caption         String?

@@ -141,6 +141,40 @@ describe('PUT /api/families/:id', () => {
   });
 });
 
+describe('GET /api/families/:id/usage', () => {
+  const familyWithOwner = { ...mockFamily, owner: { plan: 'free', planBoostUntil: null }, members: [] };
+
+  it('reports video usage against the plan limit for a member', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.family.findUnique.mockResolvedValue(familyWithOwner);
+    prisma.memory.aggregate
+      .mockResolvedValueOnce({ _sum: { size: 5 * 1024 * 1024 * 1024 } }) // video bytes
+      .mockResolvedValueOnce({ _sum: { size: 6 * 1024 * 1024 * 1024 } }); // total bytes
+    prisma.memory.count.mockResolvedValueOnce(3).mockResolvedValueOnce(40); // videoCount, photoCount
+
+    const res = await request(app)
+      .get('/api/families/family1/usage')
+      .set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(200);
+    expect(res.body.plan).toBe('free');
+    expect(res.body.usedVideoBytes).toBe(5 * 1024 * 1024 * 1024);
+    expect(res.body.videoLimitBytes).toBe(20 * 1024 * 1024 * 1024);
+    expect(res.body.photoCount).toBe(40);
+  });
+
+  it('returns 403 for a non-member', async () => {
+    prisma.user.findUnique.mockResolvedValue(otherUser);
+    prisma.family.findUnique.mockResolvedValue(familyWithOwner);
+
+    const res = await request(app)
+      .get('/api/families/family1/usage')
+      .set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(403);
+  });
+});
+
 describe('PATCH /api/families/:id/settings', () => {
   it('lets the owner toggle showPhotoLocation', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
