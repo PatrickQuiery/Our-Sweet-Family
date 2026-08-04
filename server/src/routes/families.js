@@ -110,4 +110,24 @@ router.put(
   }
 );
 
+// PATCH /api/families/:id/settings — owner-only family settings.
+// Currently: showPhotoLocation (opt-in to display photo GPS, owner-only).
+router.patch('/:id/settings', authenticate, async (req, res) => {
+  try {
+    const family = await prisma.family.findUnique({ where: { id: req.params.id } });
+    if (!family) return res.status(404).json({ error: 'Family not found' });
+    if (family.ownerId !== req.user.id) return res.status(403).json({ error: 'Only owner can update' });
+
+    const data = {};
+    if (typeof req.body.showPhotoLocation === 'boolean') data.showPhotoLocation = req.body.showPhotoLocation;
+    if (Object.keys(data).length === 0) return res.status(400).json({ error: 'Nothing to update' });
+
+    const updated = await prisma.family.update({ where: { id: req.params.id }, data, include: { children: true } });
+    res.json({ family: updated });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

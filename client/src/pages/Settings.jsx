@@ -1,6 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { UserProfile } from '@clerk/clerk-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../lib/api';
+
+const LOCATION_CONFIRM =
+  "Turn on photo location?\n\n" +
+  "Your photos already contain the GPS location where they were taken. This setting only controls whether that location is SHOWN in the app.\n\n" +
+  "• When ON, you (the family owner) will see where each photo was taken on its detail page.\n" +
+  "• It is never shown to invited loved ones.\n\n" +
+  "Heads up: a photo's location can reveal sensitive places like your home or your child's school. Only turn this on if you're comfortable seeing that.\n\n" +
+  "Enable photo location?";
 
 const PLAN_DETAILS = {
   free: {
@@ -24,8 +33,26 @@ const PLAN_DETAILS = {
 };
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, family, refreshFamily } = useAuth();
   const plan = PLAN_DETAILS[user?.plan] || PLAN_DETAILS.free;
+  const isOwner = user?.role === 'owner';
+  const locationOn = !!family?.showPhotoLocation;
+  const [savingLoc, setSavingLoc] = useState(false);
+
+  const toggleLocation = async () => {
+    const next = !locationOn;
+    // Only confirm when turning it ON (enabling a sensitive display).
+    if (next && !window.confirm(LOCATION_CONFIRM)) return;
+    setSavingLoc(true);
+    try {
+      await api.patch(`/families/${family.id}/settings`, { showPhotoLocation: next });
+      await refreshFamily();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Could not update the setting');
+    } finally {
+      setSavingLoc(false);
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -54,6 +81,38 @@ export default function Settings() {
           </div>
         )}
       </div>
+
+      {/* Privacy — photo location (owner only) */}
+      {isOwner && (
+        <div className="card p-6">
+          <h2 className="font-bold text-gray-900 mb-4">Privacy</h2>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-medium text-gray-900">Show photo location</p>
+              <p className="text-sm text-gray-500 mt-1 max-w-md">
+                Show where each photo was taken (from its GPS metadata) on the photo's page — visible
+                to you only, never to invited loved ones. Off by default.
+              </p>
+              <p className="text-xs text-gray-400 mt-1.5">
+                Location is always saved with your photos; this only controls whether it's shown.
+              </p>
+            </div>
+            <button
+              onClick={toggleLocation}
+              disabled={savingLoc}
+              role="switch"
+              aria-checked={locationOn}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                locationOn ? 'bg-brand-500' : 'bg-gray-300'
+              }`}
+            >
+              <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform mt-0.5 ${
+                locationOn ? 'translate-x-5' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Account — Clerk manages profile, email, password, 2FA and connected social accounts */}
       <div>

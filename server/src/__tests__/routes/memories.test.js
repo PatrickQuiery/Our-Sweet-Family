@@ -203,9 +203,13 @@ describe('GET /api/memories/:id', () => {
     expect(res.body.memory.id).toBe('mem1');
   });
 
-  it('exposes photo location to the family owner', async () => {
+  it('exposes photo location to the owner when the family setting is ON', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
-    prisma.memory.findUnique.mockResolvedValue({ ...memoryWithFamily, latitude: 40.1785, longitude: -73.9442 });
+    prisma.memory.findUnique.mockResolvedValue({
+      ...memoryWithFamily,
+      family: { ...mockFamily, showPhotoLocation: true },
+      latitude: 40.1785, longitude: -73.9442,
+    });
 
     const res = await request(app)
       .get('/api/memories/mem1')
@@ -216,9 +220,30 @@ describe('GET /api/memories/:id', () => {
     expect(res.body.memory.longitude).toBe(-73.9442);
   });
 
-  it('hides photo location from an invited member (non-owner)', async () => {
+  it('hides photo location from the owner when the family setting is OFF (default)', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue({
+      ...memoryWithFamily,
+      family: { ...mockFamily, showPhotoLocation: false },
+      latitude: 40.1785, longitude: -73.9442,
+    });
+
+    const res = await request(app)
+      .get('/api/memories/mem1')
+      .set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(200);
+    expect(res.body.memory.latitude).toBeUndefined();
+    expect(res.body.memory.longitude).toBeUndefined();
+  });
+
+  it('hides photo location from an invited member even when the setting is ON', async () => {
     prisma.user.findUnique.mockResolvedValue(memberUser);
-    prisma.memory.findUnique.mockResolvedValue({ ...memoryWithFamily, latitude: 40.1785, longitude: -73.9442 });
+    prisma.memory.findUnique.mockResolvedValue({
+      ...memoryWithFamily,
+      family: { ...mockFamily, showPhotoLocation: true },
+      latitude: 40.1785, longitude: -73.9442,
+    });
 
     const res = await request(app)
       .get('/api/memories/mem1')

@@ -244,8 +244,11 @@ router.get('/:id', authenticate, async (req, res) => {
     }).filter(Boolean);
 
     const shaped = mediaRefs({ ...memory, childIds, ageLabels });
-    // Location is owner-only: never reveal a photo's GPS to invited members.
-    if (!isOwner) {
+    // Location is owner-only AND gated behind the family's opt-in setting. GPS is
+    // always captured/stored; it's only ever shown when the owner has turned the
+    // feature on — and even then, only to the owner.
+    const showLocation = isOwner && memory.family.showPhotoLocation;
+    if (!showLocation) {
       delete shaped.latitude;
       delete shaped.longitude;
     }

@@ -77,6 +77,10 @@ model Family {
   id        String   @id @default(uuid())
   name      String
   ownerId   String
+  // Owner opt-in to SHOW photo location in the app. GPS is always captured and
+  // stored (see Memory.latitude/longitude); this only controls visibility, and
+  // even when on, location is shown to the owner only.
+  showPhotoLocation Boolean @default(false)
   createdAt DateTime @default(now())
 
   owner       User           @relation("FamilyOwner", fields: [ownerId], references: [id])

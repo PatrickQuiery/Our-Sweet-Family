@@ -140,3 +140,35 @@ describe('PUT /api/families/:id', () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe('PATCH /api/families/:id/settings', () => {
+  it('lets the owner toggle showPhotoLocation', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.family.findUnique.mockResolvedValue(mockFamily);
+    prisma.family.update.mockResolvedValue({ ...mockFamily, showPhotoLocation: true });
+
+    const res = await request(app)
+      .patch('/api/families/family1/settings')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ showPhotoLocation: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.family.showPhotoLocation).toBe(true);
+    expect(prisma.family.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ showPhotoLocation: true }) })
+    );
+  });
+
+  it('returns 403 when a non-owner tries to change settings', async () => {
+    prisma.user.findUnique.mockResolvedValue(otherUser);
+    prisma.family.findUnique.mockResolvedValue(mockFamily);
+
+    const res = await request(app)
+      .patch('/api/families/family1/settings')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ showPhotoLocation: true });
+
+    expect(res.status).toBe(403);
+    expect(prisma.family.update).not.toHaveBeenCalled();
+  });
+});
