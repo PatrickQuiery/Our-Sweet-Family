@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { clerkMiddleware } = require('@clerk/express');
+const { isMediaStreamPath } = require('./lib/rateLimitPaths');
 
 const authRoutes = require('./routes/auth');
 const familyRoutes = require('./routes/families');
@@ -78,6 +79,10 @@ if (!isTest) {
     max: 1000,
     standardHeaders: true,
     legacyHeaders: false,
+    // Read-only media streaming (image/video feed) makes many requests per view;
+    // exempt it so loading a feed doesn't self-exhaust the budget. Mutations and
+    // JSON endpoints stay limited.
+    skip: (req) => isMediaStreamPath(req.path),
   });
   app.use('/api/auth', authLimiter);
   app.use('/api/contact', contactLimiter);
