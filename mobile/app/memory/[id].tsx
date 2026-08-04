@@ -16,9 +16,21 @@ export default function MemoryDetail() {
   const { getToken } = useAuth();
   const [memory, setMemory] = useState<Memory | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.get<{ memory: Memory }>(`/memories/${id}`).then((d) => setMemory(d.memory));
+    let active = true;
+    api
+      .get<{ memory: Memory }>(`/memories/${id}`)
+      .then((d) => {
+        if (active) setMemory(d.memory);
+      })
+      .catch((e: any) => {
+        if (active) setError(e?.message ?? 'Failed to load');
+      });
+    return () => {
+      active = false;
+    };
   }, [id]);
   useEffect(() => {
     getToken().then(setToken);
@@ -36,6 +48,13 @@ export default function MemoryDetail() {
     if (videoSource && player) player.replace(videoSource);
   }, [player, videoSource?.uri, token]);
 
+  if (error) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <Text style={{ color: '#888', textAlign: 'center' }}>Couldn't load: {error}</Text>
+      </View>
+    );
+  }
   if (!memory) {
     return (
       <View style={{ flex: 1, justifyContent: 'center' }}>
