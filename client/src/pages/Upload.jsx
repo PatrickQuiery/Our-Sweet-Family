@@ -10,9 +10,8 @@ function formatFileSize(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function FilePreview({ file, onRemove }) {
+function Thumb({ file }) {
   const [preview, setPreview] = useState(null);
-
   useEffect(() => {
     if (file.type.startsWith('image/')) {
       const url = URL.createObjectURL(file);
@@ -20,42 +19,39 @@ function FilePreview({ file, onRemove }) {
       return () => URL.revokeObjectURL(url);
     }
   }, [file]);
-
   return (
-    <div className="relative group bg-gray-100 rounded-xl overflow-hidden aspect-square">
+    <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
       {preview ? (
-        <img src={preview} alt={file.name} className="w-full h-full object-cover" />
+        <img src={preview} alt="" className="w-full h-full object-cover" />
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
-          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.876V15.5a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          <p className="text-xs text-gray-500 text-center truncate w-full px-2">{file.name}</p>
-          <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
-        </div>
+        <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.876V15.5a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
       )}
-      <button
-        onClick={() => onRemove(file)}
-        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-      >
-        ×
-      </button>
     </div>
   );
 }
 
+const chip = (active) =>
+  `px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+    active ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-300 text-gray-600 hover:border-brand-300'
+  }`;
+
+let _seq = 0;
+const nextId = () => `f${_seq++}_${Math.round(performance.now())}`;
+
 export default function Upload() {
   const { user, family } = useAuth();
   const navigate = useNavigate();
-  const [files, setFiles] = useState([]);
+  const [items, setItems] = useState([]); // { id, file }
   const [children, setChildren] = useState([]);
-  const [selectedChildren, setSelectedChildren] = useState([]);
+  const [tags, setTags] = useState({}); // id -> [childId]
   const [caption, setCaption] = useState('');
   const [isClassified, setIsClassified] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState({});
-  const [errors, setErrors] = useState({});
-  const [done, setDone] = useState([]);
+  const [progress, setProgress] = useState({}); // id -> pct
+  const [errors, setErrors] = useState({}); // id -> message
+  const [done, setDone] = useState([]); // ids
 
   useEffect(() => {
     if (!family) return;
@@ -63,7 +59,7 @@ export default function Upload() {
   }, [family]);
 
   const onDrop = useCallback((accepted) => {
-    setFiles((prev) => [...prev, ...accepted]);
+    setItems((prev) => [...prev, ...accepted.map((file) => ({ id: nextId(), file }))]);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -75,55 +71,67 @@ export default function Upload() {
     multiple: true,
   });
 
-  const removeFile = (file) => setFiles((prev) => prev.filter((f) => f !== file));
+  const removeItem = (id) => {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    setTags((prev) => {
+      const n = { ...prev };
+      delete n[id];
+      return n;
+    });
+  };
 
-  const toggleChild = (childId) => {
-    setSelectedChildren((prev) =>
-      prev.includes(childId) ? prev.filter((c) => c !== childId) : [...prev, childId]
-    );
+  const toggleTag = (id, childId) => {
+    setTags((prev) => {
+      const cur = prev[id] || [];
+      return { ...prev, [id]: cur.includes(childId) ? cur.filter((c) => c !== childId) : [...cur, childId] };
+    });
+  };
+
+  // "Tag all": add the child to every file if not all have it, otherwise clear it from all.
+  const allHave = (childId) => items.length > 0 && items.every((i) => (tags[i.id] || []).includes(childId));
+  const applyToAll = (childId) => {
+    const add = !allHave(childId);
+    setTags((prev) => {
+      const n = { ...prev };
+      for (const i of items) {
+        const cur = n[i.id] || [];
+        if (add) n[i.id] = cur.includes(childId) ? cur : [...cur, childId];
+        else n[i.id] = cur.filter((c) => c !== childId);
+      }
+      return n;
+    });
   };
 
   const handleUpload = async () => {
-    if (files.length === 0) return;
+    if (items.length === 0) return;
     setUploading(true);
     setErrors({});
-    const results = [];
+    const okIds = [];
 
-    for (const file of files) {
+    for (const { id, file } of items) {
+      if (done.includes(id)) continue;
       const formData = new FormData();
       formData.append('file', file);
       formData.append('familyId', family.id);
-      if (selectedChildren.length > 0) {
-        formData.append('childIds', JSON.stringify(selectedChildren));
-      }
+      const childIds = tags[id] || [];
+      if (childIds.length > 0) formData.append('childIds', JSON.stringify(childIds));
       if (caption) formData.append('caption', caption);
       if (isClassified) formData.append('isClassified', 'true');
 
       try {
-        setUploadProgress((p) => ({ ...p, [file.name]: 0 }));
-        // Let the browser set Content-Type itself so the multipart boundary is
-        // included — hardcoding 'multipart/form-data' omits the boundary, and the
-        // server then silently drops every field (childIds, caption, familyId).
+        setProgress((p) => ({ ...p, [id]: 0 }));
         await api.post('/memories', formData, {
-          onUploadProgress: (e) => {
-            const pct = Math.round((e.loaded * 100) / e.total);
-            setUploadProgress((p) => ({ ...p, [file.name]: pct }));
-          },
+          onUploadProgress: (e) => setProgress((p) => ({ ...p, [id]: Math.round((e.loaded * 100) / e.total) })),
         });
-        results.push(file.name);
-        setDone((prev) => [...prev, file.name]);
+        okIds.push(id);
+        setDone((prev) => [...prev, id]);
       } catch (err) {
-        setErrors((prev) => ({
-          ...prev,
-          [file.name]: err.response?.data?.error || 'Upload failed',
-        }));
+        setErrors((prev) => ({ ...prev, [id]: err.response?.data?.error || 'Upload failed' }));
       }
     }
 
     setUploading(false);
-    if (results.length > 0) {
-      setTimeout(() => navigate('/dashboard'), 1500);
-    }
+    if (okIds.length > 0) setTimeout(() => navigate('/dashboard'), 1500);
   };
 
   if (!family) {
@@ -134,7 +142,7 @@ export default function Upload() {
     );
   }
 
-  const allDone = files.length > 0 && files.every((f) => done.includes(f.name));
+  const allDone = items.length > 0 && items.every((i) => done.includes(i.id));
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -160,103 +168,108 @@ export default function Upload() {
         )}
       </div>
 
-      {/* File previews */}
-      {files.length > 0 && (
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-6">
-          {files.map((file) => (
-            <div key={file.name} className="relative">
-              <FilePreview file={file} onRemove={removeFile} />
-              {uploadProgress[file.name] !== undefined && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 rounded-b-xl overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-300 ${done.includes(file.name) ? 'bg-green-500' : 'bg-brand-500'}`}
-                    style={{ width: `${uploadProgress[file.name]}%` }}
-                  />
-                </div>
-              )}
-              {errors[file.name] && (
-                <div className="absolute inset-0 bg-red-500/70 rounded-xl flex items-center justify-center p-1">
-                  <p className="text-white text-xs text-center">{errors[file.name]}</p>
-                </div>
-              )}
-              {done.includes(file.name) && (
-                <div className="absolute inset-0 bg-green-500/60 rounded-xl flex items-center justify-center">
-                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {files.length > 0 && (
-        <div className="card p-6 space-y-5">
-          {/* Tag children */}
-          {children.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Tag children (optional)</label>
-              <div className="flex flex-wrap gap-2">
-                {children.map((child) => (
-                  <button
-                    key={child.id}
-                    onClick={() => toggleChild(child.id)}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                      selectedChildren.includes(child.id)
-                        ? 'bg-brand-500 border-brand-500 text-white'
-                        : 'border-gray-300 text-gray-600 hover:border-brand-300'
-                    }`}
-                  >
-                    {child.name}
-                  </button>
-                ))}
-              </div>
+      {items.length > 0 && (
+        <>
+          {/* Tag-all shortcut (when there's more than one file & child) */}
+          {children.length > 0 && items.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="text-sm text-gray-500 mr-1">Tag all:</span>
+              {children.map((c) => (
+                <button key={c.id} type="button" onClick={() => applyToAll(c.id)} className={chip(allHave(c.id))}>
+                  {c.name}
+                </button>
+              ))}
             </div>
           )}
 
-          {/* Caption */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Caption (optional)</label>
-            <input
-              type="text"
-              className="input"
-              placeholder="Add a caption for all selected files..."
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-            />
+          {/* Per-file rows — each file is tagged to its own children */}
+          <div className="space-y-3 mb-6">
+            {items.map(({ id, file }) => (
+              <div key={id} className="card p-3 flex gap-3 items-start">
+                <Thumb file={file} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-gray-800 truncate">{file.name}</p>
+                    {!done.includes(id) && !uploading && (
+                      <button onClick={() => removeItem(id)} className="text-gray-400 hover:text-red-500 text-xs flex-shrink-0">
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
+
+                  {children.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {children.map((c) => {
+                        const on = (tags[id] || []).includes(c.id);
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => toggleTag(id, c.id)}
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                              on ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-300 text-gray-500 hover:border-brand-300'
+                            }`}
+                          >
+                            {c.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 mt-2">Add children on the Children page to tag them.</p>
+                  )}
+
+                  {progress[id] !== undefined && !done.includes(id) && !errors[id] && (
+                    <div className="mt-2 h-1 bg-gray-200 rounded overflow-hidden">
+                      <div className="h-full bg-brand-500 transition-all" style={{ width: `${progress[id]}%` }} />
+                    </div>
+                  )}
+                  {errors[id] && <p className="text-xs text-red-500 mt-1">{errors[id]}</p>}
+                  {done.includes(id) && <p className="text-xs text-green-600 mt-1 font-medium">✓ Uploaded</p>}
+                </div>
+              </div>
+            ))}
           </div>
 
-          {/* Classified (Premium) */}
-          {user?.plan === 'premium' && user?.role === 'owner' && (
-            <div className="flex items-center gap-3">
+          {/* Shared caption + options + upload */}
+          <div className="card p-6 space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Caption (optional)</label>
               <input
-                type="checkbox"
-                id="classified"
-                checked={isClassified}
-                onChange={(e) => setIsClassified(e.target.checked)}
-                className="w-4 h-4 accent-brand-500"
+                type="text"
+                className="input"
+                placeholder="Add a caption for all of these files..."
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
               />
-              <label htmlFor="classified" className="text-sm text-gray-700">
-                <span className="font-medium">Classified</span>
-                <span className="text-gray-500"> — visible to parents only (hides from loved ones)</span>
-              </label>
             </div>
-          )}
 
-          {/* Upload button */}
-          <button
-            onClick={handleUpload}
-            disabled={uploading || allDone}
-            className="btn-primary w-full py-3 text-base"
-          >
-            {allDone
-              ? '✓ All uploaded! Redirecting...'
-              : uploading
-              ? `Uploading ${files.length} file${files.length !== 1 ? 's' : ''}...`
-              : `Upload ${files.length} file${files.length !== 1 ? 's' : ''}`}
-          </button>
-        </div>
+            {user?.plan === 'premium' && user?.role === 'owner' && (
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="classified"
+                  checked={isClassified}
+                  onChange={(e) => setIsClassified(e.target.checked)}
+                  className="w-4 h-4 accent-brand-500"
+                />
+                <label htmlFor="classified" className="text-sm text-gray-700">
+                  <span className="font-medium">Classified</span>
+                  <span className="text-gray-500"> — visible to parents only (hides from loved ones)</span>
+                </label>
+              </div>
+            )}
+
+            <button onClick={handleUpload} disabled={uploading || allDone} className="btn-primary w-full py-3 text-base">
+              {allDone
+                ? '✓ All uploaded! Redirecting...'
+                : uploading
+                ? `Uploading ${items.length} file${items.length !== 1 ? 's' : ''}...`
+                : `Upload ${items.length} file${items.length !== 1 ? 's' : ''}`}
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
