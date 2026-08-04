@@ -221,11 +221,11 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-// Download permission: original files are a paid-plan feature ("export & download
-// originals"), and among invited members only those granted share/download — or a
-// Parent — may download.
-function downloadAllowed({ isParent, membership, plan }) {
-  if (!['plus', 'premium'].includes(plan)) return false;
+// Download permission is a ROLE decision, not a plan one: the Parents (owner /
+// full-access) plus any member granted share/download. Everyone can download —
+// the family's PLAN only decides the quality of the file that's stored/served
+// (compressed for free, original for paid).
+function downloadAllowed({ isParent, membership }) {
   return isParent || (membership && ['share_download', 'all'].includes(membership.permissions));
 }
 
@@ -241,7 +241,7 @@ router.get('/:id', authenticate, async (req, res) => {
           include: { user: { select: { id: true, name: true, avatarUrl: true } } },
           orderBy: { createdAt: 'asc' },
         },
-        family: { include: { members: true, children: true, owner: { select: { plan: true, planBoostUntil: true } } } },
+        family: { include: { members: true, children: true } },
       },
     });
 
@@ -290,12 +290,8 @@ router.get('/:id', authenticate, async (req, res) => {
       delete shaped.locationCity;
       delete shaped.locationState;
     }
-    // Tell the client whether this viewer may download the original.
-    shaped.canDownload = downloadAllowed({
-      isParent: isOwner,
-      membership,
-      plan: effectivePlan(memory.family.owner),
-    });
+    // Tell the client whether this viewer may download the file.
+    shaped.canDownload = downloadAllowed({ isParent: isOwner, membership });
     res.json({ memory: shaped });
   } catch (err) {
     console.error(err);
@@ -344,17 +340,8 @@ router.get('/:id/download', authenticate, async (req, res) => {
     if (access.error) return res.status(access.status).json({ error: access.error });
     const { memory, isOwner, membership } = access;
 
-    const owner = await prisma.user.findUnique({
-      where: { id: memory.family.ownerId },
-      select: { plan: true, planBoostUntil: true },
-    });
-    const plan = effectivePlan(owner);
-    if (!downloadAllowed({ isParent: isOwner, membership, plan })) {
-      return res.status(403).json({
-        error: ['plus', 'premium'].includes(plan)
-          ? 'You do not have permission to download this'
-          : 'Downloading originals requires a Plus or Premium plan',
-      });
+    if (!downloadAllowed({ isParent: isOwner, membership })) {
+      return res.status(403).json({ error: 'You do not have permission to download this' });
     }
 
     const key = memory.fileUrl;
