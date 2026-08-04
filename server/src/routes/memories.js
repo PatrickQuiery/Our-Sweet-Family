@@ -11,7 +11,7 @@ const { mediaRefs } = require('../lib/mediaRef');
 const { effectivePlan } = require('../lib/plan');
 const { reverseGeocode } = require('../lib/geocode');
 const { isParent } = require('../lib/familyAccess');
-const { compressVideoInBackground } = require('../lib/videoCompress');
+const { enqueueTranscode } = require('../lib/transcodeQueue');
 
 const router = express.Router();
 
@@ -491,12 +491,13 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
 
     res.status(201).json({ memory: mediaRefs(memory) });
 
-    // Kick off free-plan video compression AFTER responding (the original video is
-    // already stored and playable; this swaps in a smaller version and reclaims the
-    // original's storage). Fire-and-forget — failures keep the original.
+    // Enqueue free-plan video compression for the transcode worker. Durable
+    // (survives restarts, retried on failure) and off the request path — the
+    // original is already stored and playable; the worker swaps in a smaller
+    // version and reclaims the original's storage.
     if (needsVideoCompression) {
-      compressVideoInBackground(memory.id, req.file.buffer, fileUrl).catch((e) =>
-        console.error('background video compression error:', e.message)
+      enqueueTranscode(memory.id, fileUrl).catch((e) =>
+        console.error('enqueue transcode error:', e.message)
       );
     }
   } catch (err) {

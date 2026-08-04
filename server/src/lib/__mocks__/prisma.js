@@ -67,6 +67,12 @@ const prisma = {
     delete: jest.fn(),
     deleteMany: jest.fn(),
   },
+  transcodeJob: {
+    create: jest.fn(),
+    update: jest.fn(),
+    findUnique: jest.fn(),
+  },
+  $queryRawUnsafe: jest.fn(),
 };
 
 module.exports = prisma;

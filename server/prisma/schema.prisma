@@ -148,6 +148,22 @@ model Memory {
   comments   Comment[]
 }
 
+// Durable video-transcode queue. The API enqueues a job on free-plan video
+// upload; a worker (dedicated process or inline) claims and processes it.
+model TranscodeJob {
+  id         String    @id @default(uuid())
+  memoryId   String
+  sourceKey  String    // storage key of the original to transcode
+  status     String    @default("pending") // pending | processing | done | failed
+  attempts   Int       @default(0)
+  error      String?
+  createdAt  DateTime  @default(now())
+  startedAt  DateTime?
+  finishedAt DateTime?
+
+  @@index([status, createdAt])
+}
+
 model Reaction {
   id        String       @id @default(uuid())
   memoryId  String

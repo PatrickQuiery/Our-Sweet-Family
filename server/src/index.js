@@ -32,4 +32,13 @@ if (!fs.existsSync(thumbnailsDir)) {
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+
+  // Process transcode jobs inline by default so video compression works out of the
+  // box on a single service. For scale, deploy a dedicated worker (`npm run worker`)
+  // and set DISABLE_INLINE_WORKER=true here so only that process transcodes.
+  if (process.env.DISABLE_INLINE_WORKER !== 'true') {
+    require('./lib/transcodeQueue')
+      .runWorkerLoop()
+      .catch((e) => console.error('inline transcode worker error:', e.message));
+  }
 });
