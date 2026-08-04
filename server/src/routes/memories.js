@@ -9,6 +9,7 @@ const { calculateAgeLabel } = require('../lib/ageLabel');
 const { loadAccessibleMemory } = require('../lib/memoryAccess');
 const { mediaRefs } = require('../lib/mediaRef');
 const { effectivePlan } = require('../lib/plan');
+const { reverseGeocode } = require('../lib/geocode');
 
 const router = express.Router();
 
@@ -175,6 +176,8 @@ router.get('/', authenticate, async (req, res) => {
       // single-memory view.
       delete shaped.latitude;
       delete shaped.longitude;
+      delete shaped.locationCity;
+      delete shaped.locationState;
       return shaped;
     });
 
@@ -251,6 +254,8 @@ router.get('/:id', authenticate, async (req, res) => {
     if (!showLocation) {
       delete shaped.latitude;
       delete shaped.longitude;
+      delete shaped.locationCity;
+      delete shaped.locationState;
     }
     res.json({ memory: shaped });
   } catch (err) {
@@ -325,8 +330,11 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
       capturedAt = exifDate ? new Date(exifDate) : new Date();
     }
 
-    // Extract EXIF GPS (photos only). Stored, but only ever shown to the owner.
+    // Extract EXIF GPS (photos only) and reverse-geocode to City/State once, now,
+    // so it's never recomputed on read. Both are stored regardless of the family's
+    // display setting; visibility is enforced at read time.
     const gps = await extractExifGps(req.file.buffer, req.file.mimetype);
+    const place = gps ? await reverseGeocode(gps.latitude, gps.longitude) : null;
 
     // Upload original
     const fileUrl = await uploadFile(
@@ -376,6 +384,8 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
         caption: caption || null,
         latitude: gps?.latitude ?? null,
         longitude: gps?.longitude ?? null,
+        locationCity: place?.city ?? null,
+        locationState: place?.state ?? null,
       },
       include: {
         uploadedBy: { select: { id: true, name: true, avatarUrl: true } },

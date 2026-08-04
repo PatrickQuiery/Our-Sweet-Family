@@ -209,6 +209,7 @@ describe('GET /api/memories/:id', () => {
       ...memoryWithFamily,
       family: { ...mockFamily, showPhotoLocation: true },
       latitude: 40.1785, longitude: -73.9442,
+      locationCity: 'Brooklyn', locationState: 'New York',
     });
 
     const res = await request(app)
@@ -218,6 +219,8 @@ describe('GET /api/memories/:id', () => {
     expect(res.status).toBe(200);
     expect(res.body.memory.latitude).toBe(40.1785);
     expect(res.body.memory.longitude).toBe(-73.9442);
+    expect(res.body.memory.locationCity).toBe('Brooklyn');
+    expect(res.body.memory.locationState).toBe('New York');
   });
 
   it('hides photo location from the owner when the family setting is OFF (default)', async () => {

@@ -133,6 +133,9 @@ model Memory {
   // members, never in the feed or a URL.
   latitude        Float?
   longitude       Float?
+  // Reverse-geocoded once at upload from lat/lng (so it isn't recomputed on load).
+  locationCity    String?
+  locationState   String?
   createdAt       DateTime @default(now())
 
   family     Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)

@@ -186,11 +186,14 @@ export default function MemoryDetail() {
             )}
           </div>
 
-          {/* Photo location — owner-only (the API only sends coordinates to the
-              family owner; invited members never receive them). */}
+          {/* Photo location — parents only (the API only sends it to the family
+              owner, and only when the setting is on; members never receive it). */}
           {memory.latitude != null && memory.longitude != null && (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 mb-4">
-              <span>📍 Taken near {memory.latitude.toFixed(4)}, {memory.longitude.toFixed(4)}</span>
+              <span>
+                📍 {[memory.locationCity, memory.locationState].filter(Boolean).join(', ') ||
+                  `${memory.latitude.toFixed(4)}, ${memory.longitude.toFixed(4)}`}
+              </span>
               <a
                 href={`https://www.openstreetmap.org/?mlat=${memory.latitude}&mlon=${memory.longitude}#map=15/${memory.latitude}/${memory.longitude}`}
                 target="_blank"
@@ -199,7 +202,7 @@ export default function MemoryDetail() {
               >
                 View on map
               </a>
-              <span className="text-xs text-gray-400">· only visible to you</span>
+              <span className="text-xs text-gray-400">· visible to parents only</span>
             </div>
           )}
 
