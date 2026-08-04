@@ -120,6 +120,7 @@ model Memory {
   id              String   @id @default(uuid())
   familyId        String
   childIds        Json     @default("[]")
+  tags            Json     @default("[]") // free-text tags for search/filtering
   uploadedById    String
   fileUrl         String
   thumbnailUrl    String?

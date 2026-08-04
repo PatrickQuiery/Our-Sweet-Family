@@ -176,8 +176,10 @@ describe('GET /api/memories', () => {
       .set('x-clerk-user-id', 'clerk-test');
 
     const findManyArgs = prisma.memory.findMany.mock.calls[0][0];
-    // After fix: should use OR so individual child memories are visible
-    expect(findManyArgs.where.OR).toBeDefined();
+    // Per-child access is an OR (any allowed child) — now nested in the AND array
+    // so it composes with search/childId filters.
+    const orClause = findManyArgs.where.AND?.find((c) => c.OR);
+    expect(orClause).toBeDefined();
     // Should NOT use top-level childIds (requires all children simultaneously)
     expect(findManyArgs.where.childIds).toBeUndefined();
   });
@@ -397,6 +399,22 @@ describe('PATCH /api/memories/:id', () => {
         where: { id: 'mem1' },
         data: expect.objectContaining({ childIds: ['child1', 'child2'], caption: 'Beach day' }),
       })
+    );
+  });
+
+  it('updates free-text tags, normalized (lowercased, trimmed, de-duped)', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue(editableMemory);
+    prisma.memory.update.mockResolvedValue({ ...editableMemory, tags: ['beach', 'summer'], uploadedBy: mockMemory.uploadedBy });
+
+    const res = await request(app)
+      .patch('/api/memories/mem1')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ tags: ['Beach', ' SUMMER ', 'beach'] });
+
+    expect(res.status).toBe(200);
+    expect(prisma.memory.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ tags: ['beach', 'summer'] }) })
     );
   });
 

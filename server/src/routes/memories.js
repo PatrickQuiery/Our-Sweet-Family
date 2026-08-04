@@ -78,7 +78,7 @@ async function generateThumbnail(buffer, mimetype, originalName) {
 
 // GET /api/memories?familyId=&childId=&page=&limit=&type=
 router.get('/', authenticate, async (req, res) => {
-  const { familyId, childId, page = 1, limit = 20, type } = req.query;
+  const { familyId, childId, page = 1, limit = 20, type, search } = req.query;
 
   if (!familyId) return res.status(400).json({ error: 'familyId required' });
 
@@ -97,40 +97,45 @@ router.get('/', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Build filter
+    // Build filter. Everything AND-combines via an `and` array so the per-child
+    // access OR doesn't collide with the search OR.
     const where = { familyId };
+    const and = [];
 
     // Non-owners cannot see classified memories
     if (!isOwner) {
       where.isClassified = false;
     }
 
-    // Per-child access filter for loved ones
+    if (type && ['photo', 'video'].includes(type)) {
+      where.fileType = type;
+    }
+
+    // Per-child access filter for loved ones (OR of allowed children).
+    // NOTE: PostgreSQL Json filtering uses `array_contains` with no `path`.
     if (!isOwner && membership && membership.accessPerChild !== 'all') {
       const allowedChildren = Array.isArray(membership.accessPerChild)
         ? membership.accessPerChild
         : JSON.parse(membership.accessPerChild);
-
-      // Use OR so that memories tagged with ANY allowed child are returned.
-      // Using array_contains with the full array would require ALL allowed children
-      // to appear on every memory, which is far too restrictive.
-      // NOTE: PostgreSQL Json filtering uses `array_contains` with no `path`
-      // (the MySQL `path: '$'` form is rejected by the Postgres connector).
-      where.OR = allowedChildren.map((cid) => ({
-        childIds: { array_contains: [cid] },
-      }));
+      and.push({ OR: allowedChildren.map((cid) => ({ childIds: { array_contains: [cid] } })) });
     }
 
     if (childId) {
-      // JSON array contains childId (Postgres: array_contains, no path)
-      where.AND = [
-        { childIds: { array_contains: [childId] } },
-      ];
+      and.push({ childIds: { array_contains: [childId] } });
     }
 
-    if (type && ['photo', 'video'].includes(type)) {
-      where.fileType = type;
+    // Search: match a caption substring OR an exact tag.
+    if (search && String(search).trim()) {
+      const term = String(search).trim();
+      and.push({
+        OR: [
+          { caption: { contains: term, mode: 'insensitive' } },
+          { tags: { array_contains: [term.toLowerCase()] } },
+        ],
+      });
     }
+
+    if (and.length) where.AND = and;
 
     // Coerce & clamp pagination so bad input can't 500 (NaN skip) or request an
     // unbounded page (limit clamped to 100).
@@ -302,7 +307,7 @@ router.get('/:id/thumb', authenticate, (req, res) => streamMedia(req, res, 'thum
 router.post('/', authenticate, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-  const { familyId, childIds, caption, isClassified, capturedAtOverride } = req.body;
+  const { familyId, childIds, tags, caption, isClassified, capturedAtOverride } = req.body;
   if (!familyId) return res.status(400).json({ error: 'familyId required' });
 
   try {
@@ -366,6 +371,19 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
       }
     }
 
+    // Free-text tags: normalized (trimmed, lowercased), de-duped, capped.
+    let parsedTags = [];
+    if (tags) {
+      try {
+        const raw = Array.isArray(tags) ? tags : JSON.parse(tags);
+        if (Array.isArray(raw)) {
+          parsedTags = [...new Set(raw.map((t) => String(t).trim().toLowerCase().slice(0, 40)).filter(Boolean))].slice(0, 20);
+        }
+      } catch {
+        /* ignore malformed tags — they're optional */
+      }
+    }
+
     // Storage tier and classified access follow the family OWNER's plan (the
     // subscription holder), so a relative's contribution keeps the family's tier.
     const ownerPlan = effectivePlan(family.owner);
@@ -375,6 +393,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
       data: {
         familyId,
         childIds: parsedChildIds,
+        tags: parsedTags,
         uploadedById: req.user.id,
         fileUrl,
         thumbnailUrl,
@@ -459,6 +478,12 @@ router.patch('/:id', authenticate, async (req, res) => {
 
     if (req.body.caption !== undefined) {
       data.caption = req.body.caption || null;
+    }
+
+    if (req.body.tags !== undefined) {
+      const raw = req.body.tags;
+      if (!Array.isArray(raw)) return res.status(400).json({ error: 'tags must be an array' });
+      data.tags = [...new Set(raw.map((t) => String(t).trim().toLowerCase().slice(0, 40)).filter(Boolean))].slice(0, 20);
     }
 
     if (Object.keys(data).length === 0) {

@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 import { AuthedImage, AuthedVideo } from '../components/AuthedMedia';
+import TagInput from '../components/TagInput';
 
 export default function MemoryDetail() {
   const { id } = useParams();
@@ -19,6 +20,7 @@ export default function MemoryDetail() {
   const [editing, setEditing] = useState(false);
   const [editChildIds, setEditChildIds] = useState([]);
   const [editCaption, setEditCaption] = useState('');
+  const [editTags, setEditTags] = useState([]);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editErr, setEditErr] = useState('');
 
@@ -48,6 +50,7 @@ export default function MemoryDetail() {
     setEditErr('');
     setEditChildIds(memory.childIds || (memory.ageLabels || []).map((a) => a.childId));
     setEditCaption(memory.caption || '');
+    setEditTags(memory.tags || []);
     setEditing(true);
   };
 
@@ -62,6 +65,7 @@ export default function MemoryDetail() {
       const { data } = await api.patch(`/memories/${id}`, {
         childIds: editChildIds,
         caption: editCaption,
+        tags: editTags,
       });
       setMemory((m) => ({ ...m, ...data.memory }));
       setEditing(false);
@@ -220,6 +224,13 @@ export default function MemoryDetail() {
                   ))}
                 </div>
               )}
+              {memory.tags?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {memory.tags.map((t) => (
+                    <span key={t} className="bg-gray-100 text-gray-600 rounded-full px-2.5 py-0.5 text-xs">#{t}</span>
+                  ))}
+                </div>
+              )}
               {canEdit && (
                 <button
                   onClick={startEdit}
@@ -271,6 +282,10 @@ export default function MemoryDetail() {
                   value={editCaption}
                   onChange={(e) => setEditCaption(e.target.value)}
                 />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Tags</label>
+                <TagInput value={editTags} onChange={setEditTags} />
               </div>
               <div className="flex gap-2">
                 <button onClick={handleSaveEdit} disabled={savingEdit} className="btn-primary">

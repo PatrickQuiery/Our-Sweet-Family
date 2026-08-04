@@ -14,7 +14,14 @@ export default function Dashboard() {
   const [pagination, setPagination] = useState(null);
   const [selectedChild, setSelectedChild] = useState('');
   const [selectedType, setSelectedType] = useState('');
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const fetchChildren = useCallback(async () => {
     if (!family) return;
@@ -39,6 +46,7 @@ export default function Dashboard() {
       });
       if (selectedChild) params.set('childId', selectedChild);
       if (selectedType) params.set('type', selectedType);
+      if (debouncedSearch) params.set('search', debouncedSearch);
 
       const { data } = await api.get(`/memories?${params}`);
       if (reset || currentPage === 1) {
@@ -53,7 +61,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [family, page, selectedChild, selectedType]);
+  }, [family, page, selectedChild, selectedType, debouncedSearch]);
 
   useEffect(() => {
     fetchChildren();
@@ -61,7 +69,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchMemories(true);
-  }, [family, selectedChild, selectedType]);
+  }, [family, selectedChild, selectedType, debouncedSearch]);
 
   const loadMore = () => {
     const nextPage = page + 1;
@@ -100,6 +108,23 @@ export default function Dashboard() {
           </svg>
           Upload memory
         </Link>
+      </div>
+
+      {/* Search */}
+      <div className="relative mb-4">
+        <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search captions and #tags…"
+          className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-brand-300"
+        />
+        {search && (
+          <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
+        )}
       </div>
 
       {/* Filters */}

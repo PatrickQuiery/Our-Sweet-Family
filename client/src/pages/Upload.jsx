@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
+import TagInput from '../components/TagInput';
 
 function formatFileSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -20,11 +21,11 @@ function Thumb({ file }) {
     }
   }, [file]);
   return (
-    <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
+    <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
       {preview ? (
         <img src={preview} alt="" className="w-full h-full object-cover" />
       ) : (
-        <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.876V15.5a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
         </svg>
       )}
@@ -32,26 +33,22 @@ function Thumb({ file }) {
   );
 }
 
-const chip = (active) =>
-  `px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
-    active ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-300 text-gray-600 hover:border-brand-300'
-  }`;
-
 let _seq = 0;
 const nextId = () => `f${_seq++}_${Math.round(performance.now())}`;
 
 export default function Upload() {
   const { user, family } = useAuth();
   const navigate = useNavigate();
-  const [items, setItems] = useState([]); // { id, file }
+  const [items, setItems] = useState([]);        // { id, file }
   const [children, setChildren] = useState([]);
-  const [tags, setTags] = useState({}); // id -> [childId]
-  const [caption, setCaption] = useState('');
+  const [childSel, setChildSel] = useState({});  // id -> [childId]
+  const [captions, setCaptions] = useState({});  // id -> string
+  const [tagSel, setTagSel] = useState({});      // id -> [tag]
   const [isClassified, setIsClassified] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState({}); // id -> pct
-  const [errors, setErrors] = useState({}); // id -> message
-  const [done, setDone] = useState([]); // ids
+  const [progress, setProgress] = useState({});
+  const [errors, setErrors] = useState({});
+  const [done, setDone] = useState([]);
 
   useEffect(() => {
     if (!family) return;
@@ -73,30 +70,26 @@ export default function Upload() {
 
   const removeItem = (id) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
-    setTags((prev) => {
-      const n = { ...prev };
-      delete n[id];
-      return n;
-    });
+    setChildSel((p) => { const n = { ...p }; delete n[id]; return n; });
+    setTagSel((p) => { const n = { ...p }; delete n[id]; return n; });
+    setCaptions((p) => { const n = { ...p }; delete n[id]; return n; });
   };
 
-  const toggleTag = (id, childId) => {
-    setTags((prev) => {
+  const toggleChild = (id, childId) => {
+    setChildSel((prev) => {
       const cur = prev[id] || [];
       return { ...prev, [id]: cur.includes(childId) ? cur.filter((c) => c !== childId) : [...cur, childId] };
     });
   };
 
-  // "Tag all": add the child to every file if not all have it, otherwise clear it from all.
-  const allHave = (childId) => items.length > 0 && items.every((i) => (tags[i.id] || []).includes(childId));
+  const allHave = (childId) => items.length > 0 && items.every((i) => (childSel[i.id] || []).includes(childId));
   const applyToAll = (childId) => {
     const add = !allHave(childId);
-    setTags((prev) => {
+    setChildSel((prev) => {
       const n = { ...prev };
       for (const i of items) {
         const cur = n[i.id] || [];
-        if (add) n[i.id] = cur.includes(childId) ? cur : [...cur, childId];
-        else n[i.id] = cur.filter((c) => c !== childId);
+        n[i.id] = add ? (cur.includes(childId) ? cur : [...cur, childId]) : cur.filter((c) => c !== childId);
       }
       return n;
     });
@@ -110,17 +103,20 @@ export default function Upload() {
 
     for (const { id, file } of items) {
       if (done.includes(id)) continue;
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('familyId', family.id);
-      const childIds = tags[id] || [];
-      if (childIds.length > 0) formData.append('childIds', JSON.stringify(childIds));
-      if (caption) formData.append('caption', caption);
-      if (isClassified) formData.append('isClassified', 'true');
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('familyId', family.id);
+      const cids = childSel[id] || [];
+      if (cids.length) fd.append('childIds', JSON.stringify(cids));
+      const cap = (captions[id] || '').trim();
+      if (cap) fd.append('caption', cap);
+      const tgs = tagSel[id] || [];
+      if (tgs.length) fd.append('tags', JSON.stringify(tgs));
+      if (isClassified) fd.append('isClassified', 'true');
 
       try {
         setProgress((p) => ({ ...p, [id]: 0 }));
-        await api.post('/memories', formData, {
+        await api.post('/memories', fd, {
           onUploadProgress: (e) => setProgress((p) => ({ ...p, [id]: Math.round((e.loaded * 100) / e.total) })),
         });
         okIds.push(id);
@@ -135,11 +131,7 @@ export default function Upload() {
   };
 
   if (!family) {
-    return (
-      <div className="text-center py-20">
-        <p className="text-gray-500">Please set up your family first.</p>
-      </div>
-    );
+    return <div className="text-center py-20"><p className="text-gray-500">Please set up your family first.</p></div>;
   }
 
   const allDone = items.length > 0 && items.every((i) => done.includes(i.id));
@@ -148,7 +140,6 @@ export default function Upload() {
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Upload memories</h1>
 
-      {/* Dropzone */}
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-colors mb-6 ${
@@ -170,43 +161,45 @@ export default function Upload() {
 
       {items.length > 0 && (
         <>
-          {/* Tag-all shortcut (when there's more than one file & child) */}
           {children.length > 0 && items.length > 1 && (
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="text-sm text-gray-500 mr-1">Tag all:</span>
+              <span className="text-sm text-gray-500 mr-1">Tag all children:</span>
               {children.map((c) => (
-                <button key={c.id} type="button" onClick={() => applyToAll(c.id)} className={chip(allHave(c.id))}>
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => applyToAll(c.id)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                    allHave(c.id) ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-300 text-gray-600 hover:border-brand-300'
+                  }`}
+                >
                   {c.name}
                 </button>
               ))}
             </div>
           )}
 
-          {/* Per-file rows — each file is tagged to its own children */}
           <div className="space-y-3 mb-6">
             {items.map(({ id, file }) => (
               <div key={id} className="card p-3 flex gap-3 items-start">
                 <Thumb file={file} />
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-medium text-gray-800 truncate">{file.name}</p>
                     {!done.includes(id) && !uploading && (
-                      <button onClick={() => removeItem(id)} className="text-gray-400 hover:text-red-500 text-xs flex-shrink-0">
-                        Remove
-                      </button>
+                      <button onClick={() => removeItem(id)} className="text-gray-400 hover:text-red-500 text-xs flex-shrink-0">Remove</button>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
 
-                  {children.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
+                  {children.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
                       {children.map((c) => {
-                        const on = (tags[id] || []).includes(c.id);
+                        const on = (childSel[id] || []).includes(c.id);
                         return (
                           <button
                             key={c.id}
                             type="button"
-                            onClick={() => toggleTag(id, c.id)}
+                            onClick={() => toggleChild(id, c.id)}
                             className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                               on ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-300 text-gray-500 hover:border-brand-300'
                             }`}
@@ -216,44 +209,34 @@ export default function Upload() {
                         );
                       })}
                     </div>
-                  ) : (
-                    <p className="text-xs text-gray-400 mt-2">Add children on the Children page to tag them.</p>
                   )}
 
+                  <input
+                    type="text"
+                    value={captions[id] || ''}
+                    onChange={(e) => setCaptions((p) => ({ ...p, [id]: e.target.value }))}
+                    placeholder="Caption for this file…"
+                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-brand-300"
+                  />
+
+                  <TagInput value={tagSel[id] || []} onChange={(t) => setTagSel((p) => ({ ...p, [id]: t }))} />
+
                   {progress[id] !== undefined && !done.includes(id) && !errors[id] && (
-                    <div className="mt-2 h-1 bg-gray-200 rounded overflow-hidden">
+                    <div className="h-1 bg-gray-200 rounded overflow-hidden">
                       <div className="h-full bg-brand-500 transition-all" style={{ width: `${progress[id]}%` }} />
                     </div>
                   )}
-                  {errors[id] && <p className="text-xs text-red-500 mt-1">{errors[id]}</p>}
-                  {done.includes(id) && <p className="text-xs text-green-600 mt-1 font-medium">✓ Uploaded</p>}
+                  {errors[id] && <p className="text-xs text-red-500">{errors[id]}</p>}
+                  {done.includes(id) && <p className="text-xs text-green-600 font-medium">✓ Uploaded</p>}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Shared caption + options + upload */}
           <div className="card p-6 space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Caption (optional)</label>
-              <input
-                type="text"
-                className="input"
-                placeholder="Add a caption for all of these files..."
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-              />
-            </div>
-
             {user?.plan === 'premium' && user?.role === 'owner' && (
               <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="classified"
-                  checked={isClassified}
-                  onChange={(e) => setIsClassified(e.target.checked)}
-                  className="w-4 h-4 accent-brand-500"
-                />
+                <input type="checkbox" id="classified" checked={isClassified} onChange={(e) => setIsClassified(e.target.checked)} className="w-4 h-4 accent-brand-500" />
                 <label htmlFor="classified" className="text-sm text-gray-700">
                   <span className="font-medium">Classified</span>
                   <span className="text-gray-500"> — visible to parents only (hides from loved ones)</span>
