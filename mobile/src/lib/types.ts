@@ -65,6 +65,21 @@ export interface FamilyUsage {
   photoCount: number;
 }
 
+export interface Reaction {
+  id: string;
+  type: string;
+  userId: string;
+  user?: { id: string; name?: string | null } | null;
+}
+
+export interface Comment {
+  id: string;
+  text: string;
+  createdAt: string;
+  userId: string;
+  user?: { id: string; name?: string | null; avatarUrl?: string | null } | null;
+}
+
 export interface Memory {
   id: string;
   fileType: 'photo' | 'video';
@@ -77,6 +92,10 @@ export interface Memory {
   locationState?: string | null;
   processing?: boolean;
   createdAt: string;
+  // Present on the detail endpoint (GET /memories/:id):
+  reactions?: Reaction[];
+  comments?: Comment[];
+  uploadedBy?: { id: string; name?: string | null; avatarUrl?: string | null } | null;
 }
 
 export interface Milestone {

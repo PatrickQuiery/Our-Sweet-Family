@@ -1,6 +1,32 @@
 import { ApiError, type Api } from './api';
 import { API_ROOT } from './config';
-import type { Memory } from './types';
+import type { Comment, Memory } from './types';
+
+export async function getMemory(api: Api, id: string): Promise<Memory> {
+  const data = await api.get<{ memory: Memory }>(`/memories/${id}`);
+  return data.memory;
+}
+
+export async function deleteMemory(api: Api, id: string): Promise<void> {
+  await api.del(`/memories/${id}`);
+}
+
+export async function addReaction(api: Api, id: string): Promise<void> {
+  await api.post(`/memories/${id}/reactions`);
+}
+
+export async function removeReaction(api: Api, id: string): Promise<void> {
+  await api.del(`/memories/${id}/reactions`);
+}
+
+export async function addComment(api: Api, id: string, text: string): Promise<Comment> {
+  const data = await api.post<{ comment: Comment }>(`/memories/${id}/comments`, { text });
+  return data.comment;
+}
+
+export async function deleteComment(api: Api, memoryId: string, commentId: string): Promise<void> {
+  await api.del(`/memories/${memoryId}/comments/${commentId}`);
+}
 
 export interface MemoriesQuery {
   familyId: string;
