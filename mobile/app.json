@@ -37,7 +37,8 @@
           "photosPermission": "Allow Our Sweet Family to access your photos to share memories.",
           "cameraPermission": "Allow Our Sweet Family to use the camera to capture memories."
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

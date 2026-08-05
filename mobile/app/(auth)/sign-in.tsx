@@ -1,11 +1,13 @@
 import { useSignIn, useSSO } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Button, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
+import { Button, Input, Screen, Text } from '../../src/components/ui';
+import { colors, radius, spacing } from '../../src/theme';
 
-// Dismiss the in-app browser automatically when an OAuth redirect completes.
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
@@ -53,27 +55,69 @@ export default function SignInScreen() {
   }, []);
 
   return (
-    <View style={{ flex: 1, padding: 24, justifyContent: 'center', gap: 12 }}>
-      <Text style={{ fontSize: 28, fontWeight: '700', marginBottom: 8 }}>Our Sweet Family</Text>
-      <TextInput
-        placeholder="Email"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-        style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12 }}
-      />
-      <TextInput
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12 }}
-      />
-      {error ? <Text style={{ color: 'crimson' }}>{error}</Text> : null}
-      {busy ? <ActivityIndicator /> : <Button title="Sign in" onPress={onEmailSignIn} />}
-      <Text style={{ textAlign: 'center', color: '#888' }}>or</Text>
-      <Button title="Continue with Google" onPress={onGoogle} />
-    </View>
+    <Screen safeTop>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1, justifyContent: 'center', paddingHorizontal: spacing.xl }}
+      >
+        {/* Brand mark */}
+        <View style={{ alignItems: 'center', marginBottom: spacing.xxl }}>
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: radius.xl,
+              backgroundColor: colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: spacing.lg,
+            }}
+          >
+            <Ionicons name="heart" size={38} color={colors.onPrimary} />
+          </View>
+          <Text variant="title" center>
+            Our Sweet Family
+          </Text>
+          <Text variant="body" color="textSecondary" center style={{ marginTop: spacing.xs }}>
+            Every moment, kept close.
+          </Text>
+        </View>
+
+        <View style={{ gap: spacing.md }}>
+          <Input
+            placeholder="Email"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="email"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <Input placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
+
+          {error ? (
+            <Text variant="caption" color="danger" style={{ marginTop: -spacing.xs }}>
+              {error}
+            </Text>
+          ) : null}
+
+          <Button title="Sign in" onPress={onEmailSignIn} loading={busy} />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginVertical: spacing.sm }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+            <Text variant="caption" color="textMuted">
+              or
+            </Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+          </View>
+
+          <Button
+            title="Continue with Google"
+            variant="secondary"
+            onPress={onGoogle}
+            icon={<Ionicons name="logo-google" size={18} color={colors.text} />}
+          />
+        </View>
+      </KeyboardAvoidingView>
+    </Screen>
   );
 }

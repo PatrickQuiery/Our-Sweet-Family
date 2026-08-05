@@ -1,12 +1,17 @@
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import { useFonts } from 'expo-font';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
 import { tokenCache } from '../src/lib/tokenCache';
 import { CLERK_PUBLISHABLE_KEY } from '../src/lib/config';
+import { interFontMap } from '../src/theme/fonts';
+import { colors, fonts } from '../src/theme';
+import { Loading } from '../src/components/ui';
 
 function AuthGate() {
   const { isLoaded, isSignedIn } = useAuth();
+  const [fontsLoaded] = useFonts(interFontMap);
   const segments = useSegments();
   const router = useRouter();
 
@@ -20,19 +25,27 @@ function AuthGate() {
     }
   }, [isLoaded, isSignedIn, segments]);
 
-  if (!isLoaded) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator />
-      </View>
-    );
+  if (!isLoaded || !fontsLoaded) {
+    return <Loading />;
   }
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(app)" />
-      <Stack.Screen name="memory/[id]" options={{ headerShown: true, title: 'Memory' }} />
-    </Stack>
+    <>
+      <StatusBar style="dark" />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.bg },
+          headerStyle: { backgroundColor: colors.bg },
+          headerShadowVisible: false,
+          headerTintColor: colors.primary,
+          headerTitleStyle: { fontFamily: fonts.semibold, color: colors.text },
+        }}
+      >
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(app)" />
+        <Stack.Screen name="memory/[id]" options={{ headerShown: true, title: 'Memory' }} />
+      </Stack>
+    </>
   );
 }
 
