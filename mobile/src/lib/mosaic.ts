@@ -132,7 +132,9 @@ export function buildTimeline(memories: Memory[], opts: LayoutOpts, now: Date = 
   const groups = new Map<string, { title: string; items: Memory[] }>();
 
   for (const m of memories) {
-    const { key, title } = dateBucket(m.createdAt, now);
+    // Bucket by when the photo was taken (what the API sorts by), falling back to
+    // upload time — otherwise a back-dated upload lands in an out-of-order section.
+    const { key, title } = dateBucket(m.capturedAt ?? m.createdAt, now);
     let g = groups.get(key);
     if (!g) {
       g = { title, items: [] };

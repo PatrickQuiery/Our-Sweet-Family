@@ -222,7 +222,7 @@ export default function MemoryDetail() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="calendar-outline" size={15} color={colors.textMuted} />
               <Text variant="caption" color="textSecondary">
-                {formatFullDate(memory.createdAt)}
+                {formatFullDate(memory.capturedAt ?? memory.createdAt)}
               </Text>
             </View>
             {location ? (
