@@ -1,5 +1,5 @@
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { tokenCache } from '../src/lib/tokenCache';
@@ -27,7 +27,13 @@ function AuthGate() {
       </View>
     );
   }
-  return <Slot />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(app)" />
+      <Stack.Screen name="memory/[id]" options={{ headerShown: true, title: 'Memory' }} />
+    </Stack>
+  );
 }
 
 export default function RootLayout() {
