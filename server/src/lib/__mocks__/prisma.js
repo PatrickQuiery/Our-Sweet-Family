@@ -32,6 +32,7 @@ const prisma = {
   },
   memory: {
     findUnique: jest.fn(),
+    findFirst: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
@@ -71,6 +72,11 @@ const prisma = {
     create: jest.fn(),
     update: jest.fn(),
     findUnique: jest.fn(),
+  },
+  deviceToken: {
+    findMany: jest.fn(),
+    upsert: jest.fn(),
+    deleteMany: jest.fn(),
   },
   $queryRawUnsafe: jest.fn(),
 };
