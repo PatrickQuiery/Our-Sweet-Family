@@ -82,8 +82,19 @@ export interface Memory {
 export interface Milestone {
   id: string;
   childId: string;
-  title: string;
-  description?: string | null;
+  type: string;
+  value: string;
+  unit?: string | null;
+  note?: string | null;
   date: string;
   createdAt?: string;
+}
+
+export type ReelType = 'annual' | 'monthly' | 'birthday' | 'holiday';
+
+/** A time-period collection of memories from GET /api/reels. */
+export interface Reel {
+  key: string;
+  label: string;
+  memories: Memory[];
 }
