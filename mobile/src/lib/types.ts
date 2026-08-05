@@ -91,6 +91,8 @@ export interface Memory {
   locationCity?: string | null;
   locationState?: string | null;
   processing?: boolean;
+  /** When the photo/video was taken (EXIF). The API sorts the feed by this. */
+  capturedAt?: string | null;
   createdAt: string;
   // Present on the detail endpoint (GET /memories/:id):
   reactions?: Reaction[];
