@@ -29,7 +29,7 @@ describe('memories data layer', () => {
     expect(res).toEqual([{ id: 'm1' }]);
   });
 
-  it('buildUploadForm assembles multipart fields', () => {
+  it('buildUploadForm assembles multipart fields with the file part', () => {
     const form = buildUploadForm({
       familyId: 'f1',
       childIds: ['c1', 'c2'],

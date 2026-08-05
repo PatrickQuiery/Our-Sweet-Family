@@ -2,12 +2,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { ActivityIndicator, Button, Image, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useApi } from '../../src/hooks/useApi';
+import { useAuth } from '@clerk/clerk-expo';
 import { useMemories } from '../../src/hooks/useMemories';
 import { uploadMemory, type UploadAsset } from '../../src/lib/memories';
 
 export default function Capture() {
-  const api = useApi();
+  const { getToken } = useAuth();
   const router = useRouter();
   const { family, refresh } = useMemories();
   const [asset, setAsset] = useState<UploadAsset | null>(null);
@@ -46,7 +46,7 @@ export default function Capture() {
     setBusy(true);
     setError(null);
     try {
-      await uploadMemory(api, { familyId: family.id, childIds: selected, caption, asset });
+      await uploadMemory(getToken, { familyId: family.id, childIds: selected, caption, asset });
       setAsset(null);
       setPreview(null);
       setSelected([]);
