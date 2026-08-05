@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, SectionList, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemories } from '../../src/hooks/useMemories';
 import { MosaicTile } from '../../src/components/MosaicTile';
-import { Chip, EmptyState, Loading, Text } from '../../src/components/ui';
+import { Button, Chip, EmptyState, Skeleton, Text } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { buildTimeline } from '../../src/lib/mosaic';
 
@@ -16,6 +16,7 @@ export default function Timeline() {
   const [search, setSearch] = useState('');
   const [childFilter, setChildFilter] = useState<string | null>(null);
   const { colors, spacing, radius, fonts } = useTheme();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: screenW } = useWindowDimensions();
   const contentW = screenW - spacing.lg * 2;
@@ -97,7 +98,18 @@ export default function Timeline() {
       </View>
 
       {refreshing && memories.length === 0 && !error && !filtering ? (
-        <Loading />
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: GAP }}>
+          <Skeleton style={{ height: 190, borderRadius: radius.lg }} />
+          <View style={{ flexDirection: 'row', gap: GAP }}>
+            <Skeleton style={{ flex: 1, height: 150 }} />
+            <Skeleton style={{ flex: 1, height: 150 }} />
+          </View>
+          <View style={{ flexDirection: 'row', gap: GAP }}>
+            <Skeleton style={{ flex: 1, height: 110 }} />
+            <Skeleton style={{ flex: 1, height: 110 }} />
+            <Skeleton style={{ flex: 1, height: 110 }} />
+          </View>
+        </View>
       ) : (
         <SectionList
           style={{ backgroundColor: colors.bg }}
@@ -154,7 +166,24 @@ export default function Timeline() {
               ) : filtering ? (
                 <EmptyState icon="search-outline" title="No matches" subtitle={search ? `Nothing found for “${search}”.` : 'No memories for this filter yet.'} />
               ) : (
-                <EmptyState icon="images-outline" title="No memories yet" subtitle="Tap the camera below to add your first photo or video." />
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxl, gap: spacing.md }}>
+                  <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="heart" size={40} color={colors.primary} />
+                  </View>
+                  <Text variant="title" center>
+                    Welcome to your family
+                  </Text>
+                  <Text variant="body" color="textSecondary" center>
+                    Capture a photo or video and it'll appear here — beautifully organized by day.
+                  </Text>
+                  <Button
+                    title="Add your first memory"
+                    fullWidth={false}
+                    icon={<Ionicons name="camera" size={18} color={colors.onPrimary} />}
+                    onPress={() => router.navigate('/capture')}
+                    style={{ marginTop: spacing.sm }}
+                  />
+                </View>
               )
             ) : null
           }

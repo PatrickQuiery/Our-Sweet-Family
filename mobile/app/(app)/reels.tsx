@@ -8,7 +8,7 @@ import { useApi } from '../../src/hooks/useApi';
 import { useFamily } from '../../src/context/FamilyProvider';
 import { getReels, REEL_TYPE_LABELS } from '../../src/lib/reels';
 import { AuthedImage } from '../../src/components/AuthedImage';
-import { Card, Chip, EmptyState, Loading, Screen, Text, Touchable } from '../../src/components/ui';
+import { Card, Chip, EmptyState, Screen, Skeleton, Text, Touchable } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { ApiError } from '../../src/lib/api';
 import { API_ROOT } from '../../src/lib/config';
@@ -112,7 +112,10 @@ export default function Reels() {
       </View>
 
       {loading ? (
-        <Loading />
+        <View style={{ padding: spacing.lg, gap: spacing.lg }}>
+          <Skeleton style={{ height: 190, borderRadius: radius.lg }} />
+          <Skeleton style={{ height: 190, borderRadius: radius.lg }} />
+        </View>
       ) : gateMessage ? (
         <EmptyState icon="lock-closed-outline" title="Included in a plan" subtitle={gateMessage} />
       ) : reels.length === 0 ? (
