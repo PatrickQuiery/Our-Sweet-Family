@@ -1,7 +1,8 @@
 import { View, type ViewProps } from 'react-native';
-import { colors, radius, shadow } from '../../theme';
+import { useTheme } from '../../theme/ThemeProvider';
 
 export function Card({ style, ...rest }: ViewProps) {
+  const { colors, shadow, radius } = useTheme();
   return (
     <View
       {...rest}

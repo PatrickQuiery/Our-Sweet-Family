@@ -1,6 +1,6 @@
 import { View, type ViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing } from '../../theme';
+import { useTheme } from '../../theme/ThemeProvider';
 
 interface ScreenProps extends ViewProps {
   /** Add horizontal + vertical padding (theme.spacing.lg). */
@@ -10,6 +10,7 @@ interface ScreenProps extends ViewProps {
 }
 
 export function Screen({ style, padded, safeTop, ...rest }: ScreenProps) {
+  const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <View

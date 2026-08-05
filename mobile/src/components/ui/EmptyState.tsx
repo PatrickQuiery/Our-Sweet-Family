@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing } from '../../theme';
+import { useTheme } from '../../theme/ThemeProvider';
 import { Text } from './Text';
 
 interface EmptyStateProps {
@@ -10,6 +10,7 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ icon = 'images-outline', title, subtitle }: EmptyStateProps) {
+  const { colors, spacing } = useTheme();
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxl, gap: spacing.md }}>
       <View
@@ -17,7 +18,7 @@ export function EmptyState({ icon = 'images-outline', title, subtitle }: EmptySt
           width: 76,
           height: 76,
           borderRadius: 38,
-          backgroundColor: colors.brand[50],
+          backgroundColor: colors.primarySoft,
           alignItems: 'center',
           justifyContent: 'center',
         }}

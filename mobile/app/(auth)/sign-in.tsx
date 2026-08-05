@@ -6,13 +6,14 @@ import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import { Button, Input, Screen, Text } from '../../src/components/ui';
-import { colors, radius, spacing } from '../../src/theme';
+import { useTheme } from '../../src/theme/ThemeProvider';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const { startSSOFlow } = useSSO();
+  const { colors, radius, spacing } = useTheme();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

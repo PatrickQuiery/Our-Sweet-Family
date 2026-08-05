@@ -1,5 +1,5 @@
 import { Pressable } from 'react-native';
-import { colors, radius, spacing } from '../../theme';
+import { useTheme } from '../../theme/ThemeProvider';
 import { Text } from './Text';
 
 interface ChipProps {
@@ -9,6 +9,7 @@ interface ChipProps {
 }
 
 export function Chip({ label, selected, onPress }: ChipProps) {
+  const { colors, spacing, radius } = useTheme();
   return (
     <Pressable
       onPress={onPress}
@@ -16,7 +17,7 @@ export function Chip({ label, selected, onPress }: ChipProps) {
         paddingHorizontal: spacing.md,
         paddingVertical: 7,
         borderRadius: radius.pill,
-        backgroundColor: selected ? colors.primary : colors.gray[100],
+        backgroundColor: selected ? colors.primary : colors.fill,
         borderWidth: selected ? 0 : 1,
         borderColor: colors.border,
       }}

@@ -1,7 +1,8 @@
 import { TextInput, type TextInputProps } from 'react-native';
-import { colors, fonts, radius, spacing } from '../../theme';
+import { useTheme } from '../../theme/ThemeProvider';
 
 export function Input({ style, ...props }: TextInputProps) {
+  const { colors, fonts, radius, spacing } = useTheme();
   return (
     <TextInput
       placeholderTextColor={colors.textMuted}

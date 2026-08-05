@@ -1,4 +1,4 @@
-import { Image } from 'expo-image';
+import { Image, type ImageContentFit } from 'expo-image';
 import { useAuth } from '@clerk/clerk-expo';
 import { useEffect, useState } from 'react';
 import type { ImageStyle, StyleProp } from 'react-native';
@@ -7,9 +7,18 @@ import { API_ROOT } from '../lib/config';
 /**
  * Renders a memory image from a relative (`/memories/:id/thumb`) or absolute URL,
  * attaching the Clerk bearer token. Relative paths resolve against API_ROOT
- * (the authed media endpoints live under `/api`).
+ * (the authed media endpoints live under `/api`). `contentFit` defaults to cover
+ * (grid tiles); the detail view passes `contain` to show the full, uncropped image.
  */
-export function AuthedImage({ path, style }: { path: string; style?: StyleProp<ImageStyle> }) {
+export function AuthedImage({
+  path,
+  style,
+  contentFit = 'cover',
+}: {
+  path: string;
+  style?: StyleProp<ImageStyle>;
+  contentFit?: ImageContentFit;
+}) {
   const { getToken } = useAuth();
   const [token, setToken] = useState<string | null>(null);
 
@@ -23,8 +32,8 @@ export function AuthedImage({ path, style }: { path: string; style?: StyleProp<I
     <Image
       style={style}
       source={{ uri, headers: { Authorization: `Bearer ${token}` } }}
-      contentFit="cover"
-      transition={150}
+      contentFit={contentFit}
+      transition={280}
     />
   );
 }

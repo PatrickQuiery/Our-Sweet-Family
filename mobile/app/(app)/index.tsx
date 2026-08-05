@@ -1,20 +1,29 @@
-import { ActivityIndicator, FlatList, RefreshControl, View } from 'react-native';
+import { useMemo } from 'react';
+import { ActivityIndicator, RefreshControl, SectionList, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMemories } from '../../src/hooks/useMemories';
-import { MemoryCard } from '../../src/components/MemoryCard';
+import { MosaicTile } from '../../src/components/MosaicTile';
 import { EmptyState, Loading, Text } from '../../src/components/ui';
-import { colors, spacing } from '../../src/theme';
+import { useTheme } from '../../src/theme/ThemeProvider';
+import { buildTimeline } from '../../src/lib/mosaic';
+
+const GAP = 6;
 
 export default function Timeline() {
   const { family, memories, refreshing, loading, error, refresh, loadMore } = useMemories();
+  const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
+  const { width: screenW } = useWindowDimensions();
+  const contentW = screenW - spacing.lg * 2;
+
+  const sections = useMemo(() => buildTimeline(memories, { width: contentW, gap: GAP }), [memories, contentW]);
 
   if (refreshing && memories.length === 0 && !error) {
     return <Loading />;
   }
 
   return (
-    <FlatList
+    <SectionList
       style={{ backgroundColor: colors.bg }}
       contentContainerStyle={{
         paddingHorizontal: spacing.lg,
@@ -22,13 +31,23 @@ export default function Timeline() {
         paddingBottom: spacing.xxl,
         flexGrow: 1,
       }}
-      data={memories}
-      keyExtractor={(m) => m.id}
-      renderItem={({ item }) => <MemoryCard memory={item} />}
-      showsVerticalScrollIndicator={false}
+      sections={sections}
+      keyExtractor={(row) => row.key}
+      renderItem={({ item: row }) => (
+        <View style={{ flexDirection: 'row', gap: GAP, marginBottom: GAP }}>
+          {row.tiles.map((tile) => (
+            <MosaicTile key={tile.memory.id} tile={tile} />
+          ))}
+        </View>
+      )}
+      renderSectionHeader={({ section }) => (
+        <View style={{ backgroundColor: colors.bg, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
+          <Text variant="heading">{section.title}</Text>
+        </View>
+      )}
       ListHeaderComponent={
         memories.length > 0 ? (
-          <View style={{ marginBottom: spacing.lg }}>
+          <View style={{ marginBottom: spacing.xs }}>
             <Text variant="title">{family?.name ?? 'Your family'}</Text>
             <Text variant="body" color="textSecondary" style={{ marginTop: 2 }}>
               {memories.length} {memories.length === 1 ? 'memory' : 'memories'}
@@ -36,6 +55,8 @@ export default function Timeline() {
           </View>
         ) : null
       }
+      stickySectionHeadersEnabled={false}
+      showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} colors={[colors.primary]} />
       }
@@ -52,7 +73,7 @@ export default function Timeline() {
             <EmptyState
               icon="images-outline"
               title="No memories yet"
-              subtitle="Tap Capture to add your first photo or video."
+              subtitle="Tap the camera below to add your first photo or video."
             />
           )
         ) : null

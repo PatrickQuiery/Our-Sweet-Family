@@ -1,11 +1,15 @@
 /**
  * Mobile design tokens — extends the web brand (rose/warm/Inter/rounded), elevated
  * for a native, photo-forward feel. Single source of truth for color, type, spacing,
- * radius, and shadow. Import `theme` everywhere; never hardcode raw values in screens.
+ * radius, and shadow.
+ *
+ * Colors + shadow are theme-aware (light/dark). Consume them through `useTheme()`
+ * (see ThemeProvider). Spacing/radius/fonts/typography are scheme-independent and
+ * may be imported directly — though `useTheme()` returns them too for convenience.
  */
 import { Platform, type TextStyle } from 'react-native';
 
-// Brand rose (from the web tailwind config) — the primary family accent.
+// Raw brand ramp (from the web tailwind config) — the primary family accent.
 const brand = {
   50: '#fff1f5',
   100: '#ffe4ec',
@@ -43,18 +47,46 @@ const gray = {
   900: '#111827',
 } as const;
 
-export const colors = {
+/** Shared shape for both palettes. Raw ramps + semantic roles. */
+export interface AppColors {
+  brand: typeof brand;
+  warm: typeof warm;
+  gray: typeof gray;
+  bg: string;
+  surface: string;
+  surfaceAlt: string;
+  primary: string;
+  primaryPressed: string;
+  /** Soft brand tint for icon circles / ghost-pressed backgrounds. */
+  primarySoft: string;
+  onPrimary: string;
+  accent: string;
+  /** Neutral fill for unselected chips / secondary surfaces. */
+  fill: string;
+  fillPressed: string;
+  text: string;
+  textSecondary: string;
+  textMuted: string;
+  border: string;
+  borderSubtle: string;
+  danger: string;
+  overlay: string;
+}
+
+export const lightColors: AppColors = {
   brand,
   warm,
   gray,
-  // Semantic roles
-  bg: '#fbf7f8', // soft warm off-white app background
+  bg: '#fbf7f8', // soft warm off-white
   surface: '#ffffff',
   surfaceAlt: '#faf9fb',
   primary: brand[500],
   primaryPressed: brand[600],
+  primarySoft: brand[50],
   onPrimary: '#ffffff',
   accent: warm[400],
+  fill: gray[100],
+  fillPressed: gray[200],
   text: gray[900],
   textSecondary: gray[600],
   textMuted: gray[400],
@@ -62,7 +94,33 @@ export const colors = {
   borderSubtle: gray[100],
   danger: '#dc2626',
   overlay: 'rgba(17,24,39,0.55)',
-} as const;
+};
+
+export const darkColors: AppColors = {
+  brand,
+  warm,
+  gray,
+  bg: '#141013', // warm near-black
+  surface: '#1e181c',
+  surfaceAlt: '#262027',
+  primary: brand[400], // brighter rose reads better on dark
+  primaryPressed: brand[500],
+  primarySoft: 'rgba(244,63,116,0.16)',
+  onPrimary: '#ffffff',
+  accent: warm[300],
+  fill: '#2a232a',
+  fillPressed: '#342b34',
+  text: '#f5f0f2',
+  textSecondary: '#c3b8bf',
+  textMuted: '#8a7e86',
+  border: '#342b32',
+  borderSubtle: '#241d22',
+  danger: '#f87171',
+  overlay: 'rgba(0,0,0,0.6)',
+};
+
+/** Back-compat default (light). Prefer `useTheme().colors`. */
+export const colors = lightColors;
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 } as const;
 
@@ -90,29 +148,38 @@ export const typography = {
 
 export type TypographyVariant = keyof typeof typography;
 
-// Soft, warm shadow — subtle on iOS, elevation on Android.
-export const shadow = {
+export interface AppShadow {
+  card: object;
+  soft: object;
+}
+
+// Soft, warm shadow for light mode — subtle on iOS, elevation on Android.
+export const lightShadow: AppShadow = {
   card: Platform.select({
-    ios: {
-      shadowColor: '#9e1141',
-      shadowOpacity: 0.08,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 6 },
-    },
+    ios: { shadowColor: '#9e1141', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } },
     android: { elevation: 3 },
     default: {},
-  }),
+  })!,
   soft: Platform.select({
-    ios: {
-      shadowColor: '#111827',
-      shadowOpacity: 0.06,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 2 },
-    },
+    ios: { shadowColor: '#111827', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
     android: { elevation: 2 },
     default: {},
-  }),
-} as const;
+  })!,
+};
 
-export const theme = { colors, spacing, radius, fonts, typography, shadow } as const;
-export type Theme = typeof theme;
+// On dark, warm shadows disappear — lean on deeper black + elevation for separation.
+export const darkShadow: AppShadow = {
+  card: Platform.select({
+    ios: { shadowColor: '#000000', shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } },
+    android: { elevation: 4 },
+    default: {},
+  })!,
+  soft: Platform.select({
+    ios: { shadowColor: '#000000', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
+    android: { elevation: 3 },
+    default: {},
+  })!,
+};
+
+/** Back-compat default (light). Prefer `useTheme().shadow`. */
+export const shadow = lightShadow;

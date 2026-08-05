@@ -6,3 +6,4 @@ export { Input } from './Input';
 export { Screen } from './Screen';
 export { EmptyState } from './EmptyState';
 export { Loading } from './Loading';
+export { Touchable } from './Touchable';
