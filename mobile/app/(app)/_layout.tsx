@@ -68,6 +68,7 @@ export default function AppTabs() {
         name="reels"
         options={{
           title: 'Reels',
+          headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'film' : 'film-outline'} size={24} color={color} />
           ),
@@ -85,6 +86,7 @@ export default function AppTabs() {
         name="milestones"
         options={{
           title: 'Milestones',
+          headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'ribbon' : 'ribbon-outline'} size={23} color={color} />
           ),
