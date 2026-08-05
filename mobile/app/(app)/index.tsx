@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, SectionList, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemories } from '../../src/hooks/useMemories';
 import { MosaicTile } from '../../src/components/MosaicTile';
@@ -31,6 +32,19 @@ export default function Timeline() {
   });
   const children = family?.children ?? [];
   const filtering = search.length > 0 || !!childFilter;
+
+  // Refresh when returning to the tab (e.g. after capturing a memory), skipping
+  // the initial mount which useMemories already loads.
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      refresh();
+    }, [refresh]),
+  );
 
   const sections = useMemo(() => buildTimeline(memories, { width: contentW, gap: GAP }), [memories, contentW]);
 

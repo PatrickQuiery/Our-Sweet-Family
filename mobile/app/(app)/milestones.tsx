@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useApi } from '../../src/hooks/useApi';
 import { useFamily } from '../../src/context/FamilyProvider';
@@ -56,6 +57,18 @@ export default function Milestones() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Refresh on refocus (e.g. after adding a child elsewhere), skipping the mount.
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      load();
+    }, [load]),
+  );
 
   const onDelete = (m: Milestone) => {
     Alert.alert('Delete milestone', 'Remove this milestone?', [

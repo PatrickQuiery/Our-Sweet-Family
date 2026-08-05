@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Modal, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useApi } from '../../src/hooks/useApi';
 import { useFamily } from '../../src/context/FamilyProvider';
@@ -82,6 +82,19 @@ export default function Reels() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Refresh when returning to the tab (e.g. after capturing a memory), skipping
+  // the initial mount which the effect above already covers.
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      load();
+    }, [load]),
+  );
 
   return (
     <Screen safeTop>
