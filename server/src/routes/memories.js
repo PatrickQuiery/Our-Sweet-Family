@@ -12,6 +12,7 @@ const { effectivePlan } = require('../lib/plan');
 const { reverseGeocode } = require('../lib/geocode');
 const { isParent } = require('../lib/familyAccess');
 const { enqueueTranscode } = require('../lib/transcodeQueue');
+const { isHeicUpload, heicToJpeg } = require('../lib/heic');
 
 const router = express.Router();
 
@@ -405,19 +406,32 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
     const gps = await extractExifGps(req.file.buffer, req.file.mimetype);
     const place = gps ? await reverseGeocode(gps.latitude, gps.longitude) : null;
 
-    // Storage tier follows the family OWNER's (effective) plan. Paid plans keep
-    // the ORIGINAL file; free plans store a COMPRESSED photo to save storage.
-    // (Video transcoding needs a separate pipeline, so videos are stored as-is.)
+    // iPhone photos are HEIC, which sharp/libvips can't decode (and can crash the
+    // process on some Linux builds). Normalize HEIC -> JPEG up front — AFTER reading
+    // EXIF from the original above (exifr reads HEIC fine, so GPS/date are unaffected)
+    // — so compression/thumbnails work and the stored/served photo is web-compatible.
+    let srcBuffer = req.file.buffer;
+    let srcName = req.file.originalname;
+    let srcMime = req.file.mimetype;
+    if (fileType === 'photo' && isHeicUpload(srcMime, srcName)) {
+      srcBuffer = await heicToJpeg(srcBuffer);
+      srcMime = 'image/jpeg';
+      srcName = `${(srcName || 'photo').replace(/\.(heic|heif)$/i, '')}.jpg`;
+    }
+
+    // Storage tier follows the family OWNER's (effective) plan. Paid plans keep the
+    // (normalized) full-quality file; free plans store a COMPRESSED photo to save
+    // storage. (Video transcoding needs a separate pipeline, so videos are as-is.)
     const ownerPlan = effectivePlan(family.owner);
     const isPaid = ['plus', 'premium'].includes(ownerPlan);
     // Free-plan videos are compressed in the background after upload to save storage.
     const needsVideoCompression = fileType === 'video' && !isPaid;
 
-    let uploadBuffer = req.file.buffer;
-    let uploadName = req.file.originalname;
-    let uploadMime = req.file.mimetype;
+    let uploadBuffer = srcBuffer;
+    let uploadName = srcName;
+    let uploadMime = srcMime;
     if (fileType === 'photo' && !isPaid) {
-      const compressed = await compressPhoto(req.file.buffer);
+      const compressed = await compressPhoto(srcBuffer);
       if (compressed) {
         uploadBuffer = compressed.buffer;
         uploadName = 'compressed.jpg';
@@ -426,10 +440,10 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
     }
     const fileUrl = await uploadFile(uploadBuffer, uploadName, uploadMime, 'memories');
 
-    // Generate & upload thumbnail (photos only) — always derived from the original.
+    // Generate & upload thumbnail (photos only) — derived from the normalized image.
     let thumbnailUrl = null;
     if (fileType === 'photo') {
-      const thumb = await generateThumbnail(req.file.buffer, req.file.mimetype, req.file.originalname);
+      const thumb = await generateThumbnail(srcBuffer, srcMime, srcName);
       if (thumb) {
         thumbnailUrl = await uploadFile(thumb.buffer, thumb.name, 'image/jpeg', 'thumbnails');
       }
