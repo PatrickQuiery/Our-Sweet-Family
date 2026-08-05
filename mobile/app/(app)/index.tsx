@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
-import { ActivityIndicator, RefreshControl, SectionList, useWindowDimensions, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, SectionList, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useMemories } from '../../src/hooks/useMemories';
 import { MosaicTile } from '../../src/components/MosaicTile';
 import { EmptyState, Loading, Text } from '../../src/components/ui';
@@ -10,74 +11,108 @@ import { buildTimeline } from '../../src/lib/mosaic';
 const GAP = 6;
 
 export default function Timeline() {
-  const { family, memories, refreshing, loading, error, refresh, loadMore } = useMemories();
-  const { colors, spacing } = useTheme();
+  const [query, setQuery] = useState('');
+  const [search, setSearch] = useState('');
+  const { colors, spacing, radius, fonts } = useTheme();
   const insets = useSafeAreaInsets();
   const { width: screenW } = useWindowDimensions();
   const contentW = screenW - spacing.lg * 2;
 
+  // Debounce so the feed doesn't refetch on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(query.trim()), 350);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const { family, memories, refreshing, loading, error, refresh, loadMore } = useMemories(search || undefined);
+  const searching = search.length > 0;
+
   const sections = useMemo(() => buildTimeline(memories, { width: contentW, gap: GAP }), [memories, contentW]);
 
-  if (refreshing && memories.length === 0 && !error) {
-    return <Loading />;
-  }
-
   return (
-    <SectionList
-      style={{ backgroundColor: colors.bg }}
-      contentContainerStyle={{
-        paddingHorizontal: spacing.lg,
-        paddingTop: insets.top + spacing.sm,
-        paddingBottom: spacing.xxl,
-        flexGrow: 1,
-      }}
-      sections={sections}
-      keyExtractor={(row) => row.key}
-      renderItem={({ item: row }) => (
-        <View style={{ flexDirection: 'row', gap: GAP, marginBottom: GAP }}>
-          {row.tiles.map((tile) => (
-            <MosaicTile key={tile.memory.id} tile={tile} />
-          ))}
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <View style={{ paddingTop: insets.top + spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: radius.md,
+            paddingHorizontal: spacing.md,
+            height: 44,
+          }}
+        >
+          <Ionicons name="search" size={18} color={colors.textMuted} />
+          <TextInput
+            style={{ flex: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.text }}
+            placeholder="Search memories"
+            placeholderTextColor={colors.textMuted}
+            value={query}
+            onChangeText={setQuery}
+            autoCapitalize="none"
+            returnKeyType="search"
+          />
+          {query ? (
+            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
         </View>
+      </View>
+
+      {refreshing && memories.length === 0 && !error && !searching ? (
+        <Loading />
+      ) : (
+        <SectionList
+          style={{ backgroundColor: colors.bg }}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.xs, paddingBottom: spacing.xxl, flexGrow: 1 }}
+          sections={sections}
+          keyExtractor={(row) => row.key}
+          renderItem={({ item: row }) => (
+            <View style={{ flexDirection: 'row', gap: GAP, marginBottom: GAP }}>
+              {row.tiles.map((tile) => (
+                <MosaicTile key={tile.memory.id} tile={tile} />
+              ))}
+            </View>
+          )}
+          renderSectionHeader={({ section }) => (
+            <View style={{ backgroundColor: colors.bg, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
+              <Text variant="heading">{section.title}</Text>
+            </View>
+          )}
+          ListHeaderComponent={
+            !searching && memories.length > 0 ? (
+              <View style={{ marginBottom: spacing.xs }}>
+                <Text variant="title">{family?.name ?? 'Your family'}</Text>
+                <Text variant="body" color="textSecondary" style={{ marginTop: 2 }}>
+                  {memories.length} {memories.length === 1 ? 'memory' : 'memories'}
+                </Text>
+              </View>
+            ) : null
+          }
+          stickySectionHeadersEnabled={false}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} colors={[colors.primary]} />}
+          onEndReachedThreshold={0.5}
+          onEndReached={loadMore}
+          ListFooterComponent={loading ? <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} /> : null}
+          ListEmptyComponent={
+            !refreshing ? (
+              error ? (
+                <EmptyState icon="cloud-offline-outline" title="Couldn't load" subtitle={error} />
+              ) : searching ? (
+                <EmptyState icon="search-outline" title="No matches" subtitle={`Nothing found for “${search}”.`} />
+              ) : (
+                <EmptyState icon="images-outline" title="No memories yet" subtitle="Tap the camera below to add your first photo or video." />
+              )
+            ) : null
+          }
+        />
       )}
-      renderSectionHeader={({ section }) => (
-        <View style={{ backgroundColor: colors.bg, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
-          <Text variant="heading">{section.title}</Text>
-        </View>
-      )}
-      ListHeaderComponent={
-        memories.length > 0 ? (
-          <View style={{ marginBottom: spacing.xs }}>
-            <Text variant="title">{family?.name ?? 'Your family'}</Text>
-            <Text variant="body" color="textSecondary" style={{ marginTop: 2 }}>
-              {memories.length} {memories.length === 1 ? 'memory' : 'memories'}
-            </Text>
-          </View>
-        ) : null
-      }
-      stickySectionHeadersEnabled={false}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} colors={[colors.primary]} />
-      }
-      onEndReachedThreshold={0.5}
-      onEndReached={loadMore}
-      ListFooterComponent={
-        loading ? <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} /> : null
-      }
-      ListEmptyComponent={
-        !refreshing ? (
-          error ? (
-            <EmptyState icon="cloud-offline-outline" title="Couldn't load" subtitle={error} />
-          ) : (
-            <EmptyState
-              icon="images-outline"
-              title="No memories yet"
-              subtitle="Tap the camera below to add your first photo or video."
-            />
-          )
-        ) : null
-      }
-    />
+    </View>
   );
 }
