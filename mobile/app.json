@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Our Sweet Family",
+    "slug": "our-sweet-family",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "oursweetfamily",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.oursweetfamily.app"
+    },
+    "android": {
+      "package": "com.oursweetfamily.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-image",
+      "expo-video",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Our Sweet Family to access your photos to share memories.",
+          "cameraPermission": "Allow Our Sweet Family to use the camera to capture memories."
+        }
+      ],
+      "expo-font"
+    ]
+  }
+}
