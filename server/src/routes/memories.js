@@ -13,6 +13,7 @@ const { reverseGeocode } = require('../lib/geocode');
 const { isParent } = require('../lib/familyAccess');
 const { enqueueTranscode } = require('../lib/transcodeQueue');
 const { isHeicUpload, heicToJpeg } = require('../lib/heic');
+const { sendPushToUsers } = require('../lib/push');
 
 const router = express.Router();
 
@@ -372,7 +373,7 @@ router.get('/:id/download', authenticate, async (req, res) => {
 router.post('/', authenticate, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-  const { familyId, childIds, tags, caption, isClassified, capturedAtOverride } = req.body;
+  const { familyId, childIds, tags, caption, isClassified, capturedAtOverride, clientAssetId } = req.body;
   if (!familyId) return res.status(400).json({ error: 'familyId required' });
 
   try {
@@ -390,6 +391,14 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
     // Check upload permission for members
     if (!isOwner && membership && !['upload', 'all'].includes(membership.permissions)) {
       return res.status(403).json({ error: 'No upload permission' });
+    }
+
+    // Background auto-upload dedupe: if this camera-roll asset was already uploaded
+    // for this family (across a re-wake or reinstall), return the existing memory
+    // instead of creating a duplicate. (@@unique([familyId, clientAssetId]) backstops.)
+    if (clientAssetId) {
+      const existing = await prisma.memory.findFirst({ where: { familyId, clientAssetId } });
+      if (existing) return res.status(200).json({ memory: mediaRefs(existing), deduped: true });
     }
 
     const fileType = req.file.mimetype.startsWith('video/') ? 'video' : 'photo';
@@ -498,10 +507,21 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
         longitude: gps?.longitude ?? null,
         locationCity: place?.city ?? null,
         locationState: place?.state ?? null,
+        clientAssetId: clientAssetId || null,
       },
       include: {
         uploadedBy: { select: { id: true, name: true, avatarUrl: true } },
       },
+    });
+
+    // Notify the rest of the family that a new memory was posted (best-effort).
+    const recipientIds = [family.ownerId, ...family.members.map((m) => m.userId)].filter(
+      (uid) => uid && uid !== req.user.id,
+    );
+    sendPushToUsers(recipientIds, {
+      title: `${req.user.name} added a memory`,
+      body: memory.caption || undefined,
+      data: { type: 'memory', memoryId: memory.id, familyId },
     });
 
     res.status(201).json({ memory: mediaRefs(memory) });
@@ -681,6 +701,17 @@ router.post('/:id/comments', authenticate, async (req, res) => {
       },
       include: { user: { select: { id: true, name: true, avatarUrl: true } } },
     });
+
+    // Notify the memory's uploader that someone commented (unless it's their own).
+    const uploaderId = access.memory?.uploadedById;
+    if (uploaderId && uploaderId !== req.user.id) {
+      sendPushToUsers([uploaderId], {
+        title: `${req.user.name} commented`,
+        body: comment.text,
+        data: { type: 'comment', memoryId: req.params.id },
+      });
+    }
+
     res.status(201).json({ comment });
   } catch (err) {
     console.error(err);

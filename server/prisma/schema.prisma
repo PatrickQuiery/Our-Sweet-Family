@@ -56,6 +56,7 @@ model User {
   comments       Comment[]
   referralsMade    Referral[] @relation("ReferralsMade")
   referralReceived Referral?  @relation("ReferralReceived")
+  deviceTokens     DeviceToken[]
 }
 
 // One row per successful referral. refereeId is unique, so each new user can be
@@ -140,12 +141,17 @@ model Memory {
   // Reverse-geocoded once at upload from lat/lng (so it isn't recomputed on load).
   locationCity    String?
   locationState   String?
+  // Client-supplied stable id for a camera-roll asset (background auto-upload).
+  // Unique per family so the same asset never double-uploads across wakes/reinstalls.
+  clientAssetId   String?
   createdAt       DateTime @default(now())
 
   family     Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
   uploadedBy User       @relation(fields: [uploadedById], references: [id])
   reactions  Reaction[]
   comments   Comment[]
+
+  @@unique([familyId, clientAssetId])
 }
 
 // Durable video-transcode queue. The API enqueues a job on free-plan video
@@ -232,4 +238,18 @@ model ContactMessage {
   userId    String?
   emailSent Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+// A registered push-notification token for one of a user's devices (Expo push).
+// One row per device; the raw token is unique. Removed on sign-out.
+model DeviceToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  platform  String // 'ios' | 'android'
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

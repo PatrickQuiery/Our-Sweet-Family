@@ -16,6 +16,7 @@ const milestonesRoutes = require('./routes/milestones');
 const reelsRoutes = require('./routes/reels');
 const contactRoutes = require('./routes/contact');
 const invitationsRoutes = require('./routes/invitations');
+const devicesRoutes = require('./routes/devices');
 
 const app = express();
 const isProd = process.env.NODE_ENV === 'production';
@@ -102,6 +103,7 @@ app.use('/api/milestones', milestonesRoutes);
 app.use('/api/reels', reelsRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/invitations', invitationsRoutes);
+app.use('/api/devices', devicesRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
