@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, SectionList, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, SectionList, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemories } from '../../src/hooks/useMemories';
 import { MosaicTile } from '../../src/components/MosaicTile';
-import { EmptyState, Loading, Text } from '../../src/components/ui';
+import { Chip, EmptyState, Loading, Text } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { buildTimeline } from '../../src/lib/mosaic';
 
@@ -13,6 +13,7 @@ const GAP = 6;
 export default function Timeline() {
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState('');
+  const [childFilter, setChildFilter] = useState<string | null>(null);
   const { colors, spacing, radius, fonts } = useTheme();
   const insets = useSafeAreaInsets();
   const { width: screenW } = useWindowDimensions();
@@ -24,8 +25,12 @@ export default function Timeline() {
     return () => clearTimeout(t);
   }, [query]);
 
-  const { family, memories, refreshing, loading, error, refresh, loadMore } = useMemories(search || undefined);
-  const searching = search.length > 0;
+  const { family, memories, refreshing, loading, error, refresh, loadMore } = useMemories({
+    search: search || undefined,
+    childId: childFilter ?? undefined,
+  });
+  const children = family?.children ?? [];
+  const filtering = search.length > 0 || !!childFilter;
 
   const sections = useMemo(() => buildTimeline(memories, { width: contentW, gap: GAP }), [memories, contentW]);
 
@@ -61,9 +66,23 @@ export default function Timeline() {
             </Pressable>
           ) : null}
         </View>
+
+        {children.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingTop: spacing.sm }}>
+            <Chip label="All" selected={!childFilter} onPress={() => setChildFilter(null)} />
+            {children.map((c) => (
+              <Chip
+                key={c.id}
+                label={c.name}
+                selected={childFilter === c.id}
+                onPress={() => setChildFilter(childFilter === c.id ? null : c.id)}
+              />
+            ))}
+          </ScrollView>
+        ) : null}
       </View>
 
-      {refreshing && memories.length === 0 && !error && !searching ? (
+      {refreshing && memories.length === 0 && !error && !filtering ? (
         <Loading />
       ) : (
         <SectionList
@@ -84,7 +103,7 @@ export default function Timeline() {
             </View>
           )}
           ListHeaderComponent={
-            !searching && memories.length > 0 ? (
+            !filtering && memories.length > 0 ? (
               <View style={{ marginBottom: spacing.xs }}>
                 <Text variant="title">{family?.name ?? 'Your family'}</Text>
                 <Text variant="body" color="textSecondary" style={{ marginTop: 2 }}>
@@ -104,8 +123,8 @@ export default function Timeline() {
             !refreshing ? (
               error ? (
                 <EmptyState icon="cloud-offline-outline" title="Couldn't load" subtitle={error} />
-              ) : searching ? (
-                <EmptyState icon="search-outline" title="No matches" subtitle={`Nothing found for “${search}”.`} />
+              ) : filtering ? (
+                <EmptyState icon="search-outline" title="No matches" subtitle={search ? `Nothing found for “${search}”.` : 'No memories for this filter yet.'} />
               ) : (
                 <EmptyState icon="images-outline" title="No memories yet" subtitle="Tap the camera below to add your first photo or video." />
               )

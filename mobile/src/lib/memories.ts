@@ -7,6 +7,7 @@ export interface MemoriesQuery {
   page?: number;
   limit?: number;
   search?: string;
+  childId?: string;
 }
 
 export async function getMemories(api: Api, q: MemoriesQuery): Promise<Memory[]> {
@@ -14,6 +15,7 @@ export async function getMemories(api: Api, q: MemoriesQuery): Promise<Memory[]>
   const limit = q.limit ?? 20;
   let url = `/memories?familyId=${encodeURIComponent(q.familyId)}&page=${page}&limit=${limit}`;
   if (q.search?.trim()) url += `&search=${encodeURIComponent(q.search.trim())}`;
+  if (q.childId) url += `&childId=${encodeURIComponent(q.childId)}`;
   const data = await api.get<{ memories: Memory[] }>(url);
   return data.memories ?? [];
 }

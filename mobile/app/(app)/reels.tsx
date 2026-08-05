@@ -13,6 +13,42 @@ import type { Reel, ReelType, Memory } from '../../src/lib/types';
 
 const TYPES: ReelType[] = ['annual', 'monthly', 'birthday', 'holiday'];
 
+/** Reel cover: 1 image full, 2 side-by-side, 3–4 as a 2×2 grid. */
+function Collage({ memories, height }: { memories: Memory[]; height: number }) {
+  const { colors } = useTheme();
+  const covers = memories.slice(0, 4);
+  const src = (m: Memory) => m.thumbnailUrl ?? m.fileUrl;
+
+  if (covers.length <= 1) {
+    return covers[0] ? (
+      <AuthedImage path={src(covers[0])} style={{ width: '100%', height }} />
+    ) : (
+      <View style={{ height, backgroundColor: colors.surfaceAlt }} />
+    );
+  }
+  if (covers.length === 2) {
+    return (
+      <View style={{ height, flexDirection: 'row', gap: 2, backgroundColor: colors.surfaceAlt }}>
+        {covers.map((m) => (
+          <View key={m.id} style={{ flex: 1, height }}>
+            <AuthedImage path={src(m)} style={{ width: '100%', height }} />
+          </View>
+        ))}
+      </View>
+    );
+  }
+  const cell = (height - 2) / 2;
+  return (
+    <View style={{ height, flexDirection: 'row', flexWrap: 'wrap', gap: 2, backgroundColor: colors.surfaceAlt }}>
+      {[0, 1, 2, 3].map((i) => (
+        <View key={i} style={{ width: '49.5%', height: cell }}>
+          {covers[i] ? <AuthedImage path={src(covers[i])} style={{ width: '100%', height: cell }} /> : null}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export default function Reels() {
   const api = useApi();
   const router = useRouter();
@@ -70,43 +106,29 @@ export default function Reels() {
           keyExtractor={(r) => r.key}
           contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => {
-            const cover = item.memories[0];
-            return (
-              <Touchable onPress={() => setViewing(item)} pressedScale={0.98}>
-                <Card>
-                  <View style={{ height: 190, backgroundColor: colors.surfaceAlt }}>
-                    {cover ? (
-                      <AuthedImage path={cover.thumbnailUrl ?? cover.fileUrl} style={{ width: '100%', height: 190 }} />
-                    ) : null}
-                    <View
-                      style={{
-                        position: 'absolute',
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        padding: spacing.md,
-                        backgroundColor: colors.overlay,
-                      }}
-                    >
-                      <Text variant="heading" color="onPrimary">
-                        {item.label}
-                      </Text>
-                      <Text variant="caption" color="onPrimary">
-                        {item.memories.length} {item.memories.length === 1 ? 'memory' : 'memories'}
-                      </Text>
-                    </View>
-                    <View style={{ position: 'absolute', top: spacing.sm, right: spacing.sm, backgroundColor: colors.overlay, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Ionicons name="play" size={12} color="#fff" />
-                      <Text variant="label" color="onPrimary">
-                        Play
-                      </Text>
-                    </View>
+          renderItem={({ item }) => (
+            <Touchable onPress={() => setViewing(item)} pressedScale={0.98}>
+              <Card>
+                <View style={{ height: 190, backgroundColor: colors.surfaceAlt }}>
+                  <Collage memories={item.memories} height={190} />
+                  <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: spacing.md, paddingTop: spacing.xl, paddingBottom: spacing.md, backgroundColor: colors.overlay }}>
+                    <Text variant="heading" color="onPrimary">
+                      {item.label}
+                    </Text>
+                    <Text variant="caption" color="onPrimary">
+                      {item.memories.length} {item.memories.length === 1 ? 'memory' : 'memories'}
+                    </Text>
                   </View>
-                </Card>
-              </Touchable>
-            );
-          }}
+                  <View style={{ position: 'absolute', top: spacing.sm, right: spacing.sm, backgroundColor: colors.overlay, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Ionicons name="play" size={12} color="#fff" />
+                    <Text variant="label" color="onPrimary">
+                      Play
+                    </Text>
+                  </View>
+                </View>
+              </Card>
+            </Touchable>
+          )}
         />
       )}
 
