@@ -112,8 +112,22 @@ export default function Timeline() {
             </View>
           )}
           renderSectionHeader={({ section }) => (
-            <View style={{ backgroundColor: colors.bg, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
+            <View
+              style={{
+                backgroundColor: colors.bg,
+                paddingTop: spacing.lg,
+                paddingBottom: spacing.sm,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.sm,
+              }}
+            >
               <Text variant="heading">{section.title}</Text>
+              <View style={{ backgroundColor: colors.fill, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 }}>
+                <Text variant="label" color="textSecondary">
+                  {section.count}
+                </Text>
+              </View>
             </View>
           )}
           ListHeaderComponent={

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Modal, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { useApi } from '../../src/hooks/useApi';
 import { useFamily } from '../../src/context/FamilyProvider';
@@ -9,7 +11,10 @@ import { AuthedImage } from '../../src/components/AuthedImage';
 import { Card, Chip, EmptyState, Loading, Screen, Text, Touchable } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { ApiError } from '../../src/lib/api';
+import { API_ROOT } from '../../src/lib/config';
 import type { Reel, ReelType, Memory } from '../../src/lib/types';
+
+const absolute = (path: string) => (path.startsWith('http') ? path : `${API_ROOT}${path}`);
 
 const TYPES: ReelType[] = ['annual', 'monthly', 'birthday', 'holiday'];
 
@@ -51,7 +56,6 @@ function Collage({ memories, height }: { memories: Memory[]; height: number }) {
 
 export default function Reels() {
   const api = useApi();
-  const router = useRouter();
   const { activeFamily } = useFamily();
   const { colors, spacing, radius } = useTheme();
   const familyId = activeFamily?.id ?? null;
@@ -145,53 +149,114 @@ export default function Reels() {
         />
       )}
 
-      <ReelViewer reel={viewing} onClose={() => setViewing(null)} onOpenMemory={(id) => { setViewing(null); router.push(`/memory/${id}`); }} />
+      <ReelViewer reel={viewing} onClose={() => setViewing(null)} />
     </Screen>
   );
 }
 
-function ReelViewer({ reel, onClose, onOpenMemory }: { reel: Reel | null; onClose: () => void; onOpenMemory: (id: string) => void }) {
+/**
+ * Story-style reel player: segmented progress bars, tap left/right to navigate,
+ * photos auto-advance and videos play inline (advancing when they finish).
+ */
+function ReelViewer({ reel, onClose }: { reel: Reel | null; onClose: () => void }) {
   const { width, height } = useWindowDimensions();
-  const insetTop = 60;
+  const { getToken } = useAuth();
+  const [token, setToken] = useState<string | null>(null);
+  const [index, setIndex] = useState(0);
+  const memories = reel?.memories ?? [];
+  const current: Memory | undefined = memories[index];
+  const isVideo = current?.fileType === 'video';
+
+  useEffect(() => {
+    getToken().then(setToken);
+  }, [getToken]);
+  useEffect(() => {
+    setIndex(0);
+  }, [reel?.key]);
+
+  const goNext = useCallback(() => {
+    setIndex((i) => {
+      if (i + 1 < memories.length) return i + 1;
+      onClose();
+      return i;
+    });
+  }, [memories.length, onClose]);
+  const goPrev = useCallback(() => setIndex((i) => Math.max(0, i - 1)), []);
+
+  // Photos auto-advance after a few seconds; videos advance when they finish.
+  useEffect(() => {
+    if (!reel || !current || isVideo) return;
+    const t = setTimeout(goNext, 4000);
+    return () => clearTimeout(t);
+  }, [reel?.key, index, current?.id, isVideo, goNext]);
+
+  // One player, source swapped as the current item changes.
+  const player = useVideoPlayer(null);
+  useEffect(() => {
+    if (!player) return;
+    if (isVideo && current && token) {
+      player.replace({ uri: absolute(current.fileUrl), headers: { Authorization: `Bearer ${token}` } });
+      player.play();
+    } else {
+      try {
+        player.pause();
+      } catch {
+        // player not ready yet
+      }
+    }
+  }, [player, current?.id, isVideo, token]);
+  useEffect(() => {
+    if (!player) return;
+    const sub = player.addListener('playToEnd', goNext);
+    return () => sub.remove();
+  }, [player, goNext]);
 
   return (
     <Modal visible={reel !== null} animationType="fade" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: '#000' }}>
-        {reel ? (
-          <FlatList
-            data={reel.memories}
-            keyExtractor={(m) => m.id}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }: { item: Memory }) => (
-              <View style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
-                <AuthedImage path={item.thumbnailUrl ?? item.fileUrl} style={{ width, height: height * 0.8 }} contentFit="contain" />
-                {item.fileType === 'video' ? (
-                  <Pressable
-                    onPress={() => onOpenMemory(item.id)}
-                    style={{ position: 'absolute', width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    <Ionicons name="play" size={30} color="#fff" style={{ marginLeft: 3 }} />
-                  </Pressable>
-                ) : null}
-                {item.caption ? (
-                  <View style={{ position: 'absolute', bottom: 60, left: 24, right: 24 }}>
-                    <Text variant="body" style={{ color: '#fff', textShadowColor: 'rgba(0,0,0,0.6)', textShadowRadius: 6 }}>
-                      {item.caption}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            )}
-          />
+        {current ? (
+          isVideo ? (
+            <VideoView player={player} style={{ width, height }} contentFit="contain" nativeControls={false} />
+          ) : (
+            <AuthedImage path={current.thumbnailUrl ?? current.fileUrl} style={{ width, height }} contentFit="contain" />
+          )
         ) : null}
-        <Pressable
-          onPress={onClose}
-          style={{ position: 'absolute', top: insetTop, left: 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}
-        >
-          <Ionicons name="close" size={24} color="#fff" />
-        </Pressable>
+
+        {/* tap zones (rendered before the controls so the close button stays tappable) */}
+        <Pressable onPress={goPrev} style={{ position: 'absolute', left: 0, top: 80, bottom: 0, width: width * 0.35 }} />
+        <Pressable onPress={goNext} style={{ position: 'absolute', right: 0, top: 80, bottom: 0, width: width * 0.65 }} />
+
+        {/* segmented progress */}
+        <View style={{ position: 'absolute', top: 56, left: 12, right: 12, flexDirection: 'row', gap: 4 }}>
+          {memories.map((m, i) => (
+            <View key={m.id} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i <= index ? '#fff' : 'rgba(255,255,255,0.35)' }} />
+          ))}
+        </View>
+
+        {/* label + close */}
+        <View style={{ position: 'absolute', top: 70, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text variant="label" style={{ color: '#fff' }}>
+            {reel?.label}
+          </Text>
+          <Pressable onPress={onClose} hitSlop={12} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="close" size={20} color="#fff" />
+          </Pressable>
+        </View>
+
+        {/* caption */}
+        {current?.caption ? (
+          <View style={{ position: 'absolute', bottom: 52, left: 20, right: 20 }}>
+            <Text variant="body" style={{ color: '#fff', textShadowColor: 'rgba(0,0,0,0.7)', textShadowRadius: 6 }}>
+              {current.caption}
+            </Text>
+          </View>
+        ) : null}
+
+        {isVideo ? (
+          <View style={{ position: 'absolute', bottom: 52, right: 20, backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 999, padding: 8 }}>
+            <Ionicons name="videocam" size={16} color="#fff" />
+          </View>
+        ) : null}
       </View>
     </Modal>
   );
