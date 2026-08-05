@@ -91,6 +91,20 @@ export default function Settings() {
             </Text>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Touchable>
+
+          <Touchable
+            onPress={() => router.push('/members')}
+            pressedScale={0.99}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm }}
+          >
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.fill, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="share-social-outline" size={20} color={colors.textSecondary} />
+            </View>
+            <Text variant="bodyMedium" style={{ flex: 1 }}>
+              Members &amp; sharing
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </Touchable>
         </Card>
 
         {/* Appearance */}

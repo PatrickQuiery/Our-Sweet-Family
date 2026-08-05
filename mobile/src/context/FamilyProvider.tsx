@@ -66,7 +66,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     const canManage = (family?: Family | null) => {
       const f = family ?? activeFamily;
       if (!f || !me) return false;
-      return f.ownerId === me.id || (f.members ?? []).some((m) => m.userId === me.id && m.role === 'parent');
+      return f.ownerId === me.id || (f.members ?? []).some((m) => m.userId === me.id && m.permissions === 'all');
     };
     return { families, activeFamily, activeFamilyId, setActiveFamilyId, me, loading, error, refresh, canManage };
   }, [families, activeFamilyId, me, loading, error, refresh, setActiveFamilyId]);

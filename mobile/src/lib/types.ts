@@ -17,13 +17,24 @@ export interface MemberUser {
   role?: string | null;
 }
 
+export type Permission = 'view_only' | 'upload' | 'share_download' | 'all';
+
 export interface Member {
   id: string;
   userId: string;
   familyId?: string;
-  /** Membership role on the family (e.g. 'parent' | 'viewer'). */
-  role?: string | null;
+  /** Access level on the family. 'all' == co-parent full access. */
+  permissions?: Permission | null;
+  accessPerChild?: 'all' | string[] | null;
   user?: MemberUser | null;
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+  permissions?: Permission | null;
+  expiresAt?: string;
+  createdAt?: string;
 }
 
 export interface Family {

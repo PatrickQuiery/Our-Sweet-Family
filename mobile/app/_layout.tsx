@@ -54,6 +54,14 @@ function AuthGate() {
             name="children"
             options={{ headerShown: true, title: 'Children', headerBackButtonDisplayMode: 'minimal' }}
           />
+          <Stack.Screen
+            name="members"
+            options={{ headerShown: true, title: 'Family & Sharing', headerBackButtonDisplayMode: 'minimal' }}
+          />
+          <Stack.Screen
+            name="accept-invite"
+            options={{ headerShown: true, title: 'Invitation', headerBackButtonDisplayMode: 'minimal' }}
+          />
         </Stack>
       </FamilyProvider>
     </>
