@@ -21,7 +21,8 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
   fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|gif|webp|mp4|mov|avi|mkv|m4v/;
+    // heic/heif = iPhone's default photo format; converted to JPEG in the handler.
+    const allowed = /jpeg|jpg|png|gif|webp|heic|heif|mp4|mov|avi|mkv|m4v/;
     const ext = path.extname(file.originalname).toLowerCase().slice(1);
     if (allowed.test(ext)) cb(null, true);
     else cb(new Error('Unsupported file type'));
