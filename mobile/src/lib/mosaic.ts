@@ -26,6 +26,8 @@ export interface MosaicRow {
 export interface TimelineSection {
   key: string;
   title: string;
+  /** Number of memories in this date bucket (for the section header). */
+  count: number;
   data: MosaicRow[];
 }
 
@@ -142,6 +144,6 @@ export function buildTimeline(memories: Memory[], opts: LayoutOpts, now: Date = 
 
   return order.map((key, idx) => {
     const g = groups.get(key)!;
-    return { key, title: g.title, data: buildRows(g.items, opts, idx) };
+    return { key, title: g.title, count: g.items.length, data: buildRows(g.items, opts, idx) };
   });
 }

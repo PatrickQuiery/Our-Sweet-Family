@@ -65,11 +65,31 @@ export default function AppTabs() {
         }}
       />
       <Tabs.Screen
+        name="reels"
+        options={{
+          title: 'Reels',
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'film' : 'film-outline'} size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="capture"
         options={{
           title: 'Capture',
           tabBarLabel: () => null,
           tabBarButton: (props) => <CaptureTabButton onPress={props.onPress ?? undefined} />,
+        }}
+      />
+      <Tabs.Screen
+        name="milestones"
+        options={{
+          title: 'Milestones',
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'ribbon' : 'ribbon-outline'} size={23} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
