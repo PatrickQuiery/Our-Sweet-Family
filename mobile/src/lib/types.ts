@@ -1,16 +1,57 @@
+export type Gender = 'male' | 'female';
+
 export interface Child {
   id: string;
+  familyId?: string;
   name: string;
-  gender?: string | null;
+  gender?: Gender | null;
   dateOfBirth?: string | null;
   avatarUrl?: string | null;
+}
+
+export interface MemberUser {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  role?: string | null;
+}
+
+export interface Member {
+  id: string;
+  userId: string;
+  familyId?: string;
+  /** Membership role on the family (e.g. 'parent' | 'viewer'). */
+  role?: string | null;
+  user?: MemberUser | null;
 }
 
 export interface Family {
   id: string;
   name: string;
+  ownerId?: string;
   children: Child[];
+  members?: Member[];
   showPhotoLocation?: boolean;
+}
+
+/** Current signed-in user (from GET /api/auth/me). */
+export interface Me {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  plan?: string | null;
+}
+
+/** Storage usage for a family (from GET /api/families/:id/usage). */
+export interface FamilyUsage {
+  plan: string;
+  usedVideoBytes: number;
+  videoLimitBytes: number | null;
+  usedTotalBytes: number;
+  videoCount: number;
+  photoCount: number;
 }
 
 export interface Memory {
@@ -25,4 +66,13 @@ export interface Memory {
   locationState?: string | null;
   processing?: boolean;
   createdAt: string;
+}
+
+export interface Milestone {
+  id: string;
+  childId: string;
+  title: string;
+  description?: string | null;
+  date: string;
+  createdAt?: string;
 }

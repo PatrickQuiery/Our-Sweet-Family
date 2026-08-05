@@ -1,10 +1,12 @@
-import { getFamilies, getMemories, buildUploadForm } from '../memories';
+import { getMemories, buildUploadForm } from '../memories';
+import { getFamilies } from '../family';
 import type { Api } from '../api';
 
 function fakeApi(overrides: Partial<Api>): Api {
   return {
     get: jest.fn(),
     post: jest.fn(),
+    put: jest.fn(),
     patch: jest.fn(),
     del: jest.fn(),
     postForm: jest.fn(),

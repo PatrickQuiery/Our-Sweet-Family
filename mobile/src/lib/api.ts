@@ -20,6 +20,7 @@ interface ApiDeps {
 export interface Api {
   get<T = unknown>(path: string): Promise<T>;
   post<T = unknown>(path: string, body?: unknown): Promise<T>;
+  put<T = unknown>(path: string, body?: unknown): Promise<T>;
   patch<T = unknown>(path: string, body?: unknown): Promise<T>;
   del<T = unknown>(path: string): Promise<T>;
   postForm<T = unknown>(path: string, form: FormData): Promise<T>;
@@ -55,6 +56,7 @@ export function createApi({ root = API_ROOT, getToken, fetchImpl = fetch }: ApiD
   return {
     get: (p) => request('GET', p),
     post: (p, b) => request('POST', p, { body: b }),
+    put: (p, b) => request('PUT', p, { body: b }),
     patch: (p, b) => request('PATCH', p, { body: b }),
     del: (p) => request('DELETE', p),
     postForm: (p, form) => request('POST', p, { form }),

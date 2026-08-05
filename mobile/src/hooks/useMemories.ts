@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useApi } from './useApi';
-import { getFamilies, getMemories } from '../lib/memories';
-import type { Family, Memory } from '../lib/types';
+import { useFamily } from '../context/FamilyProvider';
+import { getMemories } from '../lib/memories';
+import type { Memory } from '../lib/types';
 
-export function useMemories() {
+/**
+ * Paginated memory feed for the active family (from FamilyProvider). Reloads when
+ * the active family or `search` changes. `family` in the return is the active
+ * family, so existing consumers (Timeline header, Capture tagging) keep working.
+ */
+export function useMemories(search?: string) {
   const api = useApi();
-  const [family, setFamily] = useState<Family | null>(null);
+  const { activeFamily } = useFamily();
+  const familyId = activeFamily?.id ?? null;
   const [memories, setMemories] = useState<Memory[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -14,31 +21,30 @@ export function useMemories() {
   const [error, setError] = useState<string | null>(null);
 
   const loadFirst = useCallback(async () => {
+    if (!familyId) {
+      setMemories([]);
+      return;
+    }
     setRefreshing(true);
     setError(null);
     try {
-      const fams = await getFamilies(api);
-      const fam = fams[0] ?? null;
-      setFamily(fam);
-      if (fam) {
-        const first = await getMemories(api, { familyId: fam.id, page: 1, limit: 20 });
-        setMemories(first);
-        setPage(1);
-        setDone(first.length < 20);
-      }
+      const first = await getMemories(api, { familyId, page: 1, limit: 20, search });
+      setMemories(first);
+      setPage(1);
+      setDone(first.length < 20);
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load');
     } finally {
       setRefreshing(false);
     }
-  }, [api]);
+  }, [api, familyId, search]);
 
   const loadMore = useCallback(async () => {
-    if (loading || done || !family) return;
+    if (loading || done || !familyId) return;
     setLoading(true);
     try {
       const next = page + 1;
-      const more = await getMemories(api, { familyId: family.id, page: next, limit: 20 });
+      const more = await getMemories(api, { familyId, page: next, limit: 20, search });
       setMemories((prev) => [...prev, ...more]);
       setPage(next);
       if (more.length < 20) setDone(true);
@@ -47,11 +53,11 @@ export function useMemories() {
     } finally {
       setLoading(false);
     }
-  }, [api, family, page, loading, done]);
+  }, [api, familyId, page, loading, done, search]);
 
   useEffect(() => {
     loadFirst();
   }, [loadFirst]);
 
-  return { family, memories, loading, refreshing, error, refresh: loadFirst, loadMore };
+  return { family: activeFamily, memories, loading, refreshing, error, refresh: loadFirst, loadMore };
 }

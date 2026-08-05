@@ -1,24 +1,20 @@
 import { ApiError, type Api } from './api';
 import { API_ROOT } from './config';
-import type { Family, Memory } from './types';
-
-export async function getFamilies(api: Api): Promise<Family[]> {
-  const data = await api.get<{ families: Family[] }>('/families');
-  return data.families ?? [];
-}
+import type { Memory } from './types';
 
 export interface MemoriesQuery {
   familyId: string;
   page?: number;
   limit?: number;
+  search?: string;
 }
 
 export async function getMemories(api: Api, q: MemoriesQuery): Promise<Memory[]> {
   const page = q.page ?? 1;
   const limit = q.limit ?? 20;
-  const data = await api.get<{ memories: Memory[] }>(
-    `/memories?familyId=${encodeURIComponent(q.familyId)}&page=${page}&limit=${limit}`,
-  );
+  let url = `/memories?familyId=${encodeURIComponent(q.familyId)}&page=${page}&limit=${limit}`;
+  if (q.search?.trim()) url += `&search=${encodeURIComponent(q.search.trim())}`;
+  const data = await api.get<{ memories: Memory[] }>(url);
   return data.memories ?? [];
 }
 

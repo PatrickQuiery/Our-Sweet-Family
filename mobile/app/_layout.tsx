@@ -7,6 +7,7 @@ import { tokenCache } from '../src/lib/tokenCache';
 import { CLERK_PUBLISHABLE_KEY } from '../src/lib/config';
 import { interFontMap } from '../src/theme/fonts';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeProvider';
+import { FamilyProvider } from '../src/context/FamilyProvider';
 import { Loading } from '../src/components/ui';
 
 function AuthGate() {
@@ -32,23 +33,29 @@ function AuthGate() {
   return (
     <>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.bg },
-          headerStyle: { backgroundColor: colors.bg },
-          headerShadowVisible: false,
-          headerTintColor: colors.primary,
-          headerTitleStyle: { fontFamily: fonts.semibold, color: colors.text },
-        }}
-      >
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(app)" />
-        <Stack.Screen
-          name="memory/[id]"
-          options={{ headerShown: true, title: 'Memory', headerBackButtonDisplayMode: 'minimal' }}
-        />
-      </Stack>
+      <FamilyProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.bg },
+            headerStyle: { backgroundColor: colors.bg },
+            headerShadowVisible: false,
+            headerTintColor: colors.primary,
+            headerTitleStyle: { fontFamily: fonts.semibold, color: colors.text },
+          }}
+        >
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(app)" />
+          <Stack.Screen
+            name="memory/[id]"
+            options={{ headerShown: true, title: 'Memory', headerBackButtonDisplayMode: 'minimal' }}
+          />
+          <Stack.Screen
+            name="children"
+            options={{ headerShown: true, title: 'Children', headerBackButtonDisplayMode: 'minimal' }}
+          />
+        </Stack>
+      </FamilyProvider>
     </>
   );
 }
