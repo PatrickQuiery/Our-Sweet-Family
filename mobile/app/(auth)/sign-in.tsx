@@ -13,7 +13,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const { startSSOFlow } = useSSO();
-  const { colors, spacing } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,20 +61,24 @@ export default function SignInScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1, justifyContent: 'center', paddingHorizontal: spacing.xl }}
       >
-        {/* Brand mark — the real recolorable OSF mark (closed heart + line-art family). */}
+        {/* Brand lockup on a white keepsake plate so it reads in light + dark. */}
         <View style={{ alignItems: 'center', marginBottom: spacing.xxl }}>
-          <Image
-            source={require('../../assets/logo-mark.png')}
-            style={{ width: 104, height: 104, marginBottom: spacing.md }}
-            resizeMode="contain"
-            accessibilityLabel="Our Sweet Family"
-          />
-          <Text variant="title" center>
-            Our Sweet Family
-          </Text>
-          <Text variant="body" color="textSecondary" center style={{ marginTop: spacing.xs }}>
-            Every moment, kept close.
-          </Text>
+          <View
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: radius.xl,
+              paddingHorizontal: spacing.xl,
+              paddingVertical: spacing.lg,
+              ...shadow.card,
+            }}
+          >
+            <Image
+              source={require('../../assets/logo-mark.png')}
+              style={{ width: 236, height: 152 }}
+              resizeMode="contain"
+              accessibilityLabel="Our Sweet Family"
+            />
+          </View>
         </View>
 
         <View style={{ gap: spacing.md }}>
