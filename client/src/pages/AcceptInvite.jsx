@@ -43,8 +43,8 @@ export default function AcceptInvite() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-sunrise px-4 py-10">
-      <Link to="/" className="mb-7 bg-white rounded-3xl shadow-soft p-3">
-        <img src="/logo.svg" alt="Our Sweet Family" className="w-20 h-20 object-contain" />
+      <Link to="/" className="mb-8">
+        <img src="/brand/osf-5-compact-sunrise.svg" alt="Our Sweet Family" className="h-28 w-auto" />
       </Link>
 
       {state === 'loading' && <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500" />}

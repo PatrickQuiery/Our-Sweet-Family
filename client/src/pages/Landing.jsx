@@ -205,7 +205,7 @@ export default function Landing() {
                 </div>
                 <div className="flex items-center gap-3 mt-3 px-1 pb-1">
                   <span className="w-9 h-9 rounded-xl bg-white shadow-soft flex items-center justify-center overflow-hidden">
-                    <img src="/logo.svg" alt="Our Sweet Family" className="w-full h-full object-contain" />
+                    <img src="/brand/osf-4-circle-badge-sunrise.svg" alt="Our Sweet Family" className="w-full h-full object-contain" />
                   </span>
                   <span className="text-sm font-semibold text-ink-soft">
                     Mom added 4 memories · <span className="text-brand-600">just now</span>
@@ -242,7 +242,7 @@ export default function Landing() {
             <div className="p-5 md:p-6">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
-                  <img src="/logo.svg" alt="Our Sweet Family" className="w-7 h-7 object-contain" />
+                  <img src="/brand/osf-4-circle-badge-sunrise.svg" alt="Our Sweet Family" className="w-7 h-7 object-contain" />
                   <span className="font-extrabold text-xl text-ink tracking-tight">The Quiery Family</span>
                 </div>
                 <span className="text-xs font-bold text-white bg-gradient-to-r from-brand-500 to-sun-400 px-3.5 py-1.5 rounded-full">Today</span>

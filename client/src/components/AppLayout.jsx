@@ -3,7 +3,6 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
 import { useAuth } from '../context/AuthContext';
 import UsageMeter from './UsageMeter';
-import Logo from './Logo';
 import LogoMark from './LogoMark';
 
 const navSections = [
@@ -98,7 +97,7 @@ export default function AppLayout() {
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-black/5 flex flex-col transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Logo */}
         <div className="flex items-center px-5 py-5 border-b border-black/5">
-          <Logo tone="brand" wordmark="script" size={34} />
+          <img src="/brand/osf-5-compact-sunrise.svg" alt="Our Sweet Family" className="w-full max-w-[160px]" />
         </div>
 
         {/* Family info */}
