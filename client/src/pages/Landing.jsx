@@ -131,7 +131,7 @@ export default function Landing() {
       {/* Nav */}
       <nav className="sticky top-0 z-30 backdrop-blur-md bg-paper/80 border-b border-black/5">
         <div className="flex items-center justify-between px-6 py-3 max-w-7xl mx-auto">
-          <Logo tone="brand" wordmark="script" size={40} />
+          <Logo tone="brand" wordmark="script" size={52} />
           <div className="flex items-center gap-4">
             <a href="#pricing" className="hidden sm:inline text-sm font-medium text-ink-soft hover:text-ink transition-colors">
               Pricing
@@ -242,7 +242,7 @@ export default function Landing() {
             <div className="p-5 md:p-6">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
-                  <img src="/brand/osf-4-circle-badge-sunrise.svg" alt="Our Sweet Family" className="w-7 h-7 object-contain" />
+                  <img src="/brand/osf-4-circle-badge-sunrise.svg" alt="Our Sweet Family" className="w-11 h-11 object-contain" />
                   <span className="font-extrabold text-xl text-ink tracking-tight">The Quiery Family</span>
                 </div>
                 <span className="text-xs font-bold text-white bg-gradient-to-r from-brand-500 to-sun-400 px-3.5 py-1.5 rounded-full">Today</span>
@@ -356,7 +356,7 @@ export default function Landing() {
           <div className="absolute -top-16 -left-10 w-72 h-72 rounded-full bg-white/40 blur-3xl pointer-events-none" />
           <div className="relative">
             <div className="flex justify-center mb-5">
-              <LogoMark heart="#ef3f74" fig="#232a45" size={64} />
+              <LogoMark heart="#ef3f74" fig="#232a45" size={104} />
             </div>
             <h2 className="text-3xl md:text-4xl font-extrabold text-ink mb-4 tracking-tight">Start saving your family's memories today</h2>
             <p className="text-ink-soft mb-8 max-w-md mx-auto">Free forever. No ads. No selling your data. Just your family.</p>
@@ -370,7 +370,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="px-6 py-10 text-center text-ink-muted text-sm border-t border-black/5 bg-paper">
         <div className="flex items-center justify-center mb-4">
-          <Logo tone="ink" wordmark="script" size={34} />
+          <Logo tone="ink" wordmark="script" size={48} />
         </div>
         <div className="flex items-center justify-center gap-4 mb-3">
           <Link to="/contact" className="text-ink-soft hover:text-brand-600 transition-colors">Contact us</Link>

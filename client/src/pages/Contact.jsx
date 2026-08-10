@@ -33,7 +33,7 @@ export default function Contact() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
         <Link to="/">
-          <Logo tone="brand" wordmark="script" size={36} />
+          <Logo tone="brand" wordmark="script" size={50} />
         </Link>
         <div className="flex items-center gap-3">
           <Link to="/login" className="text-sm font-medium text-ink-soft hover:text-ink transition-colors">
