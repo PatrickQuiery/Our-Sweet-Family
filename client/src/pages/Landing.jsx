@@ -171,7 +171,7 @@ export default function Landing() {
                 <span className="bg-gradient-to-r from-brand-500 via-brand-400 to-sun-400 bg-clip-text text-transparent">
                   every little
                 </span>{' '}
-                thing.
+                moment.
               </h1>
               <p className="text-lg md:text-xl text-ink-soft max-w-md mb-8 leading-relaxed">
                 A calm, private home for your kids' photos and videos — no ads, no strangers, just the
