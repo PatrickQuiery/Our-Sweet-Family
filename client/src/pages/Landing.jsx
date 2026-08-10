@@ -161,6 +161,11 @@ export default function Landing() {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
             {/* Copy */}
             <div>
+              <img
+                src="/brand/osf-mark-sunrise.svg"
+                alt="Our Sweet Family"
+                className="h-32 md:h-40 w-auto mb-6 -ml-1 drop-shadow-sm"
+              />
               <div className="inline-flex items-center gap-2 bg-white/70 backdrop-blur text-ink rounded-full px-4 py-1.5 text-sm font-medium mb-6 shadow-soft">
                 <span>Private family sharing</span>
                 <span className="text-brand-500">•</span>
