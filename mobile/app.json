@@ -59,7 +59,21 @@
           "cameraPermission": "Allow Our Sweet Family to use the camera to capture memories."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#ff5c8a",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "imageWidth": 220,
+            "backgroundColor": "#151726"
+          }
+        }
+      ]
     ]
   }
 }
