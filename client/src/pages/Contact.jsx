@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
+import Logo from '../components/Logo';
 
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '', company: '' });
@@ -28,15 +29,14 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-paper">
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/logo.svg" alt="Our Sweet Family" className="w-10 h-10" />
-          <span className="font-bold text-gray-900 text-lg">Our Sweet Family</span>
+        <Link to="/">
+          <Logo tone="brand" wordmark="script" size={36} />
         </Link>
         <div className="flex items-center gap-3">
-          <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+          <Link to="/login" className="text-sm font-medium text-ink-soft hover:text-ink transition-colors">
             Sign in
           </Link>
           <Link to="/signup" className="btn-primary text-sm">Get started free</Link>

@@ -78,7 +78,7 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-pink-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-sunrise flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Progress */}
         <div className="flex gap-2 mb-8 justify-center">

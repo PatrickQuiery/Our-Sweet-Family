@@ -65,7 +65,7 @@ export default function Referrals() {
 
       {/* Reward status */}
       {rewardActive && (
-        <div className="card p-5 mb-6 bg-gradient-to-br from-brand-50 to-pink-50 border-brand-200">
+        <div className="card p-5 mb-6 bg-sunrise-soft border-brand-200">
           <div className="flex items-center gap-3">
             <div className="text-2xl">🎉</div>
             <div>

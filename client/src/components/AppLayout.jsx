@@ -3,6 +3,8 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
 import { useAuth } from '../context/AuthContext';
 import UsageMeter from './UsageMeter';
+import Logo from './Logo';
+import LogoMark from './LogoMark';
 
 const navSections = [
   {
@@ -88,23 +90,22 @@ export default function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
 
-  const planColors = { free: 'bg-gray-100 text-gray-600', plus: 'bg-blue-100 text-blue-700', premium: 'bg-amber-100 text-amber-700' };
+  const planColors = { free: 'bg-ink/5 text-ink-soft', plus: 'bg-blue-100 text-blue-700', premium: 'bg-brand-100 text-brand-700' };
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <div className="min-h-screen flex bg-paper">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-black/5 flex flex-col transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Logo */}
-        <div className="flex items-center gap-2 px-6 py-5 border-b border-gray-100">
-          <img src="/logo.svg" alt="Our Sweet Family" className="w-10 h-10" />
-          <span className="font-bold text-gray-900">Our Sweet Family</span>
+        <div className="flex items-center px-5 py-5 border-b border-black/5">
+          <Logo tone="brand" wordmark="script" size={34} />
         </div>
 
         {/* Family info */}
         {family && (
-          <div className="px-4 py-3 border-b border-gray-100">
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">Family</p>
-            <p className="font-semibold text-gray-900 text-sm truncate">{family.name}</p>
+          <div className="px-4 py-3 border-b border-black/5">
+            <p className="text-xs text-ink-muted uppercase tracking-wide font-medium mb-1">Family</p>
+            <p className="font-semibold text-ink text-sm truncate">{family.name}</p>
           </div>
         )}
 
@@ -113,7 +114,7 @@ export default function AppLayout() {
           {navSections.map((section, i) => (
             <div key={section.heading || i}>
               {section.heading && (
-                <p className="px-3 mb-1 text-xs text-gray-500 uppercase tracking-wide font-medium">
+                <p className="px-3 mb-1 text-xs text-ink-muted uppercase tracking-wide font-medium">
                   {section.heading}
                 </p>
               )}
@@ -126,8 +127,8 @@ export default function AppLayout() {
                       className={({ isActive }) =>
                         `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                           isActive
-                            ? 'bg-brand-50 text-brand-700'
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                            ? 'bg-brand-50 text-brand-600'
+                            : 'text-ink-soft hover:bg-brand-50/60 hover:text-ink'
                         }`
                       }
                     >
@@ -145,11 +146,11 @@ export default function AppLayout() {
         <UsageMeter />
 
         {/* User — Clerk UserButton handles profile, password, MFA, connected accounts & sign-out */}
-        <div className="px-4 py-4 border-t border-gray-100">
+        <div className="px-4 py-4 border-t border-black/5">
           <div className="flex items-center gap-3">
             <UserButton afterSignOutUrl="/" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
+              <p className="text-sm font-semibold text-ink truncate">{user?.name}</p>
               <span className={`badge text-xs ${planColors[user?.plan] || 'bg-gray-100 text-gray-600'}`}>
                 {user?.plan}
               </span>
@@ -169,16 +170,16 @@ export default function AppLayout() {
       {/* Main content */}
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
         {/* Mobile header */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 sticky top-0 z-30">
+        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/90 backdrop-blur border-b border-black/5 sticky top-0 z-30">
           <button
             onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-lg hover:bg-gray-100"
+            className="p-2 rounded-lg hover:bg-brand-50"
           >
-            <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-ink-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <span className="font-bold text-gray-900">Our Sweet Family</span>
+          <LogoMark heart="#ef3f74" fig="#232a45" size={30} />
           <button
             onClick={() => navigate('/upload')}
             className="p-2 rounded-lg bg-brand-500 text-white hover:bg-brand-600"

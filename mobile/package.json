@@ -4,7 +4,9 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@clerk/clerk-expo": "^2.19.31",
+    "@expo-google-fonts/dancing-script": "^0.4.2",
     "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/poppins": "^0.4.1",
     "@expo/vector-icons": "^15.0.2",
     "expo": "~57.0.10",
     "expo-auth-session": "~57.0.6",

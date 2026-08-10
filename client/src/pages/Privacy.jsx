@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import Logo from '../components/Logo';
 
 // Simple, readable privacy policy. Written to match how the app actually works:
 // private media, Clerk-managed auth, no ads, no data selling.
@@ -14,18 +15,17 @@ function Section({ title, children }) {
 
 export default function Privacy() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-paper">
       <nav className="flex items-center justify-between px-6 py-4 max-w-3xl mx-auto">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/logo.svg" alt="Our Sweet Family" className="w-9 h-9" />
-          <span className="font-bold text-gray-900">Our Sweet Family</span>
+        <Link to="/">
+          <Logo tone="brand" wordmark="script" size={34} />
         </Link>
         <Link to="/signup" className="btn-primary text-sm">Get started free</Link>
       </nav>
 
       <main className="max-w-3xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Privacy Policy</h1>
-        <p className="text-gray-400 text-sm mb-10">Last updated: August 3, 2026</p>
+        <h1 className="text-3xl font-extrabold text-ink mb-2">Privacy Policy</h1>
+        <p className="text-ink-muted text-sm mb-10">Last updated: August 3, 2026</p>
 
         <Section title="The short version">
           <p>
