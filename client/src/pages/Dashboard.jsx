@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
-import MemoryCard from '../components/MemoryCard';
+import MosaicFeed from '../components/MosaicFeed';
 import DashboardTimeline from '../components/DashboardTimeline';
 
 export default function Dashboard() {
@@ -169,15 +169,16 @@ export default function Dashboard() {
       )}
 
       {loading && memories.length === 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="card overflow-hidden animate-pulse">
-              <div className="aspect-square bg-gray-200" />
-              <div className="p-3">
-                <div className="h-3 bg-gray-200 rounded w-1/2" />
-              </div>
-            </div>
-          ))}
+        <div className="space-y-2 animate-pulse">
+          <div className="flex gap-2 w-full" style={{ aspectRatio: 1 / 0.52 }}>
+            <div className="rounded-xl bg-gray-200" style={{ flexGrow: 2, flexBasis: 0 }} />
+            <div className="rounded-xl bg-gray-200" style={{ flexGrow: 1, flexBasis: 0 }} />
+          </div>
+          <div className="flex gap-2 w-full" style={{ aspectRatio: 1 / 0.36 }}>
+            <div className="flex-1 rounded-xl bg-gray-200" />
+            <div className="flex-1 rounded-xl bg-gray-200" />
+            <div className="flex-1 rounded-xl bg-gray-200" />
+          </div>
         </div>
       ) : memories.length === 0 ? (
         <div className="text-center py-20">
@@ -188,15 +189,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {memories.map((memory) => (
-              <MemoryCard
-                key={memory.id}
-                memory={{ ...memory, _currentUserId: user?.id }}
-                onTagClick={(t) => setSearch(t)}
-              />
-            ))}
-          </div>
+          <MosaicFeed memories={memories} />
 
           {pagination && page < pagination.pages && (
             <div className="flex justify-center mt-8">
