@@ -54,24 +54,41 @@ Verify: `GET https://<api-host>/api/health` returns `{ "status": "ok" }`.
 
 ---
 
-## 3. Mobile app → Expo
+## 3. Mobile app → Expo (EAS)
 
-The React Native app is in `mobile/`.
+The React Native (Expo) app is in `mobile/`. Build profiles are in `mobile/eas.json`.
 
+> ⚠️ **Auth-gated — must be run by you.** `eas login` is interactive, and store
+> builds/submits need Apple Developer (iOS, + 2FA) and Google Play (service-account
+> key) credentials. As of first setup the app is **not yet linked** to an EAS project
+> (`app.json` `owner` / `extra.eas.projectId` are empty until `eas init`).
+
+**One-time setup:**
 ```bash
 cd mobile
-
-# Local run (simulator / device with the dev client):
-npx expo run:ios          # or: npx expo run:android
-
-# Store builds via EAS:
-eas build --platform ios --profile production
-eas build --platform android --profile production
-eas submit --platform ios         # submit the build to the store
+eas login                 # your Expo account (interactive)
+eas init                  # links the app -> writes owner + extra.eas.projectId into app.json
 ```
 
-Fonts (Poppins, Dancing Script) and the theme load at the JS layer, so a JS-only
-change can also ship as an **EAS Update** (`eas update`) without a native rebuild.
+**Local run** (simulator / device with the dev client — no account needed):
+```bash
+npx expo run:ios          # or: npx expo run:android
+```
+
+**Store builds (EAS cloud):**
+```bash
+cd mobile
+eas build --platform ios --profile production        # Apple Developer creds (EAS can manage them)
+eas build --platform android --profile production    # EAS generates/holds the keystore
+eas submit --platform ios                            # -> App Store Connect (your Apple auth)
+eas submit --platform android                        # -> Google Play (service-account key)
+```
+
+**OTA JS update** (after ≥1 production build exists — ships JS/theme/font changes
+with no native rebuild, since fonts + theme load at the JS layer):
+```bash
+eas update --branch production -m "message"
+```
 
 ---
 
@@ -79,4 +96,6 @@ change can also ship as an **EAS Update** (`eas update`) without a native rebuil
 
 - Merging a PR into the production branch does **not** trigger a deploy — run the
   steps above.
-- The logo everywhere is the original `client/public/logo.svg`, used unchanged.
+- Brand logos live in `client/public/brand/` (6 lockups × original / sunrise / white,
+  plus a mark-only and a tagline-free lockup). The app uses the **sunrise** variants via
+  the `Logo` / `LogoMark` components; the mobile sign-in uses the compact lockup PNG.
