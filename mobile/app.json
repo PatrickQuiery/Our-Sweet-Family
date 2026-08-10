@@ -11,12 +11,15 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.oursweetfamily.app",
-      "associatedDomains": ["applinks:oursweetfamily.com", "applinks:www.oursweetfamily.com"]
+      "associatedDomains": [
+        "applinks:oursweetfamily.com",
+        "applinks:www.oursweetfamily.com"
+      ]
     },
     "android": {
       "package": "com.oursweetfamily.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#ff5c8a",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -26,8 +29,17 @@
         {
           "action": "VIEW",
           "autoVerify": true,
-          "data": [{ "scheme": "https", "host": "oursweetfamily.com", "pathPrefix": "/accept-invite" }],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "data": [
+            {
+              "scheme": "https",
+              "host": "oursweetfamily.com",
+              "pathPrefix": "/accept-invite"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
