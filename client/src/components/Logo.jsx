@@ -1,11 +1,13 @@
 import React from 'react';
 
 /**
- * Full horizontal lockup, Sunrise-themed. `size` = rendered pixel height.
- * `white` swaps to the reversed variant for dark backgrounds.
+ * Responsive brand lockup, Sunrise-themed:
+ *   - mobile (< sm): the compact heart+family mark (fits tight navs)
+ *   - sm and up: the full horizontal lockup (mark + "Our sweet family", no tagline)
+ * `size` = rendered pixel height. `white` swaps to reversed variants for dark backgrounds.
  */
 export default function Logo({
-  size = 40,
+  size = 44,
   white = false,
   className = '',
   title = 'Our Sweet Family',
@@ -14,15 +16,14 @@ export default function Logo({
   // eslint-disable-next-line no-unused-vars
   wordmark,
 }) {
-  const src = white
-    ? '/brand/osf-1-horizontal-white.svg'
-    : '/brand/osf-1-horizontal-sunrise.svg';
+  const mark = white ? '/brand/osf-mark-white.svg' : '/brand/osf-mark-sunrise.svg';
+  const full = white
+    ? '/brand/osf-horizontal-notag-white.svg'
+    : '/brand/osf-horizontal-notag-sunrise.svg';
   return (
-    <img
-      src={src}
-      alt={title}
-      className={className}
-      style={{ height: size, width: 'auto', display: 'block' }}
-    />
+    <span className={`inline-flex items-center ${className}`}>
+      <img src={mark} alt={title} className="block sm:hidden" style={{ height: size, width: 'auto' }} />
+      <img src={full} alt={title} className="hidden sm:block" style={{ height: size, width: 'auto' }} />
+    </span>
   );
 }

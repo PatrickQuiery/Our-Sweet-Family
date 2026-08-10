@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '../components/Logo';
-import LogoMark from '../components/LogoMark';
 
 const features = [
   {
@@ -210,7 +209,7 @@ export default function Landing() {
                 </div>
                 <div className="flex items-center gap-3 mt-3 px-1 pb-1">
                   <span className="w-9 h-9 rounded-xl bg-white shadow-soft flex items-center justify-center overflow-hidden">
-                    <img src="/brand/osf-4-circle-badge-sunrise.svg" alt="Our Sweet Family" className="w-full h-full object-contain" />
+                    <svg viewBox="0 0 100 100" className="w-5 h-5" fill="#ef3f74" aria-hidden="true"><path d="M50 82 C22 62 10 45 10 30 C10 18 19 11 29 11 C39 11 45 18 50 26 C55 18 61 11 71 11 C81 11 90 18 90 30 C90 45 78 62 50 82 Z" /></svg>
                   </span>
                   <span className="text-sm font-semibold text-ink-soft">
                     Mom added 4 memories · <span className="text-brand-600">just now</span>
@@ -247,7 +246,7 @@ export default function Landing() {
             <div className="p-5 md:p-6">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
-                  <img src="/brand/osf-4-circle-badge-sunrise.svg" alt="Our Sweet Family" className="w-11 h-11 object-contain" />
+                  <svg viewBox="0 0 100 100" className="w-7 h-7" fill="#ef3f74" aria-hidden="true"><path d="M50 82 C22 62 10 45 10 30 C10 18 19 11 29 11 C39 11 45 18 50 26 C55 18 61 11 71 11 C81 11 90 18 90 30 C90 45 78 62 50 82 Z" /></svg>
                   <span className="font-extrabold text-xl text-ink tracking-tight">The Quiery Family</span>
                 </div>
                 <span className="text-xs font-bold text-white bg-gradient-to-r from-brand-500 to-sun-400 px-3.5 py-1.5 rounded-full">Today</span>
@@ -360,9 +359,6 @@ export default function Landing() {
         <div className="relative max-w-5xl mx-auto rounded-3xl overflow-hidden bg-sunrise px-6 py-16 text-center shadow-soft">
           <div className="absolute -top-16 -left-10 w-72 h-72 rounded-full bg-white/40 blur-3xl pointer-events-none" />
           <div className="relative">
-            <div className="flex justify-center mb-5">
-              <LogoMark heart="#ef3f74" fig="#232a45" size={104} />
-            </div>
             <h2 className="text-3xl md:text-4xl font-extrabold text-ink mb-4 tracking-tight">Start saving your family's memories today</h2>
             <p className="text-ink-soft mb-8 max-w-md mx-auto">Free forever. No ads. No selling your data. Just your family.</p>
             <Link to="/signup" className="btn-primary inline-block text-base px-8 py-3">
