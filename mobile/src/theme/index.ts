@@ -9,29 +9,41 @@
  */
 import { Platform, type TextStyle } from 'react-native';
 
-// Raw brand ramp (from the web tailwind config) — the primary family accent.
+// Luminous "Sunrise" brand ramp — pink leads (matches the web tailwind config).
 const brand = {
-  50: '#fff1f5',
-  100: '#ffe4ec',
-  200: '#fecdd8',
-  300: '#fda4bb',
-  400: '#fb7097',
-  500: '#f43f74',
-  600: '#e11d58',
-  700: '#be1249',
-  800: '#9e1141',
-  900: '#88133c',
+  50: '#fff1f6',
+  100: '#ffe3ee',
+  200: '#ffc9dd',
+  300: '#ffa0c1',
+  400: '#ff6f9c',
+  500: '#ff5c8a',
+  600: '#ef3f74',
+  700: '#d0295c',
+  800: '#a81f49',
+  900: '#8a1c40',
   950: '#4c051e',
 } as const;
 
-// Warm gold accent.
+// Sunrise yellow — the sunshine accent.
 const warm = {
-  50: '#fefce8',
-  100: '#fef9c3',
-  200: '#fef08a',
-  300: '#fde047',
-  400: '#facc15',
-  500: '#eab308',
+  50: '#fff9e6',
+  100: '#fff0c0',
+  200: '#ffe58f',
+  300: '#f9d65e',
+  400: '#f6c945',
+  500: '#eeb81f',
+} as const;
+
+// Sunrise blue — the support color.
+const blue = {
+  50: '#eaf3ff',
+  100: '#d6e8ff',
+  200: '#b3d2ff',
+  300: '#85b6ff',
+  400: '#5fa0ff',
+  500: '#4d94ff',
+  600: '#2f78e6',
+  700: '#245fb8',
 } as const;
 
 const gray = {
@@ -51,6 +63,7 @@ const gray = {
 export interface AppColors {
   brand: typeof brand;
   warm: typeof warm;
+  blue: typeof blue;
   gray: typeof gray;
   bg: string;
   surface: string;
@@ -60,6 +73,9 @@ export interface AppColors {
   /** Soft brand tint for icon circles / ghost-pressed backgrounds. */
   primarySoft: string;
   onPrimary: string;
+  /** Blue support color + its soft tint. */
+  support: string;
+  supportSoft: string;
   accent: string;
   /** Neutral fill for unselected chips / secondary surfaces. */
   fill: string;
@@ -76,45 +92,51 @@ export interface AppColors {
 export const lightColors: AppColors = {
   brand,
   warm,
+  blue,
   gray,
-  bg: '#fbf7f8', // soft warm off-white
+  bg: '#fdfcff', // near-white paper
   surface: '#ffffff',
-  surfaceAlt: '#faf9fb',
+  surfaceAlt: '#fbf7fb',
   primary: brand[500],
   primaryPressed: brand[600],
   primarySoft: brand[50],
   onPrimary: '#ffffff',
+  support: blue[500],
+  supportSoft: blue[50],
   accent: warm[400],
   fill: gray[100],
   fillPressed: gray[200],
-  text: gray[900],
-  textSecondary: gray[600],
-  textMuted: gray[400],
+  text: '#232a45', // ink
+  textSecondary: '#5a627e',
+  textMuted: '#8890a8',
   border: gray[200],
   borderSubtle: gray[100],
   danger: '#dc2626',
-  overlay: 'rgba(17,24,39,0.55)',
+  overlay: 'rgba(35,42,69,0.55)',
 };
 
 export const darkColors: AppColors = {
   brand,
   warm,
+  blue,
   gray,
-  bg: '#141013', // warm near-black
-  surface: '#1e181c',
-  surfaceAlt: '#262027',
-  primary: brand[400], // brighter rose reads better on dark
+  bg: '#151726', // deep ink-navy
+  surface: '#1e2136',
+  surfaceAlt: '#262a42',
+  primary: brand[400], // brighter pink reads better on dark
   primaryPressed: brand[500],
-  primarySoft: 'rgba(244,63,116,0.16)',
+  primarySoft: 'rgba(255,92,138,0.18)',
   onPrimary: '#ffffff',
+  support: blue[400],
+  supportSoft: 'rgba(77,148,255,0.18)',
   accent: warm[300],
-  fill: '#2a232a',
-  fillPressed: '#342b34',
-  text: '#f5f0f2',
-  textSecondary: '#c3b8bf',
-  textMuted: '#8a7e86',
-  border: '#342b32',
-  borderSubtle: '#241d22',
+  fill: '#2a2e48',
+  fillPressed: '#343a58',
+  text: '#f3f2f8',
+  textSecondary: '#bfc3d8',
+  textMuted: '#8890a8',
+  border: '#343a58',
+  borderSubtle: '#252a42',
   danger: '#f87171',
   overlay: 'rgba(0,0,0,0.6)',
 };
@@ -127,11 +149,12 @@ export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48
 export const radius = { sm: 8, md: 12, lg: 16, xl: 24, pill: 999 } as const;
 
 export const fonts = {
-  regular: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semibold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
-  extrabold: 'Inter_800ExtraBold',
+  regular: 'Poppins_400Regular',
+  medium: 'Poppins_500Medium',
+  semibold: 'Poppins_600SemiBold',
+  bold: 'Poppins_700Bold',
+  extrabold: 'Poppins_800ExtraBold',
+  script: 'DancingScript_700Bold',
 } as const;
 
 // Type scale — each entry is a ready-to-spread TextStyle (minus color, which the
@@ -156,12 +179,12 @@ export interface AppShadow {
 // Soft, warm shadow for light mode — subtle on iOS, elevation on Android.
 export const lightShadow: AppShadow = {
   card: Platform.select({
-    ios: { shadowColor: '#9e1141', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } },
+    ios: { shadowColor: '#232a45', shadowOpacity: 0.12, shadowRadius: 18, shadowOffset: { width: 0, height: 8 } },
     android: { elevation: 3 },
     default: {},
   })!,
   soft: Platform.select({
-    ios: { shadowColor: '#111827', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
+    ios: { shadowColor: '#232a45', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
     android: { elevation: 2 },
     default: {},
   })!,

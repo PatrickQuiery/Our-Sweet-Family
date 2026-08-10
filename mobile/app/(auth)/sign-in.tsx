@@ -1,7 +1,7 @@
 import { useSignIn, useSSO } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { KeyboardAvoidingView, Platform, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
@@ -13,7 +13,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const { startSSOFlow } = useSSO();
-  const { colors, radius, spacing } = useTheme();
+  const { colors, spacing } = useTheme();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,21 +61,14 @@ export default function SignInScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1, justifyContent: 'center', paddingHorizontal: spacing.xl }}
       >
-        {/* Brand mark */}
+        {/* Brand mark — the real recolorable OSF mark (closed heart + line-art family). */}
         <View style={{ alignItems: 'center', marginBottom: spacing.xxl }}>
-          <View
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: radius.xl,
-              backgroundColor: colors.primary,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: spacing.lg,
-            }}
-          >
-            <Ionicons name="heart" size={38} color={colors.onPrimary} />
-          </View>
+          <Image
+            source={require('../../assets/logo-mark.png')}
+            style={{ width: 104, height: 104, marginBottom: spacing.md }}
+            resizeMode="contain"
+            accessibilityLabel="Our Sweet Family"
+          />
           <Text variant="title" center>
             Our Sweet Family
           </Text>
