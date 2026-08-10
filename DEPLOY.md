@@ -7,22 +7,31 @@ The production branch is **`claude/family-photo-sharing-app-RfJto`**.
 
 ## 1. Web client → Vercel
 
-The Vercel project root is **`client/`** (see `client/vercel.json`).
+Vercel project: **`our-sweet-family-client`** (under the personal
+**`patrickquiery-9100's projects`** account — *not* the IntelliShift team).
+Its **Root Directory** is set to `client/` in the Vercel project settings.
 
-> ⚠️ **Account note:** oursweetfamily.com lives under a **personal Vercel account**, not
-> the "IntelliShift" team. If `vercel whoami` shows an IntelliShift scope, log into the
-> account that owns the project first.
+> ⚠️ **Account note:** if `vercel whoami` / `vercel teams ls` shows an IntelliShift
+> scope, the OSF project won't be visible — `vercel login` to the personal account first.
 
 ### CLI
 
+The repo is already linked (`.vercel/` at the **repo root**, git-ignored). Deploy
+**from the repo root** — Vercel applies the `client/` Root Directory itself, so do
+**not** `cd client` (that produces a `client/client does not exist` error).
+
 ```bash
-vercel login                      # use the account that owns oursweetfamily.com
-cd client
-vercel link                       # select the "Our Sweet Family" project (first time only)
-vercel --prod                     # deploy to production
+cd ~/Developer/Our-Sweet-Family        # repo ROOT, not client/
+vercel --prod --yes --archive=tgz      # deploy to production
 ```
 
-After it reports `READY`, hard-refresh https://oursweetfamily.com to confirm.
+- **`--archive=tgz` is required.** Without it the upload includes the `mobile/` tree
+  and exceeds Vercel's 15,000-file limit (`missing_archive` error). The tgz flag
+  bundles + compresses the upload instead.
+- First-time / re-link: `vercel link --yes --project our-sweet-family-client` from the repo root.
+
+After it reports `READY` and `Aliased: https://oursweetfamily.com`, hard-refresh the
+site to confirm.
 
 ### Dashboard (alternative)
 
