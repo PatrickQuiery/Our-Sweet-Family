@@ -18,7 +18,7 @@ export default function Privacy() {
     <div className="min-h-screen bg-paper">
       <nav className="flex items-center justify-between px-6 py-4 max-w-3xl mx-auto">
         <Link to="/">
-          <Logo tone="brand" wordmark="script" size={34} />
+          <Logo tone="brand" wordmark="script" size={48} />
         </Link>
         <Link to="/signup" className="btn-primary text-sm">Get started free</Link>
       </nav>
