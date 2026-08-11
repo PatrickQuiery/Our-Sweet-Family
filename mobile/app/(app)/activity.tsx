@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useRef } from 'react';
 import { ActivityIndicator, RefreshControl, SectionList, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useActivity } from '../../src/hooks/useActivity';
 import { relativeTime } from '../../src/lib/activity';
 import { AuthedImage } from '../../src/components/AuthedImage';
+import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { EmptyState, Skeleton, Text, Touchable } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useFamily } from '../../src/context/FamilyProvider';
@@ -30,7 +30,6 @@ function dayBucket(iso: string, now: number): string {
 
 export default function Activity() {
   const { colors, spacing, radius, fonts } = useTheme();
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { me } = useFamily();
   const { items, loading, refreshing, error, refresh, loadMore } = useActivity();
@@ -115,9 +114,9 @@ export default function Activity() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={{ paddingTop: insets.top + spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.xs }}>
-        <Text variant="title">Activity</Text>
-      </View>
+      <SunriseHeader>
+        <Text variant="title" style={{ marginTop: spacing.sm }}>Activity</Text>
+      </SunriseHeader>
 
       {refreshing && items.length === 0 && !error ? (
         <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm, gap: spacing.md }}>

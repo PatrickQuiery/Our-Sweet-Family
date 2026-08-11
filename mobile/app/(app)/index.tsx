@@ -1,25 +1,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, SectionList, TextInput, useWindowDimensions, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemories } from '../../src/hooks/useMemories';
 import { MosaicTile } from '../../src/components/MosaicTile';
 import { TimelineScrubber, type TimeRange } from '../../src/components/TimelineScrubber';
-import { Button, Chip, EmptyState, Skeleton, Text, Touchable } from '../../src/components/ui';
+import { SunriseHeader } from '../../src/components/SunriseHeader';
+import { Button, Chip, EmptyState, Skeleton, Text } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { buildTimeline } from '../../src/lib/mosaic';
 
 const GAP = 6;
+// Per-child accent palette (mirrors the web timeline rail).
+const CHILD_COLORS = ['#f43f74', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#0ea5e9'];
 
 export default function Timeline() {
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState('');
   const [childFilter, setChildFilter] = useState<string | null>(null);
   const [range, setRange] = useState<TimeRange | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { colors, spacing, radius, fonts } = useTheme();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { width: screenW } = useWindowDimensions();
   const contentW = screenW - spacing.lg * 2;
 
@@ -55,93 +57,92 @@ export default function Timeline() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={{ paddingTop: insets.top + spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <View
-          style={{
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.sm,
-            backgroundColor: colors.surface,
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: radius.md,
-            paddingHorizontal: spacing.md,
-            height: 44,
-          }}
-        >
-          <Ionicons name="search" size={18} color={colors.textMuted} />
-          <TextInput
-            style={{ flex: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.text }}
-            placeholder="Search memories"
-            placeholderTextColor={colors.textMuted}
-            value={query}
-            onChangeText={setQuery}
-            autoCapitalize="none"
-            returnKeyType="search"
-          />
-          {query ? (
-            <Pressable onPress={() => setQuery('')} hitSlop={8}>
-              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+      <SunriseHeader
+        right={
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
+            <Pressable onPress={() => { if (searchOpen) setQuery(''); setSearchOpen((v) => !v); }} hitSlop={10}>
+              <Ionicons name={searchOpen ? 'close' : 'search'} size={22} color={colors.text} />
             </Pressable>
-          ) : null}
-        </View>
-          <Touchable
-            onPress={() => router.push('/reels')}
-            pressedScale={0.92}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: radius.md,
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.border,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="film-outline" size={20} color={colors.text} />
-          </Touchable>
-        </View>
-
-        {children.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingTop: spacing.sm }}>
-            <Chip label="All" selected={!childFilter} onPress={() => setChildFilter(null)} />
-            {children.map((c) => (
-              <Chip
-                key={c.id}
-                label={c.name}
-                selected={childFilter === c.id}
-                onPress={() => setChildFilter(childFilter === c.id ? null : c.id)}
-              />
-            ))}
-          </ScrollView>
-        ) : null}
-
-        {range ? (
-          <View style={{ flexDirection: 'row', paddingTop: spacing.sm }}>
-            <Pressable
-              onPress={() => setRange(null)}
-              hitSlop={8}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 6,
-                backgroundColor: colors.primarySoft,
-                borderRadius: radius.pill,
-                paddingLeft: 10,
-                paddingRight: 8,
-                paddingVertical: 5,
-              }}
-            >
-              <Ionicons name="calendar-outline" size={13} color={colors.primary} />
-              <Text variant="label" style={{ color: colors.primary }}>{range.label}</Text>
-              <Ionicons name="close" size={14} color={colors.primary} />
+            <Pressable onPress={() => router.push('/reels')} hitSlop={10}>
+              <Ionicons name="film-outline" size={22} color={colors.text} />
             </Pressable>
           </View>
+        }
+      >
+        {searchOpen ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.sm,
+              backgroundColor: colors.surface,
+              borderRadius: radius.md,
+              paddingHorizontal: spacing.md,
+              height: 44,
+              marginTop: spacing.sm,
+            }}
+          >
+            <Ionicons name="search" size={18} color={colors.textMuted} />
+            <TextInput
+              style={{ flex: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.text }}
+              placeholder="Search memories"
+              placeholderTextColor={colors.textMuted}
+              value={query}
+              onChangeText={setQuery}
+              autoCapitalize="none"
+              returnKeyType="search"
+              autoFocus
+            />
+            {query ? (
+              <Pressable onPress={() => setQuery('')} hitSlop={8}>
+                <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
+          </View>
         ) : null}
-      </View>
+      </SunriseHeader>
+
+      {children.length > 0 || range ? (
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}>
+          {children.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+              <Chip label="All" selected={!childFilter} onPress={() => setChildFilter(null)} />
+              {children.map((c, i) => (
+                <Chip
+                  key={c.id}
+                  label={c.name}
+                  color={CHILD_COLORS[i % CHILD_COLORS.length]}
+                  selected={childFilter === c.id}
+                  onPress={() => setChildFilter(childFilter === c.id ? null : c.id)}
+                />
+              ))}
+            </ScrollView>
+          ) : null}
+
+          {range ? (
+            <View style={{ flexDirection: 'row', paddingTop: spacing.sm }}>
+              <Pressable
+                onPress={() => setRange(null)}
+                hitSlop={8}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: colors.primarySoft,
+                  borderRadius: radius.pill,
+                  paddingLeft: 10,
+                  paddingRight: 8,
+                  paddingVertical: 5,
+                }}
+              >
+                <Ionicons name="calendar-outline" size={13} color={colors.primary} />
+                <Text variant="label" style={{ color: colors.primary }}>{range.label}</Text>
+                <Ionicons name="close" size={14} color={colors.primary} />
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
 
       <View style={{ flex: 1 }}>
       {refreshing && memories.length === 0 && !error && !filtering ? (
