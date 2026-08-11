@@ -1,22 +1,13 @@
-import { View, type ViewProps } from 'react-native';
+import { type ViewProps } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
+import { GlassView } from '../GlassView';
 
-export function Card({ style, ...rest }: ViewProps) {
-  const { colors, shadow, radius } = useTheme();
+/** Frosted "liquid glass" card — translucent blur instead of a solid panel. */
+export function Card({ style, children }: ViewProps) {
+  const { shadow } = useTheme();
   return (
-    <View
-      {...rest}
-      style={[
-        {
-          backgroundColor: colors.surface,
-          borderRadius: radius.lg,
-          borderWidth: 1,
-          borderColor: colors.borderSubtle,
-          overflow: 'hidden',
-        },
-        shadow.card,
-        style,
-      ]}
-    />
+    <GlassView style={[shadow.soft, style]}>
+      {children}
+    </GlassView>
   );
 }

@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
-import { View, type GestureResponderEvent } from 'react-native';
+import { StyleSheet, View, type GestureResponderEvent } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { Touchable } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
@@ -36,18 +37,26 @@ function CaptureTabButton({ onPress }: TabButtonProps) {
 }
 
 export default function AppTabs() {
-  const { colors, fonts } = useTheme();
+  const { colors, fonts, scheme } = useTheme();
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 11 },
+        // Floating frosted-glass bar over the content.
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.borderSubtle,
-          borderTopWidth: 1,
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
         },
+        tabBarBackground: () => (
+          <View style={StyleSheet.absoluteFill}>
+            <BlurView intensity={40} tint={scheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: scheme === 'dark' ? 'rgba(21,23,38,0.4)' : 'rgba(255,255,255,0.45)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: scheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.7)' }]} />
+          </View>
+        ),
         headerStyle: { backgroundColor: colors.bg },
         headerShadowVisible: false,
         headerTitleStyle: { fontFamily: fonts.bold, color: colors.text, fontSize: 20 },

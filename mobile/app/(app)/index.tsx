@@ -161,7 +161,7 @@ export default function Timeline() {
       ) : (
         <SectionList
           style={{ backgroundColor: colors.bg }}
-          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.xs, paddingBottom: spacing.xxl, flexGrow: 1 }}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.xs, paddingBottom: 110, flexGrow: 1 }}
           sections={sections}
           keyExtractor={(row) => row.key}
           renderItem={({ item: row }) => (

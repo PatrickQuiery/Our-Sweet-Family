@@ -133,7 +133,7 @@ export default function Activity() {
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1 }}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: 110, flexGrow: 1 }}
           renderItem={({ item }) => renderRow(item)}
           renderSectionHeader={({ section }) => (
             <View style={{ backgroundColor: colors.bg, paddingTop: spacing.md, paddingBottom: spacing.xs }}>

@@ -94,7 +94,7 @@ export const lightColors: AppColors = {
   warm,
   blue,
   gray,
-  bg: '#fdfcff', // near-white paper
+  bg: '#f5eef4', // soft lilac-blush wash (less stark than white; complements the Sunrise gradient)
   surface: '#ffffff',
   surfaceAlt: '#fbf7fb',
   primary: brand[500],
