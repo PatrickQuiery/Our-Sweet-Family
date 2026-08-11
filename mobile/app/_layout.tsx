@@ -2,7 +2,12 @@ import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
+
+// Sunrise header wash for the native-stack sub-screens (Memory, Children, …).
+const LIGHT_G = ['#fff2c9', '#ffd3e2', '#cfe8ff'] as const;
+const DARK_G = ['#3a2c1c', '#3a2233', '#1d2942'] as const;
 import { tokenCache } from '../src/lib/tokenCache';
 import { CLERK_PUBLISHABLE_KEY } from '../src/lib/config';
 import { interFontMap } from '../src/theme/fonts';
@@ -38,10 +43,12 @@ function AuthGate() {
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: colors.bg },
-            headerStyle: { backgroundColor: colors.bg },
             headerShadowVisible: false,
             headerTintColor: colors.primary,
             headerTitleStyle: { fontFamily: fonts.semibold, color: colors.text },
+            headerBackground: () => (
+              <LinearGradient colors={scheme === 'dark' ? DARK_G : LIGHT_G} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1 }} />
+            ),
           }}
         >
           <Stack.Screen name="(auth)" />

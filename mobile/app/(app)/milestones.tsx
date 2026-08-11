@@ -6,10 +6,13 @@ import { useApi } from '../../src/hooks/useApi';
 import { useFamily } from '../../src/context/FamilyProvider';
 import { createMilestone, deleteMilestone, getMilestones, MILESTONE_TYPES } from '../../src/lib/milestones';
 import { Button, Card, Chip, EmptyState, Input, Loading, Screen, Text, Touchable } from '../../src/components/ui';
+import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { DatePickerField } from '../../src/components/DatePickerField';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { ApiError } from '../../src/lib/api';
 import type { Child, Milestone } from '../../src/lib/types';
+
+const CHILD_COLORS = ['#f43f74', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#0ea5e9'];
 
 function formatDate(iso: string): string {
   try {
@@ -99,12 +102,12 @@ export default function Milestones() {
   }
 
   return (
-    <Screen safeTop>
+    <Screen>
+      <SunriseHeader title="Milestones" />
       <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}>
-        <Text variant="title">Milestones</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.md }}>
-          {children.map((c: Child) => (
-            <Chip key={c.id} label={c.name} selected={c.id === childId} onPress={() => setChildId(c.id)} />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.sm }}>
+          {children.map((c: Child, i: number) => (
+            <Chip key={c.id} label={c.name} color={CHILD_COLORS[i % CHILD_COLORS.length]} selected={c.id === childId} onPress={() => setChildId(c.id)} />
           ))}
         </ScrollView>
       </View>

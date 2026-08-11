@@ -4,6 +4,7 @@ import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Screen, Text, Touchable } from '../../src/components/ui';
+import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useFamily } from '../../src/context/FamilyProvider';
 import { useApi } from '../../src/hooks/useApi';
@@ -81,6 +82,7 @@ export default function Settings() {
 
   return (
     <Screen>
+      <SunriseHeader title="Settings" />
       <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }} showsVerticalScrollIndicator={false}>
         {/* Account */}
         <Card style={{ padding: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>

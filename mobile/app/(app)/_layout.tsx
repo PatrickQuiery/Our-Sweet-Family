@@ -98,6 +98,7 @@ export default function AppTabs() {
         name="settings"
         options={{
           title: 'Settings',
+          headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'settings' : 'settings-outline'} size={23} color={color} />
           ),

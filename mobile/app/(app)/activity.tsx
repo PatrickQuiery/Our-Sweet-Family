@@ -114,9 +114,7 @@ export default function Activity() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <SunriseHeader>
-        <Text variant="title" style={{ marginTop: spacing.sm }}>Activity</Text>
-      </SunriseHeader>
+      <SunriseHeader title="Activity" />
 
       {refreshing && items.length === 0 && !error ? (
         <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm, gap: spacing.md }}>
