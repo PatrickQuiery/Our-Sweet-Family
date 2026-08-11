@@ -56,7 +56,7 @@ export default function Timeline() {
   const sections = useMemo(() => buildTimeline(memories, { width: contentW, gap: GAP }), [memories, contentW]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: 'transparent' }}>
       <SunriseHeader
         right={
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
@@ -160,7 +160,7 @@ export default function Timeline() {
         </View>
       ) : (
         <SectionList
-          style={{ backgroundColor: colors.bg }}
+          style={{ backgroundColor: 'transparent' }}
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.xs, paddingBottom: 110, flexGrow: 1 }}
           sections={sections}
           keyExtractor={(row) => row.key}
@@ -174,7 +174,7 @@ export default function Timeline() {
           renderSectionHeader={({ section }) => (
             <View
               style={{
-                backgroundColor: colors.bg,
+                backgroundColor: 'transparent',
                 paddingTop: spacing.lg,
                 paddingBottom: spacing.sm,
                 flexDirection: 'row',

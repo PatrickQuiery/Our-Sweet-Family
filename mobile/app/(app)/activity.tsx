@@ -113,7 +113,7 @@ export default function Activity() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: 'transparent' }}>
       <SunriseHeader title="Activity" />
 
       {refreshing && items.length === 0 && !error ? (
@@ -136,7 +136,7 @@ export default function Activity() {
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: 110, flexGrow: 1 }}
           renderItem={({ item }) => renderRow(item)}
           renderSectionHeader={({ section }) => (
-            <View style={{ backgroundColor: colors.bg, paddingTop: spacing.md, paddingBottom: spacing.xs }}>
+            <View style={{ backgroundColor: 'transparent', paddingTop: spacing.md, paddingBottom: spacing.xs }}>
               <Text variant="label" color="textMuted" style={{ textTransform: 'uppercase' }}>{section.title}</Text>
             </View>
           )}

@@ -93,7 +93,7 @@ export default function Milestones() {
 
   if (children.length === 0) {
     return (
-      <Screen>
+      <Screen style={{ backgroundColor: 'transparent' }}>
         <View style={{ flex: 1 }}>
           <EmptyState icon="happy-outline" title="No children yet" subtitle="Add a child in Settings to track milestones." />
         </View>
@@ -102,7 +102,7 @@ export default function Milestones() {
   }
 
   return (
-    <Screen>
+    <Screen style={{ backgroundColor: 'transparent' }}>
       <SunriseHeader title="Milestones" />
       <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.sm }}>

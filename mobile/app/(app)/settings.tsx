@@ -81,7 +81,7 @@ export default function Settings() {
   const pct = limit ? Math.min(1, usedVideo / limit) : 0;
 
   return (
-    <Screen>
+    <Screen style={{ backgroundColor: 'transparent' }}>
       <SunriseHeader title="Settings" />
       <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
         {/* Account */}
