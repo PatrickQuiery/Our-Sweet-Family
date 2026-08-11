@@ -101,7 +101,10 @@ export default function AppLayout() {
   const planColors = { free: 'bg-ink/5 text-ink-soft', plus: 'bg-blue-100 text-blue-700', premium: 'bg-brand-100 text-brand-700' };
 
   return (
-    <div className="min-h-screen flex bg-sunrise-soft bg-fixed">
+    <div
+      className="min-h-screen flex"
+      style={{ background: 'linear-gradient(135deg,#fdeede 0%,#fbe4ef 52%,#e8eefb 100%)', backgroundAttachment: 'fixed' }}
+    >
       {/* Sidebar — frosted glass over the Sunrise wash */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white/60 backdrop-blur-xl border-r border-white/40 flex flex-col transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Logo */}
