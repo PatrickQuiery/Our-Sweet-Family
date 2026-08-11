@@ -181,7 +181,7 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
     : format(dateAt(labelF), 'MMM yyyy');
 
   return (
-    <div className="rounded-2xl border border-black/5 bg-white overflow-hidden select-none">
+    <div className="rounded-2xl border border-white/60 bg-white/55 backdrop-blur-md overflow-hidden select-none">
       <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Timeline</span>
         {!full && (

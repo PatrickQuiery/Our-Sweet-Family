@@ -101,9 +101,9 @@ export default function AppLayout() {
   const planColors = { free: 'bg-ink/5 text-ink-soft', plus: 'bg-blue-100 text-blue-700', premium: 'bg-brand-100 text-brand-700' };
 
   return (
-    <div className="min-h-screen flex bg-paper">
-      {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-black/5 flex flex-col transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <div className="min-h-screen flex bg-sunrise-soft bg-fixed">
+      {/* Sidebar — frosted glass over the Sunrise wash */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white/60 backdrop-blur-xl border-r border-white/40 flex flex-col transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Logo */}
         <div className="flex items-center px-5 py-5 border-b border-black/5">
           <img src="/brand/osf-5-compact-sunrise.svg" alt="Our Sweet Family" className="w-full max-w-[210px]" />

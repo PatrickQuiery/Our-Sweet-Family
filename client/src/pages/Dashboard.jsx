@@ -5,6 +5,9 @@ import api from '../lib/api';
 import MosaicFeed from '../components/MosaicFeed';
 import DashboardTimeline from '../components/DashboardTimeline';
 
+// Per-child accent palette (mirrors the mobile app + timeline rail).
+const CHILD_COLORS = ['#f43f74', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#0ea5e9'];
+
 export default function Dashboard() {
   const { user, family, loading: authLoading } = useAuth();
   const [memories, setMemories] = useState([]);
@@ -169,29 +172,35 @@ export default function Dashboard() {
         <button
           onClick={() => setSelectedChild('')}
           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-            !selectedChild ? 'bg-brand-500 text-white' : 'bg-white text-ink-soft border border-black/5 hover:bg-brand-50/60'
+            !selectedChild ? 'bg-brand-500 text-white' : 'bg-white/60 backdrop-blur text-ink-soft border border-white/60 hover:bg-white/80'
           }`}
         >
           All children
         </button>
-        {children.map((child) => (
-          <button
-            key={child.id}
-            onClick={() => setSelectedChild(child.id === selectedChild ? '' : child.id)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              selectedChild === child.id ? 'bg-brand-500 text-white' : 'bg-white text-ink-soft border border-black/5 hover:bg-brand-50/60'
-            }`}
-          >
-            {child.name}
-          </button>
-        ))}
+        {children.map((child, i) => {
+          const color = CHILD_COLORS[i % CHILD_COLORS.length];
+          const active = selectedChild === child.id;
+          return (
+            <button
+              key={child.id}
+              onClick={() => setSelectedChild(active ? '' : child.id)}
+              style={active ? { backgroundColor: color } : undefined}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                active ? 'text-white' : 'bg-white/60 backdrop-blur text-ink-soft border border-white/60 hover:bg-white/80'
+              }`}
+            >
+              {!active && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />}
+              {child.name}
+            </button>
+          );
+        })}
         <div className="ml-auto flex gap-2">
           {['', 'photo', 'video'].map((t) => (
             <button
               key={t}
               onClick={() => setSelectedType(t)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                selectedType === t ? 'bg-gray-900 text-white' : 'bg-white text-ink-soft border border-black/5 hover:bg-brand-50/60'
+                selectedType === t ? 'bg-ink text-white' : 'bg-white/60 backdrop-blur text-ink-soft border border-white/60 hover:bg-white/80'
               }`}
             >
               {t === '' ? 'All' : t === 'photo' ? 'Photos' : 'Videos'}
