@@ -131,6 +131,10 @@ model Memory {
   processing      Boolean  @default(false) // video is being compressed in the background
   size            Int?     // bytes of the stored file (for plan usage metering)
   capturedAt      DateTime
+  // True when capturedAt came from the photo's EXIF "date taken". When false
+  // (no EXIF — e.g. a screenshot; date fell back to file-modified or upload
+  // time) the owner/uploader may correct the date manually.
+  dateFromExif    Boolean  @default(false)
   isClassified    Boolean  @default(false)
   caption         String?
   // Location where the photo was taken, from EXIF GPS. SENSITIVE (can reveal a

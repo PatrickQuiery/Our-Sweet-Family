@@ -17,7 +17,9 @@ import {
   deleteMemory,
   getMemory,
   removeReaction,
+  updateMemory,
 } from '../../src/lib/memories';
+import { DatePickerField } from '../../src/components/DatePickerField';
 import { formatAge } from '../../src/lib/age';
 import type { Child, Comment, Memory } from '../../src/lib/types';
 
@@ -109,6 +111,18 @@ export default function MemoryDetail() {
   }
 
   const meId = me?.id;
+  // The date may be corrected only when it did NOT come from EXIF (a real capture
+  // date is authoritative), and only by the owner or the uploader.
+  const canEditDate = !memory.dateFromExif && (canManage() || memory.uploadedBy?.id === meId);
+  const onDateChange = async (d: Date) => {
+    const noon = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12).toISOString();
+    try {
+      const updated = await updateMemory(api, id, { capturedAt: noon });
+      setMemory((m) => (m ? { ...m, ...updated } : m));
+    } catch (e: any) {
+      Alert.alert('Could not update the date', e?.message ?? 'Please try again.');
+    }
+  };
   const location = [memory.locationCity, memory.locationState].filter(Boolean).join(', ');
   const taggedChildren = (activeFamily?.children ?? []).filter((c) => memory.childIds?.includes(c.id));
   const hearted = !!memory.reactions?.some((r) => r.userId === meId && r.type === 'love');
@@ -219,12 +233,16 @@ export default function MemoryDetail() {
           ) : null}
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="calendar-outline" size={15} color={colors.textMuted} />
-              <Text variant="caption" color="textSecondary">
-                {formatFullDate(memory.capturedAt ?? memory.createdAt)}
-              </Text>
-            </View>
+            {canEditDate ? (
+              <DatePickerField value={new Date(memory.capturedAt ?? memory.createdAt)} onChange={onDateChange} />
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="calendar-outline" size={15} color={colors.textMuted} />
+                <Text variant="caption" color="textSecondary">
+                  {formatFullDate(memory.capturedAt ?? memory.createdAt)}
+                </Text>
+              </View>
+            )}
             {location ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Ionicons name="location-outline" size={15} color={colors.textMuted} />

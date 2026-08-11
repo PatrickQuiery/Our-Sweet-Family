@@ -384,7 +384,7 @@ router.get('/:id/download', authenticate, async (req, res) => {
 router.post('/', authenticate, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-  const { familyId, childIds, tags, caption, isClassified, capturedAtOverride, clientAssetId } = req.body;
+  const { familyId, childIds, tags, caption, isClassified, capturedAtOverride, fileLastModified, clientAssetId } = req.body;
   if (!familyId) return res.status(400).json({ error: 'familyId required' });
 
   try {
@@ -414,12 +414,27 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
 
     const fileType = req.file.mimetype.startsWith('video/') ? 'video' : 'photo';
 
-    // Extract EXIF date
-    let capturedAt = capturedAtOverride ? new Date(capturedAtOverride) : null;
-    if (!capturedAt) {
-      const exifDate = await extractExifDate(req.file.buffer, req.file.mimetype);
-      capturedAt = exifDate ? new Date(exifDate) : new Date();
+    // Decide the "date taken" (capturedAt) with a clear priority:
+    //   1. EXIF DateTimeOriginal — the real capture date; when present it's
+    //      authoritative and the memory's date becomes read-only.
+    //   2. The file's last-modified time (client-supplied) — best guess for
+    //      images without EXIF (screenshots, exports).
+    //   3. Upload time (now) — last resort.
+    // An explicit override still wins if a client sends one.
+    const exifDate = await extractExifDate(req.file.buffer, req.file.mimetype);
+    let capturedAt;
+    let dateFromExif = false;
+    if (capturedAtOverride) {
+      capturedAt = new Date(capturedAtOverride);
+    } else if (exifDate) {
+      capturedAt = new Date(exifDate);
+      dateFromExif = true;
+    } else if (fileLastModified && !Number.isNaN(Number(fileLastModified))) {
+      capturedAt = new Date(Number(fileLastModified));
+    } else {
+      capturedAt = new Date();
     }
+    if (Number.isNaN(capturedAt.getTime())) capturedAt = new Date();
 
     // Extract EXIF GPS (photos only) and reverse-geocode to City/State once, now,
     // so it's never recomputed on read. Both are stored regardless of the family's
@@ -512,6 +527,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
         originalQuality: isPaid,
         processing: needsVideoCompression,
         capturedAt,
+        dateFromExif,
         isClassified: canClassify && isClassified === 'true',
         caption: caption || null,
         latitude: gps?.latitude ?? null,
@@ -617,6 +633,18 @@ router.patch('/:id', authenticate, async (req, res) => {
       if (!Array.isArray(raw)) return res.status(400).json({ error: 'tags must be an array' });
       data.tags = [...new Set(raw.map((t) => String(t).trim().toLowerCase().slice(0, 40)).filter(Boolean))].slice(0, 20);
       data.tagsText = data.tags.length ? data.tags.join(' ') : null;
+    }
+
+    // Correct the date — only when it did NOT come from EXIF (a real capture date
+    // is authoritative and stays read-only).
+    if (req.body.capturedAt !== undefined) {
+      if (memory.dateFromExif) {
+        return res.status(409).json({ error: "This memory's date comes from the photo and can't be changed." });
+      }
+      const d = new Date(req.body.capturedAt);
+      if (Number.isNaN(d.getTime())) return res.status(400).json({ error: 'Invalid date' });
+      if (d.getTime() > Date.now() + 86400000) return res.status(400).json({ error: 'Date cannot be in the future' });
+      data.capturedAt = d;
     }
 
     if (Object.keys(data).length === 0) {

@@ -452,6 +452,46 @@ describe('PATCH /api/memories/:id', () => {
     );
   });
 
+  it('lets the owner correct capturedAt when the date is NOT from EXIF', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue({ ...editableMemory, dateFromExif: false });
+    prisma.memory.update.mockResolvedValue({ ...editableMemory, capturedAt: '2025-06-15', uploadedBy: mockMemory.uploadedBy });
+
+    const res = await request(app)
+      .patch('/api/memories/mem1')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ capturedAt: '2025-06-15' });
+
+    expect(res.status).toBe(200);
+    const call = prisma.memory.update.mock.calls[0][0];
+    expect(call.data.capturedAt).toEqual(new Date('2025-06-15'));
+  });
+
+  it('refuses to change capturedAt when the date came from EXIF (409)', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue({ ...editableMemory, dateFromExif: true });
+
+    const res = await request(app)
+      .patch('/api/memories/mem1')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ capturedAt: '2025-06-15' });
+
+    expect(res.status).toBe(409);
+    expect(prisma.memory.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects an invalid capturedAt (400)', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.memory.findUnique.mockResolvedValue({ ...editableMemory, dateFromExif: false });
+
+    const res = await request(app)
+      .patch('/api/memories/mem1')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ capturedAt: 'not-a-date' });
+
+    expect(res.status).toBe(400);
+  });
+
   it('lets the original uploader retag their own memory', async () => {
     const uploaderMemory = { ...editableMemory, uploadedById: 'member1' };
     prisma.user.findUnique.mockResolvedValue(memberUser);

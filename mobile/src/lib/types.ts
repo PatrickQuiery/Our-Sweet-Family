@@ -93,6 +93,8 @@ export interface Memory {
   processing?: boolean;
   /** When the photo/video was taken (EXIF). The API sorts the feed by this. */
   capturedAt?: string | null;
+  /** True when capturedAt came from the photo's EXIF — then the date is read-only. */
+  dateFromExif?: boolean;
   createdAt: string;
   // Present on the detail endpoint (GET /memories/:id):
   reactions?: Reaction[];

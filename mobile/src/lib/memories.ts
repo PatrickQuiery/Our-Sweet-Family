@@ -11,6 +11,11 @@ export async function deleteMemory(api: Api, id: string): Promise<void> {
   await api.del(`/memories/${id}`);
 }
 
+export async function updateMemory(api: Api, id: string, patch: Record<string, unknown>): Promise<Memory> {
+  const data = await api.patch<{ memory: Memory }>(`/memories/${id}`, patch);
+  return data.memory;
+}
+
 export async function addReaction(api: Api, id: string): Promise<void> {
   await api.post(`/memories/${id}/reactions`);
 }

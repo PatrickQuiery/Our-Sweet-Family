@@ -106,6 +106,9 @@ export default function Upload() {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('familyId', family.id);
+      // Fallback "date taken" for files without EXIF (screenshots, exports): the
+      // file's own modified time. EXIF still wins server-side when present.
+      if (file.lastModified) fd.append('fileLastModified', String(file.lastModified));
       const cids = childSel[id] || [];
       if (cids.length) fd.append('childIds', JSON.stringify(cids));
       const cap = (captions[id] || '').trim();

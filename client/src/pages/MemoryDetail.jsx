@@ -23,6 +23,10 @@ export default function MemoryDetail() {
   const [editTags, setEditTags] = useState([]);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editErr, setEditErr] = useState('');
+  const [editingDate, setEditingDate] = useState(false);
+  const [dateVal, setDateVal] = useState('');
+  const [savingDate, setSavingDate] = useState(false);
+  const [dateErr, setDateErr] = useState('');
   const [downloading, setDownloading] = useState(false);
 
   const fetchMemory = async () => {
@@ -74,6 +78,29 @@ export default function MemoryDetail() {
       setEditErr(err.response?.data?.error || 'Could not save changes');
     } finally {
       setSavingEdit(false);
+    }
+  };
+
+  const startEditDate = () => {
+    setDateVal(format(new Date(memory.capturedAt), 'yyyy-MM-dd'));
+    setDateErr('');
+    setEditingDate(true);
+  };
+
+  const handleSaveDate = async () => {
+    if (!dateVal) return;
+    setSavingDate(true);
+    setDateErr('');
+    try {
+      // Noon local so the stored instant can't land on the previous day in some
+      // timezones.
+      const { data } = await api.patch(`/memories/${id}`, { capturedAt: `${dateVal}T12:00:00` });
+      setMemory((m) => ({ ...m, ...data.memory }));
+      setEditingDate(false);
+    } catch (err) {
+      setDateErr(err.response?.data?.error || 'Could not update the date');
+    } finally {
+      setSavingDate(false);
     }
   };
 
@@ -208,8 +235,42 @@ export default function MemoryDetail() {
           )}
 
           {/* Meta */}
-          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-ink-muted mb-4">
-            <span>{format(new Date(memory.capturedAt), 'MMMM d, yyyy')}</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-ink-muted mb-4">
+            {editingDate ? (
+              <span className="inline-flex items-center gap-2">
+                <input
+                  type="date"
+                  value={dateVal}
+                  max={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setDateVal(e.target.value)}
+                  className="border border-ink-muted/30 rounded-lg bg-white/70 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-brand-400"
+                />
+                <button onClick={handleSaveDate} disabled={savingDate} className="font-medium text-brand-600 hover:text-brand-700">
+                  {savingDate ? 'Saving…' : 'Save'}
+                </button>
+                <button onClick={() => setEditingDate(false)} className="text-ink-muted hover:text-ink-soft">Cancel</button>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                {format(new Date(memory.capturedAt), 'MMMM d, yyyy')}
+                {canEdit && !memory.dateFromExif && (
+                  <button onClick={startEditDate} title="Edit date" className="text-brand-500 hover:text-brand-700">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                )}
+                {memory.dateFromExif && (
+                  <span title="Date taken, from the photo" className="text-ink-muted/70">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </span>
+                )}
+              </span>
+            )}
+            {dateErr && <span className="text-red-600 text-xs">{dateErr}</span>}
             <span>by {memory.uploadedBy?.name}</span>
             {memory.isClassified && (
               <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs font-medium">
