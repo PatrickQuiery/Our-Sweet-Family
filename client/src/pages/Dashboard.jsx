@@ -189,7 +189,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
-          <MosaicFeed memories={memories} />
+          <MosaicFeed memories={memories} currentUser={{ id: user?.id, name: user?.name }} />
 
           {pagination && page < pagination.pages && (
             <div className="flex justify-center mt-8">
