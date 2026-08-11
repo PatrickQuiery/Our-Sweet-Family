@@ -108,7 +108,7 @@ export default function AppLayout() {
       {/* Sidebar — frosted glass over the Sunrise wash */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white/60 backdrop-blur-xl border-r border-white/40 flex flex-col transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Logo */}
-        <div className="flex items-center px-5 py-5 border-b border-black/5">
+        <div className="flex items-center justify-center px-5 py-5 border-b border-black/5">
           <img src="/brand/osf-5-compact-sunrise.svg" alt="Our Sweet Family" className="w-full max-w-[210px]" />
         </div>
 
