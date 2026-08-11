@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
+import Activity from './pages/Activity';
 import Upload from './pages/Upload';
 import MemoryDetail from './pages/MemoryDetail';
 import Children from './pages/Children';
@@ -58,6 +59,7 @@ function AppRoutes() {
       />
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/activity" element={<Activity />} />
         <Route path="/upload" element={<Upload />} />
         <Route path="/memories/:id" element={<MemoryDetail />} />
         <Route path="/children" element={<Children />} />
