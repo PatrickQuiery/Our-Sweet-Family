@@ -196,11 +196,14 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
         </p>
       </div>
 
-      <div className="flex gap-3 px-4 pb-4 h-[calc(100vh-13rem)]">
+      {/* Height follows the date list (so the rail ends where the dates do),
+          floored so it stays usable when zoomed to a few months, and capped so a
+          long month list scrolls instead of overflowing the viewport. */}
+      <div className="flex gap-3 px-4 pb-4 min-h-[18rem] max-h-[calc(100vh-10rem)]">
         {/* ── Slider rail (drag to filter) ── */}
         <div
           ref={railRef}
-          className="relative w-8 flex-shrink-0 rounded-lg bg-ink/5 h-full"
+          className="relative w-8 flex-shrink-0 rounded-lg bg-ink/5 self-stretch"
         >
           {yearTicks.map((t) => (
             <div key={t.y} className="absolute left-0 right-0 border-t border-black/5" style={{ top: `${t.f * 100}%` }} />
