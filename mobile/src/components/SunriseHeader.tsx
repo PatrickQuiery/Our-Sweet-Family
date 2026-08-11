@@ -9,7 +9,7 @@ import { Text } from './ui';
 // The web's "Sunrise" gradient (#fff2c9 → #ffd3e2 → #cfe8ff), plus a deep,
 // muted variant so the header stays legible in dark mode.
 const LIGHT = ['#fff2c9', '#ffd3e2', '#cfe8ff'] as const;
-const DARK = ['#3a2c1c', '#3a2233', '#1d2942'] as const;
+const DARK = ['#33263f', '#2b2142', '#1b2540'] as const; // deep plum → indigo → navy
 const LOGO_RATIO = 900 / 184; // both horizontal logos share this aspect
 
 /**

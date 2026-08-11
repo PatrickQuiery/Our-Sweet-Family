@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 
 // Sunrise header wash for the native-stack sub-screens (Memory, Children, …).
 const LIGHT_G = ['#fff2c9', '#ffd3e2', '#cfe8ff'] as const;
-const DARK_G = ['#3a2c1c', '#3a2233', '#1d2942'] as const;
+const DARK_G = ['#33263f', '#2b2142', '#1b2540'] as const;
 import { tokenCache } from '../src/lib/tokenCache';
 import { CLERK_PUBLISHABLE_KEY } from '../src/lib/config';
 import { interFontMap } from '../src/theme/fonts';
