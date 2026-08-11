@@ -55,6 +55,16 @@ export default function AppTabs() {
       }}
     >
       <Tabs.Screen
+        name="activity"
+        options={{
+          title: 'Activity',
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'heart' : 'heart-outline'} size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="index"
         options={{
           title: 'Timeline',
@@ -64,16 +74,8 @@ export default function AppTabs() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="reels"
-        options={{
-          title: 'Reels',
-          headerShown: false,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'film' : 'film-outline'} size={24} color={color} />
-          ),
-        }}
-      />
+      {/* Reels stays routable (opened from the Timeline header) but is off the tab bar. */}
+      <Tabs.Screen name="reels" options={{ href: null, headerShown: false }} />
       <Tabs.Screen
         name="capture"
         options={{

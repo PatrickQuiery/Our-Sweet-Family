@@ -100,6 +100,17 @@ export interface Memory {
   uploadedBy?: { id: string; name?: string | null; avatarUrl?: string | null } | null;
 }
 
+export type ActivityType = 'love' | 'comment' | 'memory';
+
+export interface ActivityItem {
+  id: string;
+  type: ActivityType;
+  actor: { id: string; name?: string | null; avatarUrl?: string | null } | null;
+  memory: { id: string; fileType: 'photo' | 'video'; thumbnailUrl: string | null; fileUrl: string };
+  text?: string;
+  createdAt: string;
+}
+
 export interface Milestone {
   id: string;
   childId: string;

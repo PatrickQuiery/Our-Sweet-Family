@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMemories } from '../../src/hooks/useMemories';
 import { MosaicTile } from '../../src/components/MosaicTile';
 import { TimelineScrubber, type TimeRange } from '../../src/components/TimelineScrubber';
-import { Button, Chip, EmptyState, Skeleton, Text } from '../../src/components/ui';
+import { Button, Chip, EmptyState, Skeleton, Text, Touchable } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { buildTimeline } from '../../src/lib/mosaic';
 
@@ -56,8 +56,10 @@ export default function Timeline() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ paddingTop: insets.top + spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <View
           style={{
+            flex: 1,
             flexDirection: 'row',
             alignItems: 'center',
             gap: spacing.sm,
@@ -84,6 +86,23 @@ export default function Timeline() {
               <Ionicons name="close-circle" size={18} color={colors.textMuted} />
             </Pressable>
           ) : null}
+        </View>
+          <Touchable
+            onPress={() => router.push('/reels')}
+            pressedScale={0.92}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: radius.md,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="film-outline" size={20} color={colors.text} />
+          </Touchable>
         </View>
 
         {children.length > 0 ? (

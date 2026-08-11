@@ -47,9 +47,11 @@ const prisma = {
   reaction: {
     upsert: jest.fn(),
     deleteMany: jest.fn(),
+    findMany: jest.fn(),
   },
   comment: {
     findUnique: jest.fn(),
+    findMany: jest.fn(),
     create: jest.fn(),
     delete: jest.fn(),
   },

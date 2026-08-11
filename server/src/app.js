@@ -17,6 +17,7 @@ const reelsRoutes = require('./routes/reels');
 const contactRoutes = require('./routes/contact');
 const invitationsRoutes = require('./routes/invitations');
 const devicesRoutes = require('./routes/devices');
+const activityRoutes = require('./routes/activity');
 
 const app = express();
 const isProd = process.env.NODE_ENV === 'production';
@@ -104,6 +105,7 @@ app.use('/api/reels', reelsRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/invitations', invitationsRoutes);
 app.use('/api/devices', devicesRoutes);
+app.use('/api/activity', activityRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
