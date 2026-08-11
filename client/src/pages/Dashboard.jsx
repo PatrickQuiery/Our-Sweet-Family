@@ -218,12 +218,28 @@ export default function Dashboard() {
           </div>
         </div>
       ) : memories.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="text-5xl mb-4">📷</div>
-          <h3 className="text-lg font-semibold text-ink mb-2">No memories yet</h3>
-          <p className="text-ink-muted text-sm mb-6">Upload your first photo or video to get started.</p>
-          <Link to="/upload" className="btn-primary">Upload first memory</Link>
-        </div>
+        (range || selectedChild || selectedType || debouncedSearch) ? (
+          <div className="text-center py-20">
+            <div className="text-5xl mb-4">🔍</div>
+            <h3 className="text-lg font-semibold text-ink mb-2">
+              {range ? `No memories in ${range.label}` : 'No memories match these filters'}
+            </h3>
+            <p className="text-ink-muted text-sm mb-6">Try a different {range ? 'time range' : 'filter'}, or clear it to see everything.</p>
+            <button
+              onClick={() => { setRange(null); setSelectedChild(''); setSelectedType(''); setSearch(''); }}
+              className="btn-secondary"
+            >
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          <div className="text-center py-20">
+            <div className="text-5xl mb-4">📷</div>
+            <h3 className="text-lg font-semibold text-ink mb-2">No memories yet</h3>
+            <p className="text-ink-muted text-sm mb-6">Upload your first photo or video to get started.</p>
+            <Link to="/upload" className="btn-primary">Upload first memory</Link>
+          </div>
+        )
       ) : (
         <>
           <MosaicFeed memories={memories} currentUser={{ id: user?.id, name: user?.name }} />
