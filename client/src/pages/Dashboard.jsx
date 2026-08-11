@@ -4,9 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 import MosaicFeed from '../components/MosaicFeed';
 import DashboardTimeline from '../components/DashboardTimeline';
-
-// Per-child accent palette (mirrors the mobile app + timeline rail).
-const CHILD_COLORS = ['#f43f74', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#0ea5e9'];
+import { childColor } from '../lib/childColor';
 
 export default function Dashboard() {
   const { user, family, loading: authLoading } = useAuth();
@@ -177,8 +175,8 @@ export default function Dashboard() {
         >
           All children
         </button>
-        {children.map((child, i) => {
-          const color = CHILD_COLORS[i % CHILD_COLORS.length];
+        {children.map((child) => {
+          const color = childColor(child);
           const active = selectedChild === child.id;
           return (
             <button

@@ -101,6 +101,49 @@ describe('POST /api/children', () => {
     );
   });
 
+  it('defaults the color from gender when none is given (female → pink)', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.family.findUnique.mockResolvedValue(mockFamily);
+    prisma.child.create.mockResolvedValue(mockChild);
+
+    await request(app)
+      .post('/api/children')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ familyId: 'family1', name: 'Alice', dateOfBirth: '2020-03-15', gender: 'female' });
+
+    expect(prisma.child.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ color: '#f43f74' }) })
+    );
+  });
+
+  it('stores an explicit color when provided', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.family.findUnique.mockResolvedValue(mockFamily);
+    prisma.child.create.mockResolvedValue(mockChild);
+
+    await request(app)
+      .post('/api/children')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ familyId: 'family1', name: 'Alice', dateOfBirth: '2020-03-15', gender: 'male', color: '#10b981' });
+
+    expect(prisma.child.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ color: '#10b981' }) })
+    );
+  });
+
+  it('rejects a non-hex color', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.family.findUnique.mockResolvedValue(mockFamily);
+
+    const res = await request(app)
+      .post('/api/children')
+      .set('x-clerk-user-id', 'clerk-test')
+      .send({ familyId: 'family1', name: 'Alice', dateOfBirth: '2020-03-15', color: 'blue' });
+
+    expect(res.status).toBe(400);
+    expect(prisma.child.create).not.toHaveBeenCalled();
+  });
+
   it('rejects an invalid gender value', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
     prisma.family.findUnique.mockResolvedValue(mockFamily);

@@ -3,10 +3,10 @@ import {
   differenceInYears, differenceInMonths, differenceInCalendarDays,
   format, startOfMonth, endOfMonth,
 } from 'date-fns';
+import { childColor } from '../lib/childColor';
 
 const DAY = 86400000;
 const MIN_GAP = 0.02; // smallest selectable window (~2% of the span)
-const CHILD_COLORS = ['#f43f74', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#0ea5e9'];
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const FULL = { top: 0, bot: 1 };
 const isFullWin = (w) => w.top <= 0.001 && w.bot >= 0.999;
@@ -251,7 +251,7 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
         <div className="flex-1 min-w-0 overflow-y-auto">
           {buckets.map((b) => {
             const ages = kids
-              .map((k, i) => ({ name: k.name, age: ageAt(k.dateOfBirth, b.date), color: CHILD_COLORS[i % CHILD_COLORS.length] }))
+              .map((k) => ({ name: k.name, age: ageAt(k.dateOfBirth, b.date), color: childColor(k) }))
               .filter((a) => a.age);
             return (
               <button

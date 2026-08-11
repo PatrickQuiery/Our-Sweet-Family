@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format, differenceInYears, differenceInMonths } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { AuthedImage } from '../components/AuthedMedia';
+import { CHILD_PALETTE, childColor, genderColor } from '../lib/childColor';
 import api from '../lib/api';
 
 // Placeholder emoji changes with the child's age: baby → kid → teen. When a
@@ -45,6 +46,38 @@ function ChildAvatar({ child, className = 'w-12 h-12' }) {
   );
 }
 
+// Filter-chip color for the child. Shows the gender default as active until the
+// parent picks one explicitly.
+function ColorPicker({ value, gender, onChange }) {
+  const effective = value || genderColor(gender);
+  return (
+    <div>
+      <label className="block text-sm font-medium text-ink-soft mb-1.5">Filter color</label>
+      <div className="flex flex-wrap gap-2">
+        {CHILD_PALETTE.map((c) => {
+          const active = effective.toLowerCase() === c.toLowerCase();
+          return (
+            <button
+              key={c}
+              type="button"
+              onClick={() => onChange(c)}
+              aria-label={`Choose ${c}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform ${active ? 'ring-2 ring-offset-2 ring-ink/30 scale-110' : 'hover:scale-105'}`}
+              style={{ backgroundColor: c }}
+            >
+              {active && (
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function GenderSelect({ value, onChange }) {
   return (
     <div>
@@ -84,11 +117,11 @@ export default function Children() {
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', dateOfBirth: '', gender: '' });
+  const [form, setForm] = useState({ name: '', dateOfBirth: '', gender: '', color: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', dateOfBirth: '', gender: '' });
+  const [editForm, setEditForm] = useState({ name: '', dateOfBirth: '', gender: '', color: '' });
   const [editError, setEditError] = useState('');
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(null); // id of child mid upload/remove
@@ -143,9 +176,10 @@ export default function Children() {
         name: form.name,
         dateOfBirth: form.dateOfBirth,
         gender: form.gender,
+        color: form.color || genderColor(form.gender),
       });
       setChildren((prev) => [...prev, data.child]);
-      setForm({ name: '', dateOfBirth: '', gender: '' });
+      setForm({ name: '', dateOfBirth: '', gender: '', color: '' });
       setShowForm(false);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to add child');
@@ -161,6 +195,7 @@ export default function Children() {
       name: child.name,
       dateOfBirth: new Date(child.dateOfBirth).toISOString().split('T')[0],
       gender: child.gender || '',
+      color: child.color || '',
     });
   };
 
@@ -173,6 +208,7 @@ export default function Children() {
         name: editForm.name,
         dateOfBirth: editForm.dateOfBirth,
         gender: editForm.gender,
+        color: editForm.color || genderColor(editForm.gender),
       });
       setChildren((prev) => prev.map((c) => (c.id === childId ? data.child : c)));
       setEditingId(null);
@@ -225,6 +261,7 @@ export default function Children() {
               <input type="date" className="input" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} max={new Date().toISOString().split('T')[0]} required />
             </div>
             <GenderSelect value={form.gender} onChange={(gender) => setForm({ ...form, gender })} />
+            <ColorPicker value={form.color} gender={form.gender} onChange={(color) => setForm({ ...form, color })} />
             <div className="flex gap-2">
               <button type="submit" className="btn-primary" disabled={submitting}>{submitting ? 'Adding...' : 'Add child'}</button>
               <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
@@ -283,6 +320,7 @@ export default function Children() {
                     <input type="date" className="input" value={editForm.dateOfBirth} onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })} max={new Date().toISOString().split('T')[0]} required />
                   </div>
                   <GenderSelect value={editForm.gender} onChange={(gender) => setEditForm({ ...editForm, gender })} />
+                  <ColorPicker value={editForm.color} gender={editForm.gender} onChange={(color) => setEditForm({ ...editForm, color })} />
                   <div className="flex gap-2">
                     <button type="submit" className="btn-primary" disabled={editSubmitting}>{editSubmitting ? 'Saving...' : 'Save changes'}</button>
                     <button type="button" className="btn-secondary" onClick={() => setEditingId(null)}>Cancel</button>
@@ -293,7 +331,10 @@ export default function Children() {
               <div key={child.id} className="card p-5 flex items-center gap-4">
                 <ChildAvatar child={child} />
                 <div className="flex-1">
-                  <h3 className="font-bold text-ink">{child.name}</h3>
+                  <h3 className="font-bold text-ink flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full flex-shrink-0" title="Filter color" style={{ backgroundColor: childColor(child) }} />
+                  {child.name}
+                </h3>
                   <p className="text-sm text-ink-muted">
                     {format(new Date(child.dateOfBirth), 'MMMM d, yyyy')} · {ageLabel(child.dateOfBirth)} old
                     {child.gender && ` · ${child.gender === 'male' ? 'Male' : 'Female'}`}

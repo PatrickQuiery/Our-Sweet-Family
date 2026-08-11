@@ -97,6 +97,9 @@ model Child {
   name        String
   dateOfBirth DateTime
   gender      String?
+  // Accent color (hex) used for this child's filter chip / timeline dots.
+  // Defaults from gender on create; a parent can change it.
+  color       String?
   avatarUrl   String?
 
   family     Family           @relation(fields: [familyId], references: [id], onDelete: Cascade)

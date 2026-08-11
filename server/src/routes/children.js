@@ -8,6 +8,14 @@ const { authenticate } = require('../middleware/auth');
 const { uploadFile, deleteFile, readFile, isAbsoluteUrl } = require('../lib/storage');
 const { isParent } = require('../lib/familyAccess');
 
+// Default accent color from gender (matches the boy/girl avatar tones); a
+// neutral purple for unspecified.
+function defaultColorForGender(gender) {
+  if (gender === 'male') return '#3b82f6';
+  if (gender === 'female') return '#f43f74';
+  return '#8b5cf6';
+}
+
 const router = express.Router();
 
 // Avatars are small images; keep them in memory for processing, cap the size,
@@ -60,12 +68,13 @@ router.post(
     body('name').trim().notEmpty(),
     body('dateOfBirth').isISO8601(),
     body('gender').optional({ values: 'falsy' }).isIn(['male', 'female']),
+    body('color').optional({ values: 'falsy' }).isHexColor(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { familyId, name, dateOfBirth, gender } = req.body;
+    const { familyId, name, dateOfBirth, gender, color } = req.body;
 
     try {
       const family = await prisma.family.findUnique({ where: { id: familyId }, include: { members: true } });
@@ -74,7 +83,13 @@ router.post(
         return res.status(403).json({ error: 'Only owner can add children' });
 
       const child = await prisma.child.create({
-        data: { familyId, name, dateOfBirth: new Date(dateOfBirth), gender: gender || null },
+        data: {
+          familyId,
+          name,
+          dateOfBirth: new Date(dateOfBirth),
+          gender: gender || null,
+          color: color || defaultColorForGender(gender),
+        },
       });
       res.status(201).json({ child });
     } catch (err) {
@@ -91,6 +106,7 @@ router.put(
   [
     body('name').optional().trim().notEmpty(),
     body('gender').optional({ values: 'falsy' }).isIn(['male', 'female']),
+    body('color').optional({ values: 'falsy' }).isHexColor(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -105,13 +121,14 @@ router.put(
       if (!isParent(child.family, req.user.id))
         return res.status(403).json({ error: 'Only owner can update child' });
 
-      const { name, dateOfBirth, gender, avatarUrl } = req.body;
+      const { name, dateOfBirth, gender, color, avatarUrl } = req.body;
       const updated = await prisma.child.update({
         where: { id: req.params.id },
         data: {
           ...(name && { name }),
           ...(dateOfBirth && { dateOfBirth: new Date(dateOfBirth) }),
           ...(gender !== undefined && { gender: gender || null }),
+          ...(color !== undefined && { color: color || null }),
           ...(avatarUrl !== undefined && { avatarUrl }),
         },
       });
