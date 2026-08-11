@@ -5,6 +5,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemories } from '../../src/hooks/useMemories';
 import { MosaicTile } from '../../src/components/MosaicTile';
+import { TimelineScrubber, type TimeRange } from '../../src/components/TimelineScrubber';
 import { Button, Chip, EmptyState, Skeleton, Text } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { buildTimeline } from '../../src/lib/mosaic';
@@ -15,6 +16,7 @@ export default function Timeline() {
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState('');
   const [childFilter, setChildFilter] = useState<string | null>(null);
+  const [range, setRange] = useState<TimeRange | null>(null);
   const { colors, spacing, radius, fonts } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -30,9 +32,11 @@ export default function Timeline() {
   const { family, memories, refreshing, loading, error, refresh, loadMore } = useMemories({
     search: search || undefined,
     childId: childFilter ?? undefined,
+    from: range?.from,
+    to: range?.to,
   });
   const children = family?.children ?? [];
-  const filtering = search.length > 0 || !!childFilter;
+  const filtering = search.length > 0 || !!childFilter || !!range;
 
   // Refresh when returning to the tab (e.g. after capturing a memory), skipping
   // the initial mount which useMemories already loads.
@@ -95,8 +99,32 @@ export default function Timeline() {
             ))}
           </ScrollView>
         ) : null}
+
+        {range ? (
+          <View style={{ flexDirection: 'row', paddingTop: spacing.sm }}>
+            <Pressable
+              onPress={() => setRange(null)}
+              hitSlop={8}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: colors.primarySoft,
+                borderRadius: radius.pill,
+                paddingLeft: 10,
+                paddingRight: 8,
+                paddingVertical: 5,
+              }}
+            >
+              <Ionicons name="calendar-outline" size={13} color={colors.primary} />
+              <Text variant="label" style={{ color: colors.primary }}>{range.label}</Text>
+              <Ionicons name="close" size={14} color={colors.primary} />
+            </Pressable>
+          </View>
+        ) : null}
       </View>
 
+      <View style={{ flex: 1 }}>
       {refreshing && memories.length === 0 && !error && !filtering ? (
         <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: GAP }}>
           <Skeleton style={{ height: 190, borderRadius: radius.lg }} />
@@ -164,7 +192,17 @@ export default function Timeline() {
               error ? (
                 <EmptyState icon="cloud-offline-outline" title="Couldn't load" subtitle={error} />
               ) : filtering ? (
-                <EmptyState icon="search-outline" title="No matches" subtitle={search ? `Nothing found for “${search}”.` : 'No memories for this filter yet.'} />
+                <EmptyState
+                  icon="search-outline"
+                  title="No matches"
+                  subtitle={
+                    search
+                      ? `Nothing found for “${search}”.`
+                      : range
+                        ? `No memories in ${range.label}.`
+                        : 'No memories for this filter yet.'
+                  }
+                />
               ) : (
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxl, gap: spacing.md }}>
                   <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
@@ -189,6 +227,10 @@ export default function Timeline() {
           }
         />
       )}
+        {memories.length > 0 || filtering ? (
+          <TimelineScrubber kids={children} memories={memories} range={range} onRangeChange={setRange} />
+        ) : null}
+      </View>
     </View>
   );
 }

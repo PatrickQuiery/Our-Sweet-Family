@@ -34,6 +34,9 @@ export interface MemoriesQuery {
   limit?: number;
   search?: string;
   childId?: string;
+  /** Timeline scrubber window over capturedAt (ISO strings). */
+  from?: string;
+  to?: string;
 }
 
 export async function getMemories(api: Api, q: MemoriesQuery): Promise<Memory[]> {
@@ -42,6 +45,8 @@ export async function getMemories(api: Api, q: MemoriesQuery): Promise<Memory[]>
   let url = `/memories?familyId=${encodeURIComponent(q.familyId)}&page=${page}&limit=${limit}`;
   if (q.search?.trim()) url += `&search=${encodeURIComponent(q.search.trim())}`;
   if (q.childId) url += `&childId=${encodeURIComponent(q.childId)}`;
+  if (q.from) url += `&from=${encodeURIComponent(q.from)}`;
+  if (q.to) url += `&to=${encodeURIComponent(q.to)}`;
   const data = await api.get<{ memories: Memory[] }>(url);
   return data.memories ?? [];
 }

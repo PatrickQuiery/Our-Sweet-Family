@@ -31,6 +31,15 @@ describe('memories data layer', () => {
     expect(res).toEqual([{ id: 'm1' }]);
   });
 
+  it('getMemories appends the timeline from/to window', async () => {
+    const get = jest.fn().mockResolvedValue({ memories: [] });
+    const api = fakeApi({ get });
+    await getMemories(api, { familyId: 'f1', from: '2023-01-01T00:00:00.000Z', to: '2023-12-31T23:59:59.000Z' });
+    const url = get.mock.calls[0][0] as string;
+    expect(url).toContain('from=2023-01-01T00%3A00%3A00.000Z');
+    expect(url).toContain('to=2023-12-31T23%3A59%3A59.000Z');
+  });
+
   it('buildUploadForm assembles multipart fields with the file part', () => {
     const form = buildUploadForm({
       familyId: 'f1',

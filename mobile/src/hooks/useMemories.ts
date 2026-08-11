@@ -7,6 +7,8 @@ import type { Memory } from '../lib/types';
 interface UseMemoriesOpts {
   search?: string;
   childId?: string;
+  from?: string;
+  to?: string;
 }
 
 /**
@@ -14,7 +16,7 @@ interface UseMemoriesOpts {
  * the active family, `search`, or `childId` filter changes. `family` in the return
  * is the active family, so existing consumers (Timeline header, Capture) keep working.
  */
-export function useMemories({ search, childId }: UseMemoriesOpts = {}) {
+export function useMemories({ search, childId, from, to }: UseMemoriesOpts = {}) {
   const api = useApi();
   const { activeFamily } = useFamily();
   const familyId = activeFamily?.id ?? null;
@@ -33,7 +35,7 @@ export function useMemories({ search, childId }: UseMemoriesOpts = {}) {
     setRefreshing(true);
     setError(null);
     try {
-      const first = await getMemories(api, { familyId, page: 1, limit: 20, search, childId });
+      const first = await getMemories(api, { familyId, page: 1, limit: 20, search, childId, from, to });
       setMemories(first);
       setPage(1);
       setDone(first.length < 20);
@@ -42,14 +44,14 @@ export function useMemories({ search, childId }: UseMemoriesOpts = {}) {
     } finally {
       setRefreshing(false);
     }
-  }, [api, familyId, search, childId]);
+  }, [api, familyId, search, childId, from, to]);
 
   const loadMore = useCallback(async () => {
     if (loading || done || !familyId) return;
     setLoading(true);
     try {
       const next = page + 1;
-      const more = await getMemories(api, { familyId, page: next, limit: 20, search, childId });
+      const more = await getMemories(api, { familyId, page: next, limit: 20, search, childId, from, to });
       setMemories((prev) => [...prev, ...more]);
       setPage(next);
       if (more.length < 20) setDone(true);
@@ -58,7 +60,7 @@ export function useMemories({ search, childId }: UseMemoriesOpts = {}) {
     } finally {
       setLoading(false);
     }
-  }, [api, familyId, page, loading, done, search, childId]);
+  }, [api, familyId, page, loading, done, search, childId, from, to]);
 
   useEffect(() => {
     loadFirst();
