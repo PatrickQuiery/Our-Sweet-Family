@@ -32,27 +32,27 @@ export default function UsageMeter() {
   const barColor = pct >= 90 ? 'bg-red-500' : pct >= 75 ? 'bg-amber-500' : 'bg-brand-500';
 
   return (
-    <Link to="/settings" className="block px-4 py-3 border-t border-gray-100 hover:bg-gray-50 transition-colors" title="View plan & storage">
+    <Link to="/settings" className="block px-4 py-3 border-t border-black/5 hover:bg-brand-50/60 transition-colors" title="View plan & storage">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-xs font-medium text-gray-500">Video storage</span>
-        <span className="text-[10px] uppercase font-semibold tracking-wide text-gray-400">{plan}</span>
+        <span className="text-xs font-medium text-ink-muted">Video storage</span>
+        <span className="text-[10px] uppercase font-semibold tracking-wide text-ink-muted">{plan}</span>
       </div>
 
       {hasLimit ? (
         <>
-          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-ink/5 rounded-full overflow-hidden">
             <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
           </div>
-          <p className="text-[11px] text-gray-500 mt-1 tabular-nums">
+          <p className="text-[11px] text-ink-muted mt-1 tabular-nums">
             {fmt(usedVideoBytes)} of {fmt(videoLimitBytes)}
           </p>
         </>
       ) : (
-        <p className="text-[11px] text-gray-500 tabular-nums">{fmt(usedVideoBytes)} used · Unlimited</p>
+        <p className="text-[11px] text-ink-muted tabular-nums">{fmt(usedVideoBytes)} used · Unlimited</p>
       )}
 
       {typeof photoCount === 'number' && (
-        <p className="text-[10px] text-gray-400 mt-0.5">{photoCount} photo{photoCount === 1 ? '' : 's'}</p>
+        <p className="text-[10px] text-ink-muted mt-0.5">{photoCount} photo{photoCount === 1 ? '' : 's'}</p>
       )}
     </Link>
   );

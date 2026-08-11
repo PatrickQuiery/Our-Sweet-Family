@@ -85,12 +85,12 @@ export default function Onboarding() {
           {STEPS.map((s, i) => (
             <div key={s} className="flex items-center gap-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
-                i < step ? 'bg-brand-500 text-white' : i === step ? 'bg-brand-500 text-white' : 'bg-gray-200 text-gray-500'
+                i < step ? 'bg-brand-500 text-white' : i === step ? 'bg-brand-500 text-white' : 'bg-ink/10 text-ink-muted'
               }`}>
                 {i < step ? '✓' : i + 1}
               </div>
               {i < STEPS.length - 1 && (
-                <div className={`w-12 h-0.5 ${i < step ? 'bg-brand-400' : 'bg-gray-200'}`} />
+                <div className={`w-12 h-0.5 ${i < step ? 'bg-brand-400' : 'bg-ink/10'}`} />
               )}
             </div>
           ))}
@@ -99,8 +99,8 @@ export default function Onboarding() {
         <div className="card p-8">
           {step === 0 && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Name your family</h2>
-              <p className="text-gray-500 text-sm mb-6">This is how your family will appear on the platform.</p>
+              <h2 className="text-2xl font-bold text-ink mb-2">Name your family</h2>
+              <p className="text-ink-muted text-sm mb-6">This is how your family will appear on the platform.</p>
               {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">{error}</div>}
               <input
                 type="text"
@@ -117,12 +117,12 @@ export default function Onboarding() {
 
           {step === 1 && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Add your first child</h2>
-              <p className="text-gray-500 text-sm mb-6">You can add more children later in the Children section.</p>
+              <h2 className="text-2xl font-bold text-ink mb-2">Add your first child</h2>
+              <p className="text-ink-muted text-sm mb-6">You can add more children later in the Children section.</p>
               {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">{error}</div>}
               <div className="space-y-3 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Child's name</label>
+                  <label className="block text-sm font-medium text-ink-soft mb-1.5">Child's name</label>
                   <input
                     type="text"
                     className="input"
@@ -132,7 +132,7 @@ export default function Onboarding() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of birth</label>
+                  <label className="block text-sm font-medium text-ink-soft mb-1.5">Date of birth</label>
                   <input
                     type="date"
                     className="input"
@@ -150,11 +150,11 @@ export default function Onboarding() {
 
           {step === 2 && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Invite a loved one</h2>
-              <p className="text-gray-500 text-sm mb-6">Share access with grandparents, relatives, or close friends.</p>
+              <h2 className="text-2xl font-bold text-ink mb-2">Invite a loved one</h2>
+              <p className="text-ink-muted text-sm mb-6">Share access with grandparents, relatives, or close friends.</p>
               {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">{error}</div>}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Their email address</label>
+                <label className="block text-sm font-medium text-ink-soft mb-1.5">Their email address</label>
                 <input
                   type="email"
                   className="input"
@@ -166,7 +166,7 @@ export default function Onboarding() {
               <button className="btn-primary w-full mb-3" onClick={handleInvite} disabled={loading}>
                 {loading ? 'Inviting...' : 'Invite & go to dashboard'}
               </button>
-              <button className="btn-ghost w-full text-sm text-gray-500" onClick={skipInvite}>
+              <button className="btn-ghost w-full text-sm text-ink-muted" onClick={skipInvite}>
                 Skip for now
               </button>
             </div>

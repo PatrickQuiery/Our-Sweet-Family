@@ -176,7 +176,7 @@ export default function MemoryDetail() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-ink-muted hover:text-ink mb-4 transition-colors">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
@@ -204,11 +204,11 @@ export default function MemoryDetail() {
         <div className="p-5">
           {/* Caption */}
           {!editing && memory.caption && (
-            <p className="text-gray-900 font-medium text-base mb-3">{memory.caption}</p>
+            <p className="text-ink font-medium text-base mb-3">{memory.caption}</p>
           )}
 
           {/* Meta */}
-          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500 mb-4">
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-ink-muted mb-4">
             <span>{format(new Date(memory.capturedAt), 'MMMM d, yyyy')}</span>
             <span>by {memory.uploadedBy?.name}</span>
             {memory.isClassified && (
@@ -221,7 +221,7 @@ export default function MemoryDetail() {
           {/* Photo location — parents only (the API only sends it to the family
               owner, and only when the setting is on; members never receive it). */}
           {memory.latitude != null && memory.longitude != null && (
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 mb-4">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted mb-4">
               <span>
                 📍 {[memory.locationCity, memory.locationState].filter(Boolean).join(', ') ||
                   `${memory.latitude.toFixed(4)}, ${memory.longitude.toFixed(4)}`}
@@ -234,7 +234,7 @@ export default function MemoryDetail() {
               >
                 View on map
               </a>
-              <span className="text-xs text-gray-400">· visible to parents only</span>
+              <span className="text-xs text-ink-muted">· visible to parents only</span>
             </div>
           )}
 
@@ -255,7 +255,7 @@ export default function MemoryDetail() {
               {memory.tags?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {memory.tags.map((t) => (
-                    <span key={t} className="bg-gray-100 text-gray-600 rounded-full px-2.5 py-0.5 text-xs">#{t}</span>
+                    <span key={t} className="bg-ink/5 text-ink-soft rounded-full px-2.5 py-0.5 text-xs">#{t}</span>
                   ))}
                 </div>
               )}
@@ -275,13 +275,13 @@ export default function MemoryDetail() {
 
           {/* Edit mode */}
           {editing && (
-            <div className="mb-4 rounded-xl border border-gray-200 p-4">
+            <div className="mb-4 rounded-xl border border-black/5 p-4">
               {editErr && (
                 <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-3">{editErr}</div>
               )}
               {familyChildren.length > 0 ? (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tag children</label>
+                  <label className="block text-sm font-medium text-ink-soft mb-2">Tag children</label>
                   <div className="flex flex-wrap gap-2">
                     {familyChildren.map((child) => (
                       <button
@@ -290,7 +290,7 @@ export default function MemoryDetail() {
                         className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                           editChildIds.includes(child.id)
                             ? 'bg-brand-500 border-brand-500 text-white'
-                            : 'border-gray-300 text-gray-600 hover:border-brand-300'
+                            : 'border-ink-muted/30 text-ink-soft hover:border-brand-300'
                         }`}
                       >
                         {child.name}
@@ -299,10 +299,10 @@ export default function MemoryDetail() {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 mb-4">No children to tag yet — add one on the Children page first.</p>
+                <p className="text-sm text-ink-muted mb-4">No children to tag yet — add one on the Children page first.</p>
               )}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Caption</label>
+                <label className="block text-sm font-medium text-ink-soft mb-1.5">Caption</label>
                 <input
                   type="text"
                   className="input"
@@ -312,7 +312,7 @@ export default function MemoryDetail() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Tags</label>
+                <label className="block text-sm font-medium text-ink-soft mb-1.5">Tags</label>
                 <TagInput value={editTags} onChange={setEditTags} />
               </div>
               <div className="flex gap-2">
@@ -325,10 +325,10 @@ export default function MemoryDetail() {
           )}
 
           {/* Reactions row */}
-          <div className="flex items-center justify-between py-3 border-t border-b border-gray-100 mb-4">
+          <div className="flex items-center justify-between py-3 border-t border-b border-black/5 mb-4">
             <button
               onClick={handleLike}
-              className={`flex items-center gap-2 font-medium text-sm transition-colors ${liked ? 'text-brand-500' : 'text-gray-500 hover:text-brand-400'}`}
+              className={`flex items-center gap-2 font-medium text-sm transition-colors ${liked ? 'text-brand-500' : 'text-ink-muted hover:text-brand-400'}`}
             >
               <svg className="w-5 h-5" fill={liked ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -342,7 +342,7 @@ export default function MemoryDetail() {
                 <button
                   onClick={handleDownload}
                   disabled={downloading}
-                  className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-brand-600 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-brand-600 transition-colors disabled:opacity-50"
                 >
                   <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: 18, height: 18 }}>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
@@ -361,7 +361,7 @@ export default function MemoryDetail() {
           {/* Comments */}
           <div className="space-y-3 mb-4">
             {memory.comments?.length === 0 && (
-              <p className="text-sm text-gray-400">No comments yet. Be the first!</p>
+              <p className="text-sm text-ink-muted">No comments yet. Be the first!</p>
             )}
             {memory.comments?.map((c) => (
               <div key={c.id} className="flex items-start gap-3">
@@ -370,8 +370,8 @@ export default function MemoryDetail() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-900">{c.user?.name}</span>
-                    <span className="text-xs text-gray-400">{format(new Date(c.createdAt), 'MMM d')}</span>
+                    <span className="text-sm font-semibold text-ink">{c.user?.name}</span>
+                    <span className="text-xs text-ink-muted">{format(new Date(c.createdAt), 'MMM d')}</span>
                     {c.userId === user?.id && (
                       <button
                         onClick={() => handleDeleteComment(c.id)}
@@ -381,7 +381,7 @@ export default function MemoryDetail() {
                       </button>
                     )}
                   </div>
-                  <p className="text-sm text-gray-700">{c.text}</p>
+                  <p className="text-sm text-ink-soft">{c.text}</p>
                 </div>
               </div>
             ))}

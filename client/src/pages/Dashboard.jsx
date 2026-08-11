@@ -6,7 +6,7 @@ import MosaicFeed from '../components/MosaicFeed';
 import DashboardTimeline from '../components/DashboardTimeline';
 
 export default function Dashboard() {
-  const { user, family } = useAuth();
+  const { user, family, loading: authLoading } = useAuth();
   const [memories, setMemories] = useState([]);
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,12 +80,30 @@ export default function Dashboard() {
     if (page > 1) fetchMemories(false);
   }, [page]);
 
+  // While auth/family are still resolving, show a skeleton — never the "no family"
+  // prompt (that flashed the empty state before data arrived).
+  if (authLoading) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-2 animate-pulse py-2">
+        <div className="flex gap-2 w-full" style={{ aspectRatio: 1 / 0.52 }}>
+          <div className="rounded-xl bg-ink/10" style={{ flexGrow: 2, flexBasis: 0 }} />
+          <div className="rounded-xl bg-ink/10" style={{ flexGrow: 1, flexBasis: 0 }} />
+        </div>
+        <div className="flex gap-2 w-full" style={{ aspectRatio: 1 / 0.36 }}>
+          <div className="flex-1 rounded-xl bg-ink/10" />
+          <div className="flex-1 rounded-xl bg-ink/10" />
+          <div className="flex-1 rounded-xl bg-ink/10" />
+        </div>
+      </div>
+    );
+  }
+
   if (!family) {
     return (
       <div className="text-center py-20">
         <div className="text-5xl mb-4">👨‍👩‍👧‍👦</div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">No family set up yet</h2>
-        <p className="text-gray-500 mb-6">Create your family to start sharing memories.</p>
+        <h2 className="text-xl font-bold text-ink mb-2">No family set up yet</h2>
+        <p className="text-ink-soft mb-6">Create your family to start sharing memories.</p>
         <Link to="/onboarding" className="btn-primary">
           Set up your family
         </Link>
@@ -99,8 +117,8 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Family Timeline</h1>
-          <p className="text-gray-500 text-sm mt-1">{family.name}</p>
+          <h1 className="text-2xl font-bold text-ink">Family Timeline</h1>
+          <p className="text-ink-muted text-sm mt-1">{family.name}</p>
         </div>
         <Link to="/upload" className="btn-primary flex items-center gap-2 self-start sm:self-auto">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -112,7 +130,7 @@ export default function Dashboard() {
 
       {/* Search */}
       <div className="relative mb-4">
-        <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-4 h-4 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <input
@@ -120,10 +138,10 @@ export default function Dashboard() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search captions and #tags…"
-          className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-brand-300"
+          className="w-full pl-9 pr-8 py-2 border border-black/5 rounded-xl text-sm outline-none focus:border-brand-300"
         />
         {search && (
-          <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
+          <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-soft text-lg leading-none">×</button>
         )}
       </div>
 
@@ -132,7 +150,7 @@ export default function Dashboard() {
         <button
           onClick={() => setSelectedChild('')}
           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-            !selectedChild ? 'bg-brand-500 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            !selectedChild ? 'bg-brand-500 text-white' : 'bg-white text-ink-soft border border-black/5 hover:bg-brand-50/60'
           }`}
         >
           All children
@@ -142,7 +160,7 @@ export default function Dashboard() {
             key={child.id}
             onClick={() => setSelectedChild(child.id === selectedChild ? '' : child.id)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              selectedChild === child.id ? 'bg-brand-500 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              selectedChild === child.id ? 'bg-brand-500 text-white' : 'bg-white text-ink-soft border border-black/5 hover:bg-brand-50/60'
             }`}
           >
             {child.name}
@@ -154,7 +172,7 @@ export default function Dashboard() {
               key={t}
               onClick={() => setSelectedType(t)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                selectedType === t ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                selectedType === t ? 'bg-gray-900 text-white' : 'bg-white text-ink-soft border border-black/5 hover:bg-brand-50/60'
               }`}
             >
               {t === '' ? 'All' : t === 'photo' ? 'Photos' : 'Videos'}
@@ -171,20 +189,20 @@ export default function Dashboard() {
       {loading && memories.length === 0 ? (
         <div className="space-y-2 animate-pulse">
           <div className="flex gap-2 w-full" style={{ aspectRatio: 1 / 0.52 }}>
-            <div className="rounded-xl bg-gray-200" style={{ flexGrow: 2, flexBasis: 0 }} />
-            <div className="rounded-xl bg-gray-200" style={{ flexGrow: 1, flexBasis: 0 }} />
+            <div className="rounded-xl bg-ink/10" style={{ flexGrow: 2, flexBasis: 0 }} />
+            <div className="rounded-xl bg-ink/10" style={{ flexGrow: 1, flexBasis: 0 }} />
           </div>
           <div className="flex gap-2 w-full" style={{ aspectRatio: 1 / 0.36 }}>
-            <div className="flex-1 rounded-xl bg-gray-200" />
-            <div className="flex-1 rounded-xl bg-gray-200" />
-            <div className="flex-1 rounded-xl bg-gray-200" />
+            <div className="flex-1 rounded-xl bg-ink/10" />
+            <div className="flex-1 rounded-xl bg-ink/10" />
+            <div className="flex-1 rounded-xl bg-ink/10" />
           </div>
         </div>
       ) : memories.length === 0 ? (
         <div className="text-center py-20">
           <div className="text-5xl mb-4">📷</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No memories yet</h3>
-          <p className="text-gray-500 text-sm mb-6">Upload your first photo or video to get started.</p>
+          <h3 className="text-lg font-semibold text-ink mb-2">No memories yet</h3>
+          <p className="text-ink-muted text-sm mb-6">Upload your first photo or video to get started.</p>
           <Link to="/upload" className="btn-primary">Upload first memory</Link>
         </div>
       ) : (
@@ -204,7 +222,7 @@ export default function Dashboard() {
           )}
 
           {pagination && (
-            <p className="text-center text-sm text-gray-400 mt-4">
+            <p className="text-center text-sm text-ink-muted mt-4">
               Showing {memories.length} of {pagination.total} memories
             </p>
           )}

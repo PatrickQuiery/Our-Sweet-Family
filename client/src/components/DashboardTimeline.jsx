@@ -117,9 +117,9 @@ export default function DashboardTimeline({ kids = [], memories = [] }) {
   const isFull = win.top <= 0.001 && win.bot >= 0.999;
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden select-none">
+    <div className="rounded-2xl border border-black/5 bg-white overflow-hidden select-none">
       <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Timeline</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Timeline</span>
         {!isFull && (
           <button onClick={() => setWin({ top: 0, bot: 1 })} className="text-[11px] font-medium text-brand-600 hover:text-brand-700">Reset</button>
         )}
@@ -127,8 +127,8 @@ export default function DashboardTimeline({ kids = [], memories = [] }) {
 
       {/* selected range */}
       <div className="px-4 pb-2">
-        <p className="text-[11px] text-gray-500 tabular-nums">
-          {format(older, 'MMM yyyy')} <span className="text-gray-300">→</span> {format(newer, 'MMM yyyy')}
+        <p className="text-[11px] text-ink-muted tabular-nums">
+          {format(older, 'MMM yyyy')} <span className="text-ink-muted/60">→</span> {format(newer, 'MMM yyyy')}
         </p>
       </div>
 
@@ -136,10 +136,10 @@ export default function DashboardTimeline({ kids = [], memories = [] }) {
         {/* ── Slider rail (drag handles to zoom) ── */}
         <div
           ref={railRef}
-          className="relative w-8 flex-shrink-0 rounded-lg bg-gray-100 h-full"
+          className="relative w-8 flex-shrink-0 rounded-lg bg-ink/5 h-full"
         >
           {yearTicks.map((t) => (
-            <div key={t.y} className="absolute left-0 right-0 border-t border-gray-200/70" style={{ top: `${t.f * 100}%` }} />
+            <div key={t.y} className="absolute left-0 right-0 border-t border-black/5/70" style={{ top: `${t.f * 100}%` }} />
           ))}
 
           {/* selected band (drag to pan) */}
@@ -176,19 +176,19 @@ export default function DashboardTimeline({ kids = [], memories = [] }) {
               .filter((a) => a.age);
             return (
               <div key={b.key} className="relative pl-4 pb-3.5 last:pb-1">
-                <span className="absolute left-[3px] top-1.5 bottom-0 w-px bg-gray-200" />
+                <span className="absolute left-[3px] top-1.5 bottom-0 w-px bg-ink/10" />
                 <span className="absolute left-0 top-1 w-[7px] h-[7px] rounded-full bg-brand-400 ring-2 ring-white" />
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-semibold text-gray-900 text-sm tabular-nums">{b.label}</span>
-                  {b.count > 0 && <span className="text-[10px] text-gray-400 flex-shrink-0">{b.count}</span>}
+                  <span className="font-semibold text-ink text-sm tabular-nums">{b.label}</span>
+                  {b.count > 0 && <span className="text-[10px] text-ink-muted flex-shrink-0">{b.count}</span>}
                 </div>
                 {ages.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1">
                     {ages.map((a) => (
-                      <span key={a.name} title={`${a.name} · ${a.age}`} className="inline-flex items-center gap-1 rounded-full bg-gray-50 border border-gray-100 pl-1 pr-1.5 py-0.5 text-[11px] text-gray-600">
+                      <span key={a.name} title={`${a.name} · ${a.age}`} className="inline-flex items-center gap-1 rounded-full bg-paper border border-black/5 pl-1 pr-1.5 py-0.5 text-[11px] text-ink-soft">
                         <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: a.color }} />
                         <span className="truncate max-w-[56px]">{a.name.split(' ')[0]}</span>
-                        <span className="text-gray-400 tabular-nums">{a.age}</span>
+                        <span className="text-ink-muted tabular-nums">{a.age}</span>
                       </span>
                     ))}
                   </div>
@@ -199,7 +199,7 @@ export default function DashboardTimeline({ kids = [], memories = [] }) {
         </div>
       </div>
 
-      <p className="px-4 pb-3 text-[10px] text-gray-400">Drag the handles to zoom · drag the band to pan</p>
+      <p className="px-4 pb-3 text-[10px] text-ink-muted">Drag the handles to zoom · drag the band to pan</p>
     </div>
   );
 }

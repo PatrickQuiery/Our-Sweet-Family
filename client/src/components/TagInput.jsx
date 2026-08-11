@@ -10,11 +10,11 @@ export default function TagInput({ value = [], onChange, placeholder = 'Add tags
     setDraft('');
   };
   return (
-    <div className="flex flex-wrap items-center gap-1.5 border border-gray-200 rounded-lg px-2 py-1.5 focus-within:border-brand-300">
+    <div className="flex flex-wrap items-center gap-1.5 border border-black/5 rounded-lg px-2 py-1.5 focus-within:border-brand-300">
       {value.map((t) => (
-        <span key={t} className="inline-flex items-center gap-1 bg-gray-100 text-gray-600 rounded-full pl-2 pr-1 py-0.5 text-xs">
+        <span key={t} className="inline-flex items-center gap-1 bg-ink/5 text-ink-soft rounded-full pl-2 pr-1 py-0.5 text-xs">
           #{t}
-          <button type="button" onClick={() => onChange(value.filter((x) => x !== t))} className="text-gray-400 hover:text-red-500">×</button>
+          <button type="button" onClick={() => onChange(value.filter((x) => x !== t))} className="text-ink-muted hover:text-red-500">×</button>
         </span>
       ))}
       <input

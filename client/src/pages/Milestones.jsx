@@ -82,8 +82,8 @@ export default function Milestones() {
     return (
       <div className="max-w-lg mx-auto text-center py-16">
         <div className="text-5xl mb-4">⭐</div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Milestones require Plus or Premium</h2>
-        <p className="text-gray-500 text-sm mb-6">Track height, weight, stories, and special firsts with a Plus or Premium plan.</p>
+        <h2 className="text-xl font-bold text-ink mb-2">Milestones require Plus or Premium</h2>
+        <p className="text-ink-muted text-sm mb-6">Track height, weight, stories, and special firsts with a Plus or Premium plan.</p>
         <Link to="/settings" className="btn-primary">Upgrade your plan</Link>
       </div>
     );
@@ -92,7 +92,7 @@ export default function Milestones() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Milestones</h1>
+        <h1 className="text-2xl font-bold text-ink">Milestones</h1>
         {isOwner && selectedChild && (
           <button onClick={() => setShowForm(!showForm)} className="btn-primary">+ Add milestone</button>
         )}
@@ -106,7 +106,7 @@ export default function Milestones() {
               key={c.id}
               onClick={() => setSelectedChild(c)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                selectedChild?.id === c.id ? 'bg-brand-500 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                selectedChild?.id === c.id ? 'bg-brand-500 text-white' : 'bg-white border border-black/5 text-ink-soft hover:bg-brand-50/60'
               }`}
             >
               {c.name}
@@ -117,11 +117,11 @@ export default function Milestones() {
 
       {showForm && (
         <div className="card p-5 mb-6">
-          <h3 className="font-semibold text-gray-900 mb-4">New milestone for {selectedChild?.name}</h3>
+          <h3 className="font-semibold text-ink mb-4">New milestone for {selectedChild?.name}</h3>
           {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Type</label>
+              <label className="block text-sm font-medium text-ink-soft mb-1.5">Type</label>
               <select className="input" value={form.type} onChange={(e) => handleTypeChange(e.target.value)}>
                 {MILESTONE_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>{t.icon} {t.label}</option>
@@ -130,22 +130,22 @@ export default function Milestones() {
             </div>
             <div className="flex gap-2">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Value</label>
+                <label className="block text-sm font-medium text-ink-soft mb-1.5">Value</label>
                 <input type="text" className="input" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} placeholder={form.unit || 'Enter value'} required />
               </div>
               {form.unit && (
                 <div className="w-24">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Unit</label>
+                  <label className="block text-sm font-medium text-ink-soft mb-1.5">Unit</label>
                   <input type="text" className="input" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
                 </div>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
+              <label className="block text-sm font-medium text-ink-soft mb-1.5">Date</label>
               <input type="date" className="input" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} max={new Date().toISOString().split('T')[0]} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Note (optional)</label>
+              <label className="block text-sm font-medium text-ink-soft mb-1.5">Note (optional)</label>
               <input type="text" className="input" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Any notes..." />
             </div>
             <div className="flex gap-2">
@@ -161,11 +161,11 @@ export default function Milestones() {
       ) : milestones.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-5xl mb-4">📏</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No milestones yet</h3>
+          <h3 className="text-lg font-semibold text-ink mb-2">No milestones yet</h3>
           {isOwner ? (
-            <p className="text-gray-500 text-sm">Start tracking {selectedChild?.name}'s growth and special firsts.</p>
+            <p className="text-ink-muted text-sm">Start tracking {selectedChild?.name}'s growth and special firsts.</p>
           ) : (
-            <p className="text-gray-500 text-sm">No milestones have been added for {selectedChild?.name} yet.</p>
+            <p className="text-ink-muted text-sm">No milestones have been added for {selectedChild?.name} yet.</p>
           )}
         </div>
       ) : (
@@ -177,11 +177,11 @@ export default function Milestones() {
                 <span className="text-2xl">{type?.icon || '📌'}</span>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-900">{m.value}{m.unit && ` ${m.unit}`}</span>
-                    <span className="text-xs text-gray-400">{type?.label}</span>
+                    <span className="font-semibold text-ink">{m.value}{m.unit && ` ${m.unit}`}</span>
+                    <span className="text-xs text-ink-muted">{type?.label}</span>
                   </div>
-                  {m.note && <p className="text-sm text-gray-500">{m.note}</p>}
-                  <p className="text-xs text-gray-400 mt-0.5">{format(new Date(m.date), 'MMMM d, yyyy')}</p>
+                  {m.note && <p className="text-sm text-ink-muted">{m.note}</p>}
+                  <p className="text-xs text-ink-muted mt-0.5">{format(new Date(m.date), 'MMMM d, yyyy')}</p>
                 </div>
                 {isOwner && (
                   <button onClick={() => handleDelete(m.id)} className="text-red-400 hover:text-red-600 transition-colors">

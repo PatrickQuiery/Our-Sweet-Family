@@ -150,7 +150,7 @@ export default function AppLayout() {
             <UserButton afterSignOutUrl="/" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-ink truncate">{user?.name}</p>
-              <span className={`badge text-xs ${planColors[user?.plan] || 'bg-gray-100 text-gray-600'}`}>
+              <span className={`badge text-xs ${planColors[user?.plan] || 'bg-ink/5 text-ink-soft'}`}>
                 {user?.plan}
               </span>
             </div>

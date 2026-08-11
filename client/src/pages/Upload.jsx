@@ -21,11 +21,11 @@ function Thumb({ file }) {
     }
   }, [file]);
   return (
-    <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
+    <div className="w-16 h-16 rounded-xl overflow-hidden bg-ink/5 flex-shrink-0 flex items-center justify-center">
       {preview ? (
         <img src={preview} alt="" className="w-full h-full object-cover" />
       ) : (
-        <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-7 h-7 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.876V15.5a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
         </svg>
       )}
@@ -131,19 +131,19 @@ export default function Upload() {
   };
 
   if (!family) {
-    return <div className="text-center py-20"><p className="text-gray-500">Please set up your family first.</p></div>;
+    return <div className="text-center py-20"><p className="text-ink-muted">Please set up your family first.</p></div>;
   }
 
   const allDone = items.length > 0 && items.every((i) => done.includes(i.id));
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Upload memories</h1>
+      <h1 className="text-2xl font-bold text-ink mb-6">Upload memories</h1>
 
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-colors mb-6 ${
-          isDragActive ? 'border-brand-400 bg-brand-50' : 'border-gray-300 bg-gray-50 hover:border-brand-300 hover:bg-brand-50/30'
+          isDragActive ? 'border-brand-400 bg-brand-50' : 'border-ink-muted/30 bg-paper hover:border-brand-300 hover:bg-brand-50/30'
         }`}
       >
         <input {...getInputProps()} />
@@ -152,9 +152,9 @@ export default function Upload() {
           <p className="text-brand-600 font-semibold">Drop files here...</p>
         ) : (
           <>
-            <p className="font-semibold text-gray-700 mb-1">Drag & drop photos or videos</p>
-            <p className="text-sm text-gray-500">or click to browse your files</p>
-            <p className="text-xs text-gray-400 mt-2">JPG, PNG, GIF, WebP, MP4, MOV, AVI, MKV — up to 500MB per file</p>
+            <p className="font-semibold text-ink-soft mb-1">Drag & drop photos or videos</p>
+            <p className="text-sm text-ink-muted">or click to browse your files</p>
+            <p className="text-xs text-ink-muted mt-2">JPG, PNG, GIF, WebP, MP4, MOV, AVI, MKV — up to 500MB per file</p>
           </>
         )}
       </div>
@@ -163,14 +163,14 @@ export default function Upload() {
         <>
           {children.length > 0 && items.length > 1 && (
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="text-sm text-gray-500 mr-1">Tag all children:</span>
+              <span className="text-sm text-ink-muted mr-1">Tag all children:</span>
               {children.map((c) => (
                 <button
                   key={c.id}
                   type="button"
                   onClick={() => applyToAll(c.id)}
                   className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
-                    allHave(c.id) ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-300 text-gray-600 hover:border-brand-300'
+                    allHave(c.id) ? 'bg-brand-500 border-brand-500 text-white' : 'border-ink-muted/30 text-ink-soft hover:border-brand-300'
                   }`}
                 >
                   {c.name}
@@ -185,9 +185,9 @@ export default function Upload() {
                 <Thumb file={file} />
                 <div className="flex-1 min-w-0 space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium text-gray-800 truncate">{file.name}</p>
+                    <p className="text-sm font-medium text-ink truncate">{file.name}</p>
                     {!done.includes(id) && !uploading && (
-                      <button onClick={() => removeItem(id)} className="text-gray-400 hover:text-red-500 text-xs flex-shrink-0">Remove</button>
+                      <button onClick={() => removeItem(id)} className="text-ink-muted hover:text-red-500 text-xs flex-shrink-0">Remove</button>
                     )}
                   </div>
 
@@ -201,7 +201,7 @@ export default function Upload() {
                             type="button"
                             onClick={() => toggleChild(id, c.id)}
                             className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                              on ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-300 text-gray-500 hover:border-brand-300'
+                              on ? 'bg-brand-500 border-brand-500 text-white' : 'border-ink-muted/30 text-ink-muted hover:border-brand-300'
                             }`}
                           >
                             {c.name}
@@ -216,13 +216,13 @@ export default function Upload() {
                     value={captions[id] || ''}
                     onChange={(e) => setCaptions((p) => ({ ...p, [id]: e.target.value }))}
                     placeholder="Caption for this file…"
-                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-brand-300"
+                    className="w-full text-sm border border-black/5 rounded-lg px-2.5 py-1.5 outline-none focus:border-brand-300"
                   />
 
                   <TagInput value={tagSel[id] || []} onChange={(t) => setTagSel((p) => ({ ...p, [id]: t }))} />
 
                   {progress[id] !== undefined && !done.includes(id) && !errors[id] && (
-                    <div className="h-1 bg-gray-200 rounded overflow-hidden">
+                    <div className="h-1 bg-ink/10 rounded overflow-hidden">
                       <div className="h-full bg-brand-500 transition-all" style={{ width: `${progress[id]}%` }} />
                     </div>
                   )}
@@ -237,9 +237,9 @@ export default function Upload() {
             {user?.plan === 'premium' && user?.role === 'owner' && (
               <div className="flex items-center gap-3">
                 <input type="checkbox" id="classified" checked={isClassified} onChange={(e) => setIsClassified(e.target.checked)} className="w-4 h-4 accent-brand-500" />
-                <label htmlFor="classified" className="text-sm text-gray-700">
+                <label htmlFor="classified" className="text-sm text-ink-soft">
                   <span className="font-medium">Classified</span>
-                  <span className="text-gray-500"> — visible to parents only (hides from loved ones)</span>
+                  <span className="text-ink-muted"> — visible to parents only (hides from loved ones)</span>
                 </label>
               </div>
             )}

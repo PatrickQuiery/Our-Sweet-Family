@@ -14,8 +14,8 @@ const LOCATION_CONFIRM =
 const PLAN_DETAILS = {
   free: {
     name: 'Free',
-    color: 'bg-gray-100',
-    badge: 'bg-gray-200 text-gray-700',
+    color: 'bg-ink/5',
+    badge: 'bg-ink/10 text-ink-soft',
     features: ['Unlimited photos (compressed)', '20GB video', 'Annual Memory Reel', 'Loved one access'],
   },
   plus: {
@@ -56,17 +56,17 @@ export default function Settings() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+      <h1 className="text-2xl font-bold text-ink">Settings</h1>
 
       {/* Current plan (app-specific) */}
       <div className={`card p-6 ${plan.color}`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-gray-900">Your Plan</h2>
+          <h2 className="font-bold text-ink">Your Plan</h2>
           <span className={`badge ${plan.badge} font-semibold`}>{plan.name}</span>
         </div>
         <ul className="space-y-1.5 mb-4">
           {plan.features.map((f) => (
-            <li key={f} className="flex items-center gap-2 text-sm text-gray-700">
+            <li key={f} className="flex items-center gap-2 text-sm text-ink-soft">
               <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
@@ -85,15 +85,15 @@ export default function Settings() {
       {/* Privacy — photo location (owner only) */}
       {isOwner && (
         <div className="card p-6">
-          <h2 className="font-bold text-gray-900 mb-4">Privacy</h2>
+          <h2 className="font-bold text-ink mb-4">Privacy</h2>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="font-medium text-gray-900">Show photo location</p>
-              <p className="text-sm text-gray-500 mt-1 max-w-md">
+              <p className="font-medium text-ink">Show photo location</p>
+              <p className="text-sm text-ink-muted mt-1 max-w-md">
                 Show where each photo was taken (from its GPS metadata) on the photo's page — visible
                 to you only, never to invited loved ones. Off by default.
               </p>
-              <p className="text-xs text-gray-400 mt-1.5">
+              <p className="text-xs text-ink-muted mt-1.5">
                 Location is always saved with your photos; this only controls whether it's shown.
               </p>
             </div>
@@ -103,7 +103,7 @@ export default function Settings() {
               role="switch"
               aria-checked={locationOn}
               className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-                locationOn ? 'bg-brand-500' : 'bg-gray-300'
+                locationOn ? 'bg-brand-500' : 'bg-ink/15'
               }`}
             >
               <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform mt-0.5 ${
@@ -116,7 +116,7 @@ export default function Settings() {
 
       {/* Account — Clerk manages profile, email, password, 2FA and connected social accounts */}
       <div>
-        <h2 className="font-bold text-gray-900 mb-3">Account & Security</h2>
+        <h2 className="font-bold text-ink mb-3">Account & Security</h2>
         <UserProfile routing="hash" />
       </div>
     </div>

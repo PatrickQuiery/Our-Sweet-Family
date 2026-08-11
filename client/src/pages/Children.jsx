@@ -22,7 +22,7 @@ function childEmoji(child) {
 function avatarTone(gender) {
   if (gender === 'male') return 'from-blue-100 to-blue-200';
   if (gender === 'female') return 'from-brand-100 to-brand-200';
-  return 'from-gray-100 to-gray-200';
+  return 'from-ink/5 to-ink/10';
 }
 
 function ChildAvatar({ child, className = 'w-12 h-12' }) {
@@ -48,7 +48,7 @@ function ChildAvatar({ child, className = 'w-12 h-12' }) {
 function GenderSelect({ value, onChange }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1.5">Gender</label>
+      <label className="block text-sm font-medium text-ink-soft mb-1.5">Gender</label>
       <div className="flex gap-2">
         {[['male', 'Male'], ['female', 'Female']].map(([val, label]) => (
           <button
@@ -58,7 +58,7 @@ function GenderSelect({ value, onChange }) {
             className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
               value === val
                 ? 'bg-brand-500 border-brand-500 text-white'
-                : 'border-gray-300 text-gray-600 hover:border-brand-300'
+                : 'border-ink-muted/30 text-ink-soft hover:border-brand-300'
             }`}
           >
             {label}
@@ -201,8 +201,8 @@ export default function Children() {
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Children</h1>
-          <p className="text-gray-500 text-sm mt-1">{children.length} {children.length === 1 ? 'child' : 'children'} in your family</p>
+          <h1 className="text-2xl font-bold text-ink">Children</h1>
+          <p className="text-ink-muted text-sm mt-1">{children.length} {children.length === 1 ? 'child' : 'children'} in your family</p>
         </div>
         {isOwner && (
           <button onClick={() => setShowForm(!showForm)} className="btn-primary">
@@ -213,15 +213,15 @@ export default function Children() {
 
       {showForm && (
         <div className="card p-5 mb-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Add a child</h3>
+          <h3 className="font-semibold text-ink mb-4">Add a child</h3>
           {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">{error}</div>}
           <form onSubmit={handleAdd} className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
+              <label className="block text-sm font-medium text-ink-soft mb-1.5">Name</label>
               <input type="text" className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Child's name" required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of birth</label>
+              <label className="block text-sm font-medium text-ink-soft mb-1.5">Date of birth</label>
               <input type="date" className="input" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} max={new Date().toISOString().split('T')[0]} required />
             </div>
             <GenderSelect value={form.gender} onChange={(gender) => setForm({ ...form, gender })} />
@@ -236,19 +236,19 @@ export default function Children() {
       {children.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-5xl mb-4">👶</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No children yet</h3>
-          {isOwner && <p className="text-gray-500 text-sm">Add your first child to start tagging memories.</p>}
+          <h3 className="text-lg font-semibold text-ink mb-2">No children yet</h3>
+          {isOwner && <p className="text-ink-muted text-sm">Add your first child to start tagging memories.</p>}
         </div>
       ) : (
         <div className="space-y-3">
           {children.map((child) => (
             editingId === child.id ? (
               <div key={child.id} className="card p-5">
-                <h3 className="font-semibold text-gray-900 mb-4">Edit {child.name}</h3>
+                <h3 className="font-semibold text-ink mb-4">Edit {child.name}</h3>
                 {editError && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">{editError}</div>}
                 <form onSubmit={(e) => handleEdit(e, child.id)} className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Photo</label>
+                    <label className="block text-sm font-medium text-ink-soft mb-1.5">Photo</label>
                     <div className="flex items-center gap-4">
                       <ChildAvatar child={child} className="w-16 h-16" />
                       <div className="flex items-center gap-3">
@@ -275,11 +275,11 @@ export default function Children() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
+                    <label className="block text-sm font-medium text-ink-soft mb-1.5">Name</label>
                     <input type="text" className="input" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of birth</label>
+                    <label className="block text-sm font-medium text-ink-soft mb-1.5">Date of birth</label>
                     <input type="date" className="input" value={editForm.dateOfBirth} onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })} max={new Date().toISOString().split('T')[0]} required />
                   </div>
                   <GenderSelect value={editForm.gender} onChange={(gender) => setEditForm({ ...editForm, gender })} />
@@ -293,8 +293,8 @@ export default function Children() {
               <div key={child.id} className="card p-5 flex items-center gap-4">
                 <ChildAvatar child={child} />
                 <div className="flex-1">
-                  <h3 className="font-bold text-gray-900">{child.name}</h3>
-                  <p className="text-sm text-gray-500">
+                  <h3 className="font-bold text-ink">{child.name}</h3>
+                  <p className="text-sm text-ink-muted">
                     {format(new Date(child.dateOfBirth), 'MMMM d, yyyy')} · {ageLabel(child.dateOfBirth)} old
                     {child.gender && ` · ${child.gender === 'male' ? 'Male' : 'Female'}`}
                   </p>
@@ -303,7 +303,7 @@ export default function Children() {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => startEdit(child)}
-                      className="p-2 text-gray-400 hover:text-brand-600 transition-colors"
+                      className="p-2 text-ink-muted hover:text-brand-600 transition-colors"
                       title="Edit child"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

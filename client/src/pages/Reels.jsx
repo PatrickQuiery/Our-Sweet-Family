@@ -63,8 +63,8 @@ export default function Reels() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Memory Reels</h1>
-      <p className="text-gray-500 text-sm mb-6">Auto-generated slideshows from your best moments.</p>
+      <h1 className="text-2xl font-bold text-ink mb-2">Memory Reels</h1>
+      <p className="text-ink-muted text-sm mb-6">Auto-generated slideshows from your best moments.</p>
 
       {/* Type selector */}
       <div className="flex gap-2 flex-wrap mb-4">
@@ -80,8 +80,8 @@ export default function Reels() {
                 reelType === rt.value
                   ? 'bg-brand-500 text-white'
                   : allowed
-                  ? 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  ? 'bg-white border border-black/5 text-ink-soft hover:bg-brand-50/60'
+                  : 'bg-ink/5 text-ink-muted cursor-not-allowed'
               }`}
             >
               {rt.label}
@@ -96,7 +96,7 @@ export default function Reels() {
         <div className="flex gap-2 flex-wrap mb-6">
           <button
             onClick={() => setSelectedChild('')}
-            className={`px-3 py-1 rounded-full text-xs font-medium ${!selectedChild ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium ${!selectedChild ? 'bg-gray-900 text-white' : 'bg-white border border-black/5 text-ink-soft hover:bg-brand-50/60'}`}
           >
             All
           </button>
@@ -104,7 +104,7 @@ export default function Reels() {
             <button
               key={c.id}
               onClick={() => setSelectedChild(c.id === selectedChild ? '' : c.id)}
-              className={`px-3 py-1 rounded-full text-xs font-medium ${selectedChild === c.id ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+              className={`px-3 py-1 rounded-full text-xs font-medium ${selectedChild === c.id ? 'bg-gray-900 text-white' : 'bg-white border border-black/5 text-ink-soft hover:bg-brand-50/60'}`}
             >
               {c.name}
             </button>
@@ -119,8 +119,8 @@ export default function Reels() {
       ) : reels.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-5xl mb-4">🎬</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No reels yet</h3>
-          <p className="text-gray-500 text-sm">Upload more memories to generate your first reel.</p>
+          <h3 className="text-lg font-semibold text-ink mb-2">No reels yet</h3>
+          <p className="text-ink-muted text-sm">Upload more memories to generate your first reel.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -144,7 +144,7 @@ export default function Reels() {
                     <p className="text-white/70 text-sm">{reel.memories.length} {reel.memories.length === 1 ? 'memory' : 'memories'}</p>
                   </div>
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <svg className="w-6 h-6 text-gray-900 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 text-ink ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M8 5v14l11-7z" />
                     </svg>
                   </div>

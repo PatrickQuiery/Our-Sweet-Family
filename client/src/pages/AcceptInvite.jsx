@@ -52,8 +52,8 @@ export default function AcceptInvite() {
       {state === 'invalid' && (
         <div className="card p-6 max-w-sm text-center">
           <div className="text-4xl mb-3">🔗</div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Invitation unavailable</h1>
-          <p className="text-gray-500 text-sm mb-6">{error}</p>
+          <h1 className="text-xl font-bold text-ink mb-2">Invitation unavailable</h1>
+          <p className="text-ink-muted text-sm mb-6">{error}</p>
           <Link to="/login" className="btn-primary">Go to sign in</Link>
         </div>
       )}
@@ -61,8 +61,8 @@ export default function AcceptInvite() {
       {state === 'ready' && (
         <>
           <div className="text-center mb-5 max-w-sm">
-            <h1 className="text-2xl font-bold text-gray-900">You're invited!</h1>
-            <p className="text-gray-500 mt-1 text-sm">
+            <h1 className="text-2xl font-bold text-ink">You're invited!</h1>
+            <p className="text-ink-muted mt-1 text-sm">
               <span className="font-medium">{info.inviterName}</span> invited you to join{' '}
               <span className="font-medium">{info.familyName}</span>.
             </p>
@@ -70,7 +70,7 @@ export default function AcceptInvite() {
           {isSignedIn ? (
             <div className="card p-6 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500 mx-auto" />
-              <p className="text-sm text-gray-500 mt-3">Joining {info.familyName}…</p>
+              <p className="text-sm text-ink-muted mt-3">Joining {info.familyName}…</p>
             </div>
           ) : (
             <SignUp

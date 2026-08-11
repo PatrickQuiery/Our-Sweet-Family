@@ -56,8 +56,8 @@ export default function Referrals() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Refer friends</h1>
-        <p className="text-gray-500 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-ink">Refer friends</h1>
+        <p className="text-ink-muted text-sm mt-1">
           Invite another family to Our Sweet Family. When they sign up with your link and start their
           family, <span className="font-semibold text-brand-600">you both get Plus free for {data?.rewardDays || 90} days.</span>
         </p>
@@ -69,8 +69,8 @@ export default function Referrals() {
           <div className="flex items-center gap-3">
             <div className="text-2xl">🎉</div>
             <div>
-              <p className="font-semibold text-gray-900">You have Plus, on the house</p>
-              <p className="text-sm text-gray-600">Active until {format(new Date(data.rewardActiveUntil), 'MMMM d, yyyy')}.</p>
+              <p className="font-semibold text-ink">You have Plus, on the house</p>
+              <p className="text-sm text-ink-soft">Active until {format(new Date(data.rewardActiveUntil), 'MMMM d, yyyy')}.</p>
             </div>
           </div>
         </div>
@@ -78,14 +78,14 @@ export default function Referrals() {
 
       {/* Share link */}
       <div className="card p-5 mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Your invite link</label>
+        <label className="block text-sm font-medium text-ink-soft mb-2">Your invite link</label>
         <div className="flex gap-2">
           <input
             type="text"
             readOnly
             value={link}
             onFocus={(e) => e.target.select()}
-            className="input flex-1 text-sm text-gray-600"
+            className="input flex-1 text-sm text-ink-soft"
           />
           <button onClick={copy} className="btn-primary whitespace-nowrap">
             {copied ? 'Copied!' : 'Copy'}
@@ -105,8 +105,8 @@ export default function Referrals() {
       {/* Stats */}
       <div className="card p-5 flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-500">Families you've brought in</p>
-          <p className="text-3xl font-extrabold text-gray-900">{data?.count ?? 0}</p>
+          <p className="text-sm text-ink-muted">Families you've brought in</p>
+          <p className="text-3xl font-extrabold text-ink">{data?.count ?? 0}</p>
         </div>
         <div className="text-4xl">👨‍👩‍👧‍👦</div>
       </div>

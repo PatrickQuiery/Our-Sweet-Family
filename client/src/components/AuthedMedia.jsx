@@ -37,7 +37,7 @@ function useBlobUrl(src) {
 
 export function AuthedImage({ src, className = '', alt = '', ...props }) {
   const url = useBlobUrl(src);
-  if (!url) return <div className={`${className} bg-gray-100 animate-pulse`} aria-hidden="true" />;
+  if (!url) return <div className={`${className} bg-ink/5 animate-pulse`} aria-hidden="true" />;
   return <img src={url} className={className} alt={alt} {...props} />;
 }
 

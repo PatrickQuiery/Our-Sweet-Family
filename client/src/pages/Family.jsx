@@ -10,7 +10,7 @@ const PERMISSION_LABELS = {
 };
 
 const PERMISSION_COLORS = {
-  view_only: 'bg-gray-100 text-gray-700',
+  view_only: 'bg-ink/5 text-ink-soft',
   upload: 'bg-blue-100 text-blue-700',
   share_download: 'bg-green-100 text-green-700',
   all: 'bg-brand-100 text-brand-700',
@@ -122,8 +122,8 @@ export default function Family() {
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Family Members</h1>
-          <p className="text-gray-500 text-sm mt-1">{family?.name}</p>
+          <h1 className="text-2xl font-bold text-ink">Family Members</h1>
+          <p className="text-ink-muted text-sm mt-1">{family?.name}</p>
         </div>
         {isOwner && (
           <button onClick={() => setShowInvite(!showInvite)} className="btn-primary">
@@ -138,24 +138,24 @@ export default function Family() {
 
       {inviteLink && (
         <div className="card p-4 mb-4 bg-brand-50 border-brand-200">
-          <p className="text-sm font-medium text-gray-700 mb-2">Invite link — share it with your loved one:</p>
+          <p className="text-sm font-medium text-ink-soft mb-2">Invite link — share it with your loved one:</p>
           <div className="flex gap-2">
             <input readOnly value={inviteLink} onFocus={(e) => e.target.select()} className="input flex-1 text-xs bg-white" />
             <button onClick={copyInviteLink} className="btn-primary text-sm whitespace-nowrap">
               {copied ? 'Copied!' : 'Copy link'}
             </button>
           </div>
-          <p className="text-xs text-gray-500 mt-2">We also emailed this link. It expires in 7 days.</p>
+          <p className="text-xs text-ink-muted mt-2">We also emailed this link. It expires in 7 days.</p>
         </div>
       )}
 
       {showInvite && isOwner && (
         <div className="card p-5 mb-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Invite a loved one</h3>
+          <h3 className="font-semibold text-ink mb-4">Invite a loved one</h3>
           {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">{error}</div>}
           <form onSubmit={handleInvite} className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email address</label>
+              <label className="block text-sm font-medium text-ink-soft mb-1.5">Email address</label>
               <input
                 type="email"
                 className="input"
@@ -166,7 +166,7 @@ export default function Family() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Access level</label>
+              <label className="block text-sm font-medium text-ink-soft mb-1.5">Access level</label>
               <select
                 className="input"
                 value={inviteForm.permissions}
@@ -187,7 +187,7 @@ export default function Family() {
 
       {isOwner && invitations.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Pending invitations</h2>
+          <h2 className="text-sm font-semibold text-ink-muted uppercase tracking-wide mb-2">Pending invitations</h2>
           <div className="space-y-2">
             {invitations.map((inv) => (
               <div key={inv.id} className="card p-4 flex items-center gap-4 border-dashed">
@@ -197,8 +197,8 @@ export default function Family() {
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 text-sm truncate">{inv.email}</p>
-                  <p className="text-xs text-gray-500">Invited · awaiting acceptance</p>
+                  <p className="font-semibold text-ink text-sm truncate">{inv.email}</p>
+                  <p className="text-xs text-ink-muted">Invited · awaiting acceptance</p>
                 </div>
                 <button
                   onClick={() => handleRevokeInvite(inv.id)}
@@ -214,13 +214,13 @@ export default function Family() {
 
       {!isOwner ? (
         <div className="card p-6 text-center">
-          <p className="text-gray-500">Family member management is available to the family owner.</p>
+          <p className="text-ink-muted">Family member management is available to the family owner.</p>
         </div>
       ) : members.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-5xl mb-4">👥</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No loved ones invited yet</h3>
-          <p className="text-gray-500 text-sm">Invite grandparents, relatives, and close friends to share in the memories.</p>
+          <h3 className="text-lg font-semibold text-ink mb-2">No loved ones invited yet</h3>
+          <p className="text-ink-muted text-sm">Invite grandparents, relatives, and close friends to share in the memories.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -230,8 +230,8 @@ export default function Family() {
                 {member.user?.name?.[0]?.toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900 text-sm">{member.user?.name}</p>
-                <p className="text-xs text-gray-500 truncate">{member.user?.email}</p>
+                <p className="font-semibold text-ink text-sm">{member.user?.name}</p>
+                <p className="text-xs text-ink-muted truncate">{member.user?.email}</p>
               </div>
               <select
                 value={member.permissions}
