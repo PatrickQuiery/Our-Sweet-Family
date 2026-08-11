@@ -183,6 +183,40 @@ describe('GET /api/memories', () => {
     // Should NOT use top-level childIds (requires all children simultaneously)
     expect(findManyArgs.where.childIds).toBeUndefined();
   });
+
+  it('filters by a capturedAt window when from/to are given (timeline scrubber)', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.family.findUnique.mockResolvedValue(mockFamily);
+    prisma.memory.count.mockResolvedValue(0);
+    prisma.memory.findMany.mockResolvedValue([]);
+    prisma.child.findMany.mockResolvedValue(mockFamily.children);
+
+    const from = '2023-01-01T00:00:00.000Z';
+    const to = '2023-12-31T23:59:59.000Z';
+    await request(app)
+      .get(`/api/memories?familyId=family1&from=${from}&to=${to}`)
+      .set('x-clerk-user-id', 'clerk-test');
+
+    const { where } = prisma.memory.findMany.mock.calls[0][0];
+    expect(where.capturedAt.gte).toEqual(new Date(from));
+    expect(where.capturedAt.lte).toEqual(new Date(to));
+  });
+
+  it('ignores an unparseable timeline bound instead of erroring', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.family.findUnique.mockResolvedValue(mockFamily);
+    prisma.memory.count.mockResolvedValue(0);
+    prisma.memory.findMany.mockResolvedValue([]);
+    prisma.child.findMany.mockResolvedValue(mockFamily.children);
+
+    const res = await request(app)
+      .get('/api/memories?familyId=family1&from=not-a-date')
+      .set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(200);
+    const { where } = prisma.memory.findMany.mock.calls[0][0];
+    expect(where.capturedAt).toBeUndefined();
+  });
 });
 
 // ─── GET /api/memories/:id ────────────────────────────────────────────────────

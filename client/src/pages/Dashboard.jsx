@@ -16,6 +16,8 @@ export default function Dashboard() {
   const [selectedType, setSelectedType] = useState('');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  // Timeline scrubber window: { from, to, label } (ISO strings) or null for "all".
+  const [range, setRange] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -47,6 +49,8 @@ export default function Dashboard() {
       if (selectedChild) params.set('childId', selectedChild);
       if (selectedType) params.set('type', selectedType);
       if (debouncedSearch) params.set('search', debouncedSearch);
+      if (range?.from) params.set('from', range.from);
+      if (range?.to) params.set('to', range.to);
 
       const { data } = await api.get(`/memories?${params}`);
       if (reset || currentPage === 1) {
@@ -61,7 +65,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [family, page, selectedChild, selectedType, debouncedSearch]);
+  }, [family, page, selectedChild, selectedType, debouncedSearch, range]);
 
   useEffect(() => {
     fetchChildren();
@@ -69,7 +73,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchMemories(true);
-  }, [family, selectedChild, selectedType, debouncedSearch]);
+  }, [family, selectedChild, selectedType, debouncedSearch, range]);
 
   const loadMore = () => {
     const nextPage = page + 1;
@@ -118,7 +122,22 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-ink">Family Timeline</h1>
-          <p className="text-ink-muted text-sm mt-1">{family.name}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-ink-muted text-sm">{family.name}</p>
+            {range && (
+              <button
+                onClick={() => setRange(null)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 text-brand-700 pl-2.5 pr-2 py-0.5 text-xs font-medium hover:bg-brand-100 transition-colors"
+                title="Clear timeline filter"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {range.label}
+                <span className="text-brand-400 text-sm leading-none">×</span>
+              </button>
+            )}
+          </div>
         </div>
         <Link to="/upload" className="btn-primary flex items-center gap-2 self-start sm:self-auto">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -233,7 +252,7 @@ export default function Dashboard() {
       {/* Right-hand time rail — dates on the left, each child's age on the right;
           scroll through time and zoom to sharpen the resolution. */}
       <aside className="hidden xl:block w-72 flex-shrink-0 sticky top-6">
-        <DashboardTimeline kids={children} memories={memories} />
+        <DashboardTimeline kids={children} memories={memories} range={range} onRangeChange={setRange} />
       </aside>
     </div>
   );

@@ -98,7 +98,7 @@ async function compressPhoto(buffer) {
 
 // GET /api/memories?familyId=&childId=&page=&limit=&type=
 router.get('/', authenticate, async (req, res) => {
-  const { familyId, childId, page = 1, limit = 20, type, search } = req.query;
+  const { familyId, childId, page = 1, limit = 20, type, search, from, to } = req.query;
 
   if (!familyId) return res.status(400).json({ error: 'familyId required' });
 
@@ -129,6 +129,17 @@ router.get('/', authenticate, async (req, res) => {
 
     if (type && ['photo', 'video'].includes(type)) {
       where.fileType = type;
+    }
+
+    // Timeline range filter — a window over capturedAt (when the moment happened,
+    // matching the timeline rail). Invalid/absent bounds are simply ignored.
+    if (from || to) {
+      const gte = from ? new Date(from) : null;
+      const lte = to ? new Date(to) : null;
+      const captured = {};
+      if (gte && !Number.isNaN(gte.getTime())) captured.gte = gte;
+      if (lte && !Number.isNaN(lte.getTime())) captured.lte = lte;
+      if (Object.keys(captured).length) where.capturedAt = captured;
     }
 
     // Per-child access filter for loved ones (OR of allowed children).
