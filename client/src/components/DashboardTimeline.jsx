@@ -90,19 +90,21 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
     e.preventDefault();
     e.stopPropagation();
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* noop */ }
+    // Snapshot the rail geometry ONCE at drag-start; reusing it for the whole
+    // drag makes the cursor→fraction math immune to any mid-drag layout shift.
+    const rect = railRef.current.getBoundingClientRect();
     if (mode === 'band') {
-      const rect = railRef.current.getBoundingClientRect();
       const f = (e.clientY - rect.top) / rect.height;
-      active.current = { mode, grab: f - win.top, width: win.bot - win.top };
+      active.current = { mode, rect, grab: f - win.top, width: win.bot - win.top };
     } else {
-      active.current = { mode };
+      active.current = { mode, rect };
     }
     setDrag(mode);
   };
   const onMove = (e) => {
     const d = active.current;
     if (!d) return;
-    const rect = railRef.current.getBoundingClientRect();
+    const rect = d.rect;
     const f = clamp((e.clientY - rect.top) / rect.height, 0, 1);
     const w = latestWin.current;
     let next;
@@ -196,10 +198,10 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
         </p>
       </div>
 
-      {/* Height follows the date list (so the rail ends where the dates do),
-          floored so it stays usable when zoomed to a few months, and capped so a
-          long month list scrolls instead of overflowing the viewport. */}
-      <div className="flex gap-3 px-4 pb-4 min-h-[18rem] max-h-[calc(100vh-10rem)]">
+      {/* FIXED height — the rail is a stable drag surface. (Coupling its height to
+          the bucket list made it change size mid-drag, so the handle jumped.) The
+          detail column scrolls within this height. */}
+      <div className="flex gap-3 px-4 pb-4 h-[calc(100vh-13rem)]">
         {/* ── Slider rail (drag to filter) ── */}
         <div
           ref={railRef}
