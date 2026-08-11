@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format, differenceInYears, differenceInMonths } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { AuthedImage } from '../components/AuthedMedia';
-import { CHILD_PALETTE, childColor, genderColor } from '../lib/childColor';
+import { PICKER_PALETTE, resolveChildColors, nextColorForGender } from '../lib/childColor';
 import api from '../lib/api';
 
 // Placeholder emoji changes with the child's age: baby → kid → teen. When a
@@ -46,15 +46,15 @@ function ChildAvatar({ child, className = 'w-12 h-12' }) {
   );
 }
 
-// Filter-chip color for the child. Shows the gender default as active until the
-// parent picks one explicitly.
-function ColorPicker({ value, gender, onChange }) {
-  const effective = value || genderColor(gender);
+// Filter-chip color for the child. `defaultColor` (a gender-aware, sibling-aware
+// suggestion) shows as active until the parent picks one explicitly.
+function ColorPicker({ value, defaultColor, onChange }) {
+  const effective = value || defaultColor || '';
   return (
     <div>
       <label className="block text-sm font-medium text-ink-soft mb-1.5">Filter color</label>
       <div className="flex flex-wrap gap-2">
-        {CHILD_PALETTE.map((c) => {
+        {PICKER_PALETTE.map((c) => {
           const active = effective.toLowerCase() === c.toLowerCase();
           return (
             <button
@@ -176,7 +176,7 @@ export default function Children() {
         name: form.name,
         dateOfBirth: form.dateOfBirth,
         gender: form.gender,
-        color: form.color || genderColor(form.gender),
+        color: form.color || nextColorForGender(form.gender, children),
       });
       setChildren((prev) => [...prev, data.child]);
       setForm({ name: '', dateOfBirth: '', gender: '', color: '' });
@@ -208,7 +208,7 @@ export default function Children() {
         name: editForm.name,
         dateOfBirth: editForm.dateOfBirth,
         gender: editForm.gender,
-        color: editForm.color || genderColor(editForm.gender),
+        color: editForm.color || nextColorForGender(editForm.gender, children.filter((c) => c.id !== childId)),
       });
       setChildren((prev) => prev.map((c) => (c.id === childId ? data.child : c)));
       setEditingId(null);
@@ -232,6 +232,9 @@ export default function Children() {
   if (loading) {
     return <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500" /></div>;
   }
+
+  // Resolved (distinct) filter color per child, for the card dots.
+  const childColors = resolveChildColors(children);
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -261,7 +264,7 @@ export default function Children() {
               <input type="date" className="input" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} max={new Date().toISOString().split('T')[0]} required />
             </div>
             <GenderSelect value={form.gender} onChange={(gender) => setForm({ ...form, gender })} />
-            <ColorPicker value={form.color} gender={form.gender} onChange={(color) => setForm({ ...form, color })} />
+            <ColorPicker value={form.color} defaultColor={nextColorForGender(form.gender, children)} onChange={(color) => setForm({ ...form, color })} />
             <div className="flex gap-2">
               <button type="submit" className="btn-primary" disabled={submitting}>{submitting ? 'Adding...' : 'Add child'}</button>
               <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
@@ -320,7 +323,7 @@ export default function Children() {
                     <input type="date" className="input" value={editForm.dateOfBirth} onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })} max={new Date().toISOString().split('T')[0]} required />
                   </div>
                   <GenderSelect value={editForm.gender} onChange={(gender) => setEditForm({ ...editForm, gender })} />
-                  <ColorPicker value={editForm.color} gender={editForm.gender} onChange={(color) => setEditForm({ ...editForm, color })} />
+                  <ColorPicker value={editForm.color} defaultColor={nextColorForGender(editForm.gender, children.filter((c) => c.id !== child.id))} onChange={(color) => setEditForm({ ...editForm, color })} />
                   <div className="flex gap-2">
                     <button type="submit" className="btn-primary" disabled={editSubmitting}>{editSubmitting ? 'Saving...' : 'Save changes'}</button>
                     <button type="button" className="btn-secondary" onClick={() => setEditingId(null)}>Cancel</button>
@@ -332,7 +335,7 @@ export default function Children() {
                 <ChildAvatar child={child} />
                 <div className="flex-1">
                   <h3 className="font-bold text-ink flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full flex-shrink-0" title="Filter color" style={{ backgroundColor: childColor(child) }} />
+                  <span className="w-3 h-3 rounded-full flex-shrink-0" title="Filter color" style={{ backgroundColor: childColors[child.id] }} />
                   {child.name}
                 </h3>
                   <p className="text-sm text-ink-muted">

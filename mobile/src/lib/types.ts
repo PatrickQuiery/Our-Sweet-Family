@@ -6,6 +6,8 @@ export interface Child {
   name: string;
   gender?: Gender | null;
   dateOfBirth?: string | null;
+  /** Accent color (hex) for this child's filter chip; defaults from gender. */
+  color?: string | null;
   avatarUrl?: string | null;
 }
 

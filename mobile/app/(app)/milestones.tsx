@@ -9,10 +9,9 @@ import { Button, Card, Chip, EmptyState, Input, Loading, Screen, Text, Touchable
 import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { DatePickerField } from '../../src/components/DatePickerField';
 import { useTheme } from '../../src/theme/ThemeProvider';
+import { resolveChildColors } from '../../src/lib/childColor';
 import { ApiError } from '../../src/lib/api';
 import type { Child, Milestone } from '../../src/lib/types';
-
-const CHILD_COLORS = ['#f43f74', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#0ea5e9'];
 
 function formatDate(iso: string): string {
   try {
@@ -27,6 +26,7 @@ export default function Milestones() {
   const { activeFamily, canManage } = useFamily();
   const { colors, spacing } = useTheme();
   const children = activeFamily?.children ?? [];
+  const childColors = resolveChildColors(children);
   const manage = canManage();
 
   const [childId, setChildId] = useState<string | null>(children[0]?.id ?? null);
@@ -106,8 +106,8 @@ export default function Milestones() {
       <SunriseHeader title="Milestones" />
       <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.sm }}>
-          {children.map((c: Child, i: number) => (
-            <Chip key={c.id} label={c.name} color={CHILD_COLORS[i % CHILD_COLORS.length]} selected={c.id === childId} onPress={() => setChildId(c.id)} />
+          {children.map((c: Child) => (
+            <Chip key={c.id} label={c.name} color={childColors[c.id]} selected={c.id === childId} onPress={() => setChildId(c.id)} />
           ))}
         </ScrollView>
       </View>

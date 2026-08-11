@@ -3,7 +3,7 @@ import {
   differenceInYears, differenceInMonths, differenceInCalendarDays,
   format, startOfMonth, endOfMonth,
 } from 'date-fns';
-import { childColor } from '../lib/childColor';
+import { resolveChildColors } from '../lib/childColor';
 
 const DAY = 86400000;
 const MIN_GAP = 0.02; // smallest selectable window (~2% of the span)
@@ -143,35 +143,36 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
     return ticks;
   }, [start, end, totalDays]);
 
-  // Buckets inside the selected window — granularity auto-zooms with the window
-  // size. Each bucket carries its own full [from, to] extent so a tap can filter
-  // to it, and counts are computed over that extent (independent of the window).
-  const { buckets, grain } = useMemo(() => {
-    const winDays = (newer - older) / DAY;
-    const grain = winDays > 3.2 * 365 ? 'year' : 'month';
+  // Buckets over the FULL span (newest → oldest), NOT just the selected window.
+  // This keeps the detail list aligned with the rail and its height stable (so a
+  // drag/filter can't make the rail jump or leave the band stranded far from the
+  // list). Grain is picked from the full span. Whether a bucket falls inside the
+  // selected window drives its styling; a tap still filters to that bucket.
+  const buckets = useMemo(() => {
+    const grain = totalDays / 365 > 3.2 ? 'year' : 'month';
     const out = [];
     const countIn = (a, b) => memories.filter((m) => { const d = new Date(m.capturedAt); return d >= a && d <= b; }).length;
 
     if (grain === 'year') {
-      for (let y = newer.getFullYear(); y >= older.getFullYear() && out.length < 60; y--) {
-        const yStart = new Date(y, 0, 1);
-        const yEnd = new Date(y, 11, 31, 23, 59, 59);
-        const from = new Date(Math.max(+yStart, +start));
-        const to = new Date(Math.min(+yEnd, +end));
+      for (let y = end.getFullYear(); y >= start.getFullYear() && out.length < 80; y--) {
+        const from = new Date(Math.max(+new Date(y, 0, 1), +start));
+        const to = new Date(Math.min(+new Date(y, 11, 31, 23, 59, 59), +end));
         out.push({ key: y, label: `${y}`, date: to, from, to, count: countIn(from, to) });
       }
     } else {
-      let d = startOfMonth(newer);
-      for (let i = 0; i < 120 && d >= startOfMonth(older); i++) {
-        const mEnd = endOfMonth(d);
+      let d = startOfMonth(end);
+      for (let i = 0; i < 240 && d >= startOfMonth(start); i++) {
         const from = new Date(Math.max(+d, +start));
-        const to = new Date(Math.min(+mEnd, +end));
+        const to = new Date(Math.min(+endOfMonth(d), +end));
         out.push({ key: +d, label: format(d, 'MMM yyyy'), date: to, from, to, count: countIn(from, to) });
         d = new Date(d.getFullYear(), d.getMonth() - 1, 1);
       }
     }
-    return { buckets: out, grain };
-  }, [newer, older, memories, start, end, totalDays]);
+    return out;
+  }, [start, end, totalDays, memories]);
+
+  // Distinct color per child (same-gender siblings get different shades).
+  const kidColors = useMemo(() => resolveChildColors(kids), [kids]);
 
   if (!kids.length && !memories.length) return null;
 
@@ -198,10 +199,9 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
         </p>
       </div>
 
-      {/* FIXED height — the rail is a stable drag surface. (Coupling its height to
-          the bucket list made it change size mid-drag, so the handle jumped.) The
-          detail column scrolls within this height. */}
-      <div className="flex gap-3 px-4 pb-4 h-[calc(100vh-13rem)]">
+      {/* Height follows the (now full-span, stable) bucket list, so the rail ends
+          with the dates and never leaves the band stranded in empty space. */}
+      <div className="flex gap-3 px-4 pb-4 min-h-[18rem] max-h-[calc(100vh-11rem)]">
         {/* ── Slider rail (drag to filter) ── */}
         <div
           ref={railRef}
@@ -247,11 +247,14 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
           )}
         </div>
 
-        {/* ── Detail: the zoomed window (tap a row to filter to it) ── */}
+        {/* ── Detail: full span, newest → oldest (tap a row to filter to it). The
+              rows inside the selected window are highlighted so the list reads
+              together with the rail band beside it. ── */}
         <div className="flex-1 min-w-0 overflow-y-auto">
           {buckets.map((b) => {
+            const on = b.to >= older && b.from <= newer; // inside the selected window
             const ages = kids
-              .map((k) => ({ name: k.name, age: ageAt(k.dateOfBirth, b.date), color: childColor(k) }))
+              .map((k) => ({ name: k.name, age: ageAt(k.dateOfBirth, b.date), color: kidColors[k.id] }))
               .filter((a) => a.age);
             return (
               <button
@@ -259,12 +262,12 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
                 type="button"
                 onClick={() => jumpTo(b.from, b.to)}
                 title={`Filter to ${b.label}`}
-                className="relative w-full text-left pl-4 pb-3.5 last:pb-1 group"
+                className={`relative w-full text-left pl-4 pb-3.5 last:pb-1 group transition-opacity ${on ? '' : 'opacity-45'}`}
               >
                 <span className="absolute left-[3px] top-1.5 bottom-0 w-px bg-ink/10" />
-                <span className="absolute left-0 top-1 w-[7px] h-[7px] rounded-full bg-brand-400 ring-2 ring-white group-hover:bg-brand-500" />
+                <span className={`absolute left-0 top-1 w-[7px] h-[7px] rounded-full ring-2 ring-white group-hover:bg-brand-500 ${on ? 'bg-brand-500' : 'bg-ink/25'}`} />
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-semibold text-ink text-sm tabular-nums group-hover:text-brand-600">{b.label}</span>
+                  <span className={`font-semibold text-sm tabular-nums group-hover:text-brand-600 ${on ? 'text-brand-600' : 'text-ink'}`}>{b.label}</span>
                   {b.count > 0 && <span className="text-[10px] text-ink-muted flex-shrink-0">{b.count}</span>}
                 </div>
                 {ages.length > 0 && (

@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 import MosaicFeed from '../components/MosaicFeed';
 import DashboardTimeline from '../components/DashboardTimeline';
-import { childColor } from '../lib/childColor';
+import { resolveChildColors } from '../lib/childColor';
 
 export default function Dashboard() {
   const { user, family, loading: authLoading } = useAuth();
@@ -84,6 +84,9 @@ export default function Dashboard() {
   useEffect(() => {
     if (page > 1) fetchMemories(false);
   }, [page]);
+
+  // Distinct filter color per child (same-gender siblings differ).
+  const childColors = useMemo(() => resolveChildColors(children), [children]);
 
   // While auth/family are still resolving, show a skeleton — never the "no family"
   // prompt (that flashed the empty state before data arrived).
@@ -176,7 +179,7 @@ export default function Dashboard() {
           All children
         </button>
         {children.map((child) => {
-          const color = childColor(child);
+          const color = childColors[child.id];
           const active = selectedChild === child.id;
           return (
             <button

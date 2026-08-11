@@ -9,10 +9,9 @@ import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { Button, Chip, EmptyState, Skeleton, Text } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { buildTimeline } from '../../src/lib/mosaic';
+import { resolveChildColors } from '../../src/lib/childColor';
 
 const GAP = 6;
-// Per-child accent palette (mirrors the web timeline rail).
-const CHILD_COLORS = ['#f43f74', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#0ea5e9'];
 
 export default function Timeline() {
   const [query, setQuery] = useState('');
@@ -38,6 +37,7 @@ export default function Timeline() {
     to: range?.to,
   });
   const children = family?.children ?? [];
+  const childColors = useMemo(() => resolveChildColors(children), [children]);
   const filtering = search.length > 0 || !!childFilter || !!range;
 
   // Refresh when returning to the tab (e.g. after capturing a memory), skipping
@@ -107,11 +107,11 @@ export default function Timeline() {
           {children.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
               <Chip label="All" selected={!childFilter} onPress={() => setChildFilter(null)} />
-              {children.map((c, i) => (
+              {children.map((c) => (
                 <Chip
                   key={c.id}
                   label={c.name}
-                  color={CHILD_COLORS[i % CHILD_COLORS.length]}
+                  color={childColors[c.id]}
                   selected={childFilter === c.id}
                   onPress={() => setChildFilter(childFilter === c.id ? null : c.id)}
                 />
