@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../lib/api';
 
 // Private media is served only by authenticated endpoints, so <img>/<video> can't
@@ -41,14 +41,20 @@ export function AuthedImage({ src, className = '', alt = '', ...props }) {
   return <img src={url} className={className} alt={alt} {...props} />;
 }
 
-export function AuthedVideo({ src, className = '', ...props }) {
+export function AuthedVideo({ src, className = '', muted, loadingClassName, ...props }) {
   const url = useBlobUrl(src);
+  const ref = useRef(null);
+  // React's `muted` attribute alone is unreliable — browsers often ignore it and
+  // block muted autoplay. Set the DOM property directly so autoplay is allowed.
+  useEffect(() => {
+    if (ref.current) ref.current.muted = !!muted;
+  }, [muted, url]);
   if (!url) {
     return (
-      <div className={`${className} bg-gray-900 flex items-center justify-center`} aria-hidden="true">
+      <div className={`${loadingClassName ?? className} bg-gray-900 flex items-center justify-center`} aria-hidden="true">
         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white/70" />
       </div>
     );
   }
-  return <video src={url} className={className} {...props} />;
+  return <video ref={ref} src={url} className={className} muted={muted} {...props} />;
 }

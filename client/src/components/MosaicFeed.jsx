@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { AuthedImage } from './AuthedMedia';
+import { AuthedImage, AuthedVideo } from './AuthedMedia';
 import { buildTimeline } from '../lib/mosaic';
 import api from '../lib/api';
 
@@ -22,8 +22,27 @@ function CommentIcon({ className }) {
 }
 
 function Tile({ memory, weight, currentUser }) {
-  const img = memory.thumbnailUrl || memory.fileUrl;
   const isVideo = memory.fileType === 'video';
+  // Images use the thumbnail (or the file itself); videos show their poster
+  // thumbnail until they scroll into view, then autoplay muted.
+  const img = isVideo ? memory.thumbnailUrl : (memory.thumbnailUrl || memory.fileUrl);
+
+  // Autoplay-on-scroll: only mount the (bandwidth-heavy) video element while the
+  // tile is meaningfully in view, and unmount it when it scrolls away so we're
+  // never fetching every video blob at once.
+  const tileRef = useRef(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    if (!isVideo) return undefined;
+    const el = tileRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return undefined;
+    const obs = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting && entry.intersectionRatio >= 0.5),
+      { threshold: [0, 0.5, 1] }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [isVideo]);
 
   // Local, optimistic engagement state (seeded from the list payload, which already
   // includes reactor names + comment authors — no extra fetch needed).
@@ -76,17 +95,35 @@ function Tile({ memory, weight, currentUser }) {
 
   return (
     <div
+      ref={tileRef}
       className="relative rounded-xl overflow-hidden bg-brand-50 group"
       style={{ flexGrow: weight, flexBasis: 0, minWidth: 0 }}
     >
-      {/* Image → detail */}
+      {/* Media → detail */}
       <Link to={`/memories/${memory.id}`} className="absolute inset-0 block">
+        {/* Poster: thumbnail for both images and videos (videos may have none) */}
         {img ? (
           <AuthedImage src={img} alt={memory.caption || 'Memory'} className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.04]" />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-2xl">📷</div>
+          <div className="absolute inset-0 flex items-center justify-center text-2xl bg-ink/80">🎬</div>
         )}
-        {isVideo && (
+
+        {/* Video autoplays (muted, looping) once scrolled into view, over the poster */}
+        {isVideo && inView && (
+          <AuthedVideo
+            src={memory.fileUrl}
+            muted
+            autoPlay
+            loop
+            playsInline
+            preload="metadata"
+            className="absolute inset-0 w-full h-full object-cover"
+            loadingClassName="absolute inset-0 w-full h-full"
+          />
+        )}
+
+        {/* Play badge — hidden once the video is actually playing */}
+        {isVideo && !inView && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-11 h-11 rounded-full bg-white/85 flex items-center justify-center backdrop-blur-sm shadow">
               <svg className="w-5 h-5 text-ink ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
