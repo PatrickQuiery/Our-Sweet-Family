@@ -131,6 +131,10 @@ model Memory {
   thumbnailUrl    String?
   fileType        FileType
   originalQuality Boolean  @default(false)
+  // True once the thumbnail has been generated at the current hi-res (800px)
+  // size. A one-time boot backfill regenerates any photo still at the old 400px
+  // size and flips this — so the scan converges to zero and never repeats work.
+  thumbHiRes      Boolean  @default(false)
   processing      Boolean  @default(false) // video is being compressed in the background
   size            Int?     // bytes of the stored file (for plan usage metering)
   capturedAt      DateTime

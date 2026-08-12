@@ -14,6 +14,7 @@ const { isParent } = require('../lib/familyAccess');
 const { enqueueTranscode } = require('../lib/transcodeQueue');
 const { isHeicUpload, heicToJpeg } = require('../lib/heic');
 const { sendPushToUsers } = require('../lib/push');
+const { generateThumbnail } = require('../lib/thumbnails');
 
 const router = express.Router();
 
@@ -61,23 +62,6 @@ async function extractExifGps(buffer, mimetype) {
     // ignore EXIF errors
   }
   return null;
-}
-
-async function generateThumbnail(buffer, mimetype, originalName) {
-  if (!mimetype.startsWith('image/')) return null;
-
-  try {
-    const thumbBuffer = await sharp(buffer)
-      .resize(400, 400, { fit: 'cover', position: 'center' })
-      .jpeg({ quality: 80 })
-      .toBuffer();
-
-    const thumbName = path.basename(originalName, path.extname(originalName)) + '_thumb.jpg';
-    return { buffer: thumbBuffer, name: thumbName };
-  } catch (e) {
-    console.error('Thumbnail generation failed:', e);
-    return null;
-  }
 }
 
 // A display-quality compressed photo (max 1600px, JPEG q72) — what free plans
@@ -522,6 +506,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
         uploadedById: req.user.id,
         fileUrl,
         thumbnailUrl,
+        thumbHiRes: true, // freshly generated at the current hi-res size
         fileType,
         size: uploadBuffer.length, // bytes actually stored (compressed for free-plan photos)
         originalQuality: isPaid,

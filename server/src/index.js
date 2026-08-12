@@ -41,4 +41,13 @@ app.listen(PORT, () => {
       .runWorkerLoop()
       .catch((e) => console.error('inline transcode worker error:', e.message));
   }
+
+  // One-time, self-converging backfill of old 400px thumbnails to the current
+  // hi-res size. Non-blocking and best-effort; a no-op once all are upgraded.
+  setImmediate(() => {
+    const prisma = require('./lib/prisma');
+    require('./lib/backfillThumbnails')
+      .backfillThumbnails(prisma)
+      .catch((e) => console.error('thumbnail backfill error:', e.message));
+  });
 });
