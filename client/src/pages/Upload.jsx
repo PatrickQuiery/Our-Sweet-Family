@@ -12,6 +12,8 @@ const MEDIA_RE = /\.(mp4|mov|m4v|avi|mkv|webm|3gp|jpe?g|png|gif|webp|heic|heif|b
 const isMediaFile = (f) =>
   (f.type || '').startsWith('image/') || (f.type || '').startsWith('video/') || MEDIA_RE.test(f.name || '');
 
+const IS_IOS = typeof navigator !== 'undefined' && /iP(hone|ad|od)/.test(navigator.userAgent);
+
 function formatFileSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -214,6 +216,15 @@ export default function Upload() {
           </>
         )}
       </div>
+
+      {IS_IOS && (
+        <div className="-mt-3 mb-6 flex items-start gap-2 rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
+          <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17 4H7a3 3 0 00-3 3v10a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3zm-5 15a1 1 0 110-2 1 1 0 010 2zm4-4H8V7h8v8z" /></svg>
+          <p className="text-xs text-ink-soft">
+            Uploading big videos from your iPhone? The <span className="font-semibold">Our Sweet Family app</span> is much faster — it skips Safari's video-prep step that makes the picker feel slow here.
+          </p>
+        </div>
+      )}
 
       {items.length > 0 && (
         <>

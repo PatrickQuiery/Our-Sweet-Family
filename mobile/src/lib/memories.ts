@@ -92,6 +92,7 @@ export function buildUploadForm(input: UploadInput): FormData {
 export function uploadMemory(
   getToken: () => Promise<string | null>,
   input: UploadInput,
+  onProgress?: (pct: number) => void,
 ): Promise<Memory> {
   return new Promise<Memory>((resolve, reject) => {
     getToken()
@@ -99,6 +100,11 @@ export function uploadMemory(
         const xhr = new XMLHttpRequest();
         xhr.open('POST', `${API_ROOT}/memories`);
         if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        if (onProgress && xhr.upload) {
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) onProgress(Math.round((e.loaded * 100) / e.total));
+          };
+        }
         xhr.onload = () => {
           let body: { memory?: Memory; error?: string; message?: string } | null = null;
           try {

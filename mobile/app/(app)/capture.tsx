@@ -20,6 +20,7 @@ export default function Capture() {
   const [selected, setSelected] = useState<string[]>([]);
   const [caption, setCaption] = useState('');
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const pick = async (fromCamera: boolean) => {
@@ -49,9 +50,10 @@ export default function Capture() {
   const upload = async () => {
     if (!asset || !family) return;
     setBusy(true);
+    setProgress(0);
     setError(null);
     try {
-      await uploadMemory(getToken, { familyId: family.id, childIds: selected, caption, asset });
+      await uploadMemory(getToken, { familyId: family.id, childIds: selected, caption, asset }, setProgress);
       setAsset(null);
       setPreview(null);
       setSelected([]);
@@ -170,6 +172,18 @@ export default function Capture() {
             <Text variant="caption" color="danger">
               {error}
             </Text>
+          ) : null}
+
+          {busy ? (
+            <View style={{ gap: 6 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text variant="caption" color="textSecondary">{progress < 100 ? 'Uploading…' : 'Processing…'}</Text>
+                <Text variant="caption" color="textSecondary">{progress}%</Text>
+              </View>
+              <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.fill, overflow: 'hidden' }}>
+                <View style={{ height: '100%', width: `${progress}%`, borderRadius: 4, backgroundColor: colors.primary }} />
+              </View>
+            </View>
           ) : null}
 
           <Button title="Share memory" onPress={upload} loading={busy} disabled={!asset} />
