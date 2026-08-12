@@ -103,6 +103,7 @@ export default function AppTabs() {
         name="capture"
         options={{
           title: 'Capture',
+          headerShown: false,
           tabBarLabel: () => null,
           tabBarButton: (props) => <CaptureTabButton onPress={props.onPress ?? undefined} />,
         }}
