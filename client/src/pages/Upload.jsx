@@ -1,9 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 import TagInput from '../components/TagInput';
+
+// Accept anything the browser reports as media, plus common extensions — iOS
+// sometimes hands over a video with an empty MIME type, which the accept filter
+// would otherwise silently reject.
+const MEDIA_RE = /\.(mp4|mov|m4v|avi|mkv|webm|3gp|jpe?g|png|gif|webp|heic|heif|bmp|tiff?)$/i;
+const isMediaFile = (f) =>
+  (f.type || '').startsWith('image/') || (f.type || '').startsWith('video/') || MEDIA_RE.test(f.name || '');
 
 function formatFileSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -49,21 +56,55 @@ export default function Upload() {
   const [progress, setProgress] = useState({});
   const [errors, setErrors] = useState({});
   const [done, setDone] = useState([]);
+  const [preparing, setPreparing] = useState(false); // iOS exporting the selection
+  const [notice, setNotice] = useState('');
+  const awaitingRef = useRef(false); // picker opened, files not yet delivered
+  const prepTimerRef = useRef(null);
 
   useEffect(() => {
     if (!family) return;
     api.get(`/children?familyId=${family.id}`).then(({ data }) => setChildren(data.children));
   }, [family]);
 
-  const onDrop = useCallback((accepted) => {
-    setItems((prev) => [...prev, ...accepted.map((file) => ({ id: nextId(), file }))]);
+  const clearPreparing = () => {
+    awaitingRef.current = false;
+    if (prepTimerRef.current) { clearTimeout(prepTimerRef.current); prepTimerRef.current = null; }
+    setPreparing(false);
+  };
+
+  // Take BOTH accepted and rejected files so an iOS video with an odd/empty MIME
+  // type never gets silently dropped; keep only real media.
+  const onDrop = useCallback((accepted, fileRejections) => {
+    clearPreparing();
+    const rejected = (fileRejections || []).map((r) => r.file).filter(Boolean);
+    const all = [...accepted, ...rejected];
+    const media = all.filter(isMediaFile);
+    const skipped = all.length - media.length;
+    if (media.length) setItems((prev) => [...prev, ...media.map((file) => ({ id: nextId(), file }))]);
+    setNotice(skipped > 0 ? `${skipped} file${skipped > 1 ? 's' : ''} skipped — only photos and videos can be uploaded.` : '');
+  }, []);
+
+  // iOS prepares (exports) selected videos AFTER you tap ✓ but BEFORE the change
+  // event fires — a silent gap. When the window regains focus with a pending pick
+  // and no files yet, show a "preparing" indicator so it never looks frozen.
+  useEffect(() => {
+    const onFocus = () => {
+      if (!awaitingRef.current) return;
+      setPreparing(true);
+      if (prepTimerRef.current) clearTimeout(prepTimerRef.current);
+      // Safety: clear the hint even if the pick was cancelled. If a real export
+      // runs longer, the files still appear on arrival (onDrop) regardless.
+      prepTimerRef.current = setTimeout(() => { setPreparing(false); awaitingRef.current = false; }, 60000);
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
-      'video/*': ['.mp4', '.mov', '.avi', '.mkv', '.m4v'],
+      'image/*': [],
+      'video/*': [],
     },
     multiple: true,
   });
@@ -143,8 +184,19 @@ export default function Upload() {
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-ink mb-6">Upload memories</h1>
 
+      {preparing && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl bg-brand-50 border border-brand-200 px-4 py-3">
+          <div className="w-5 h-5 border-2 border-brand-300 border-t-brand-600 rounded-full animate-spin flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-ink">Preparing your selection…</p>
+            <p className="text-xs text-ink-muted">Videos from an iPhone can take a moment to load in — hang tight.</p>
+          </div>
+        </div>
+      )}
+      {notice && <p className="text-sm text-amber-600 mb-4">{notice}</p>}
+
       <div
-        {...getRootProps()}
+        {...getRootProps({ onClick: () => { awaitingRef.current = true; } })}
         className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-colors mb-6 ${
           isDragActive ? 'border-brand-400 bg-brand-50' : 'border-ink-muted/30 bg-paper hover:border-brand-300 hover:bg-brand-50/30'
         }`}
@@ -158,6 +210,7 @@ export default function Upload() {
             <p className="font-semibold text-ink-soft mb-1">Drag & drop photos or videos</p>
             <p className="text-sm text-ink-muted">or click to browse your files</p>
             <p className="text-xs text-ink-muted mt-2">JPG, PNG, GIF, WebP, MP4, MOV, AVI, MKV — up to 500MB per file</p>
+            <p className="text-xs text-ink-muted/80 mt-1">On iPhone, large videos take a moment to appear after you tap ✓.</p>
           </>
         )}
       </div>
@@ -225,8 +278,17 @@ export default function Upload() {
                   <TagInput value={tagSel[id] || []} onChange={(t) => setTagSel((p) => ({ ...p, [id]: t }))} />
 
                   {progress[id] !== undefined && !done.includes(id) && !errors[id] && (
-                    <div className="h-1 bg-ink/10 rounded overflow-hidden">
-                      <div className="h-full bg-brand-500 transition-all" style={{ width: `${progress[id]}%` }} />
+                    <div>
+                      <div className="flex items-center justify-between text-xs text-ink-soft mb-1">
+                        <span className="font-medium">{progress[id] < 100 ? 'Uploading…' : 'Processing…'}</span>
+                        <span className="tabular-nums">{progress[id]}%</span>
+                      </div>
+                      <div className="h-2 bg-ink/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${progress[id] < 100 ? 'bg-brand-500' : 'bg-brand-400 animate-pulse'}`}
+                          style={{ width: `${progress[id]}%` }}
+                        />
+                      </div>
                     </div>
                   )}
                   {errors[id] && <p className="text-xs text-red-500">{errors[id]}</p>}
