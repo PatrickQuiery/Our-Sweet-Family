@@ -30,7 +30,7 @@ export default function Timeline() {
     return () => clearTimeout(t);
   }, [query]);
 
-  const { family, memories, refreshing, loading, error, refresh, loadMore } = useMemories({
+  const { family, memories, refreshing, revalidating, loading, error, refresh, loadMore } = useMemories({
     search: search || undefined,
     childId: childFilter ?? undefined,
     from: range?.from,
@@ -194,9 +194,28 @@ export default function Timeline() {
             !filtering && memories.length > 0 ? (
               <View style={{ marginBottom: spacing.xs }}>
                 <Text variant="title">{family?.name ?? 'Your family'}</Text>
-                <Text variant="body" color="textSecondary" style={{ marginTop: 2 }}>
-                  {memories.length} {memories.length === 1 ? 'memory' : 'memories'}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 2 }}>
+                  <Text variant="body" color="textSecondary">
+                    {memories.length} {memories.length === 1 ? 'memory' : 'memories'}
+                  </Text>
+                  {revalidating ? (
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        backgroundColor: colors.primarySoft,
+                        borderRadius: radius.pill,
+                        paddingLeft: 8,
+                        paddingRight: 10,
+                        paddingVertical: 3,
+                      }}
+                    >
+                      <ActivityIndicator size="small" color={colors.primary} />
+                      <Text variant="label" style={{ color: colors.primary }}>Updating…</Text>
+                    </View>
+                  ) : null}
+                </View>
               </View>
             ) : null
           }

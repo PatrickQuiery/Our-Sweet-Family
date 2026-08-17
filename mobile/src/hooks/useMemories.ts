@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useApi } from './useApi';
 import { useFamily } from '../context/FamilyProvider';
 import { getMemories } from '../lib/memories';
+import { readFeedCache, writeFeedCache } from '../lib/feedCache';
 import type { Memory } from '../lib/types';
 
 interface UseMemoriesOpts {
@@ -24,8 +25,29 @@ export function useMemories({ search, childId, from, to }: UseMemoriesOpts = {})
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [revalidating, setRevalidating] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // The unfiltered "most recent" view is the one we cache/hydrate.
+  const isDefaultView = !search && !childId && !from && !to;
+
+  // Hydrate instantly from the on-device cache on launch of the default view, so
+  // a cold start paints the last-seen memories while the network refetch runs.
+  useEffect(() => {
+    if (!familyId || !isDefaultView) return;
+    let active = true;
+    readFeedCache(familyId).then((cached) => {
+      if (active && cached?.memories?.length) {
+        setMemories((prev) => (prev.length ? prev : cached.memories));
+      }
+    });
+    return () => {
+      active = false;
+    };
+    // Only on family change — don't re-seed after filters clear.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [familyId]);
 
   const loadFirst = useCallback(async () => {
     if (!familyId) {
@@ -33,18 +55,21 @@ export function useMemories({ search, childId, from, to }: UseMemoriesOpts = {})
       return;
     }
     setRefreshing(true);
+    setRevalidating(true);
     setError(null);
     try {
       const first = await getMemories(api, { familyId, page: 1, limit: 20, search, childId, from, to });
       setMemories(first);
       setPage(1);
       setDone(first.length < 20);
+      if (isDefaultView) writeFeedCache(familyId, first);
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load');
     } finally {
       setRefreshing(false);
+      setRevalidating(false);
     }
-  }, [api, familyId, search, childId, from, to]);
+  }, [api, familyId, search, childId, from, to, isDefaultView]);
 
   const loadMore = useCallback(async () => {
     if (loading || done || !familyId) return;
@@ -66,5 +91,5 @@ export function useMemories({ search, childId, from, to }: UseMemoriesOpts = {})
     loadFirst();
   }, [loadFirst]);
 
-  return { family: activeFamily, memories, loading, refreshing, error, refresh: loadFirst, loadMore };
+  return { family: activeFamily, memories, loading, refreshing, revalidating, error, refresh: loadFirst, loadMore };
 }

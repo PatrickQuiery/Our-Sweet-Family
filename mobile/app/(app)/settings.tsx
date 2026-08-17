@@ -10,6 +10,7 @@ import { useFamily } from '../../src/context/FamilyProvider';
 import { useApi } from '../../src/hooks/useApi';
 import { getFamilyUsage, updateFamilySettings } from '../../src/lib/family';
 import { getReferral, type ReferralInfo } from '../../src/lib/referrals';
+import { clearFeedCache } from '../../src/lib/feedCache';
 import { formatBytes, PLAN_LABELS } from '../../src/lib/format';
 import type { FamilyUsage } from '../../src/lib/types';
 
@@ -222,7 +223,7 @@ export default function Settings() {
           </View>
         </Card>
 
-        <Button variant="secondary" title="Sign out" icon={<Ionicons name="log-out-outline" size={18} color={colors.danger} />} onPress={() => signOut()} />
+        <Button variant="secondary" title="Sign out" icon={<Ionicons name="log-out-outline" size={18} color={colors.danger} />} onPress={async () => { await clearFeedCache(); signOut(); }} />
 
         <Text variant="caption" color="textMuted" center>
           Our Sweet Family
