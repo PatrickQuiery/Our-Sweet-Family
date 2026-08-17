@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
 import api from '../lib/api';
+import { clearFeedCache } from '../lib/feedCache';
 
 const AuthContext = createContext(null);
 
@@ -48,6 +49,7 @@ export function AuthProvider({ children }) {
     setUser(null);
     setFamily(null);
     setLoading(false);
+    clearFeedCache(); // signed out — drop any cached family memories
   }, [isLoaded, isSignedIn, clerkUser?.id, fetchMe, fetchFamily]);
 
   const logout = () => signOut({ redirectUrl: '/' });

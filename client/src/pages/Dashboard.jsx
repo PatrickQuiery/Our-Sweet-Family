@@ -5,6 +5,7 @@ import api from '../lib/api';
 import MosaicFeed from '../components/MosaicFeed';
 import DashboardTimeline from '../components/DashboardTimeline';
 import { resolveChildColors } from '../lib/childColor';
+import { readFeedCache, writeFeedCache } from '../lib/feedCache';
 
 export default function Dashboard() {
   const { user, family, loading: authLoading } = useAuth();
@@ -20,6 +21,24 @@ export default function Dashboard() {
   // Timeline scrubber window: { from, to, label } (ISO strings) or null for "all".
   const [range, setRange] = useState(null);
   const [error, setError] = useState('');
+  // Background refresh over already-shown (cached) content — drives the "Updating…" pill.
+  const [revalidating, setRevalidating] = useState(false);
+
+  // The unfiltered "most recent" view is the one we cache/hydrate.
+  const isDefaultView = !selectedChild && !selectedType && !debouncedSearch && !range;
+
+  // Hydrate instantly from the on-device cache on first paint of the default view,
+  // so a refresh shows the last-seen memories while the network refetch runs.
+  useEffect(() => {
+    if (!family?.id || !isDefaultView) return;
+    const cached = readFeedCache(family.id);
+    if (cached?.memories?.length) {
+      setMemories((prev) => (prev.length ? prev : cached.memories));
+      setLoading(false);
+    }
+    // Only on family change — we don't want to re-seed after filters clear.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [family?.id]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
@@ -39,7 +58,9 @@ export default function Dashboard() {
   const fetchMemories = useCallback(async (reset = false) => {
     if (!family) return;
     const currentPage = reset ? 1 : page;
+    const defaultView = !selectedChild && !selectedType && !debouncedSearch && !range;
     setLoading(true);
+    if (reset) setRevalidating(true);
     setError('');
     try {
       const params = new URLSearchParams({
@@ -56,6 +77,8 @@ export default function Dashboard() {
       const { data } = await api.get(`/memories?${params}`);
       if (reset || currentPage === 1) {
         setMemories(data.memories);
+        // Refresh the on-device cache with the newest default-view first page.
+        if (defaultView) writeFeedCache(family.id, data.memories);
       } else {
         setMemories((prev) => [...prev, ...data.memories]);
       }
@@ -65,6 +88,7 @@ export default function Dashboard() {
       setError('Failed to load memories.');
     } finally {
       setLoading(false);
+      if (reset) setRevalidating(false);
     }
   }, [family, page, selectedChild, selectedType, debouncedSearch, range]);
 
@@ -128,6 +152,15 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-ink">Family Timeline</h1>
           <div className="flex items-center gap-2 mt-1">
             <p className="text-ink-muted text-sm">{family.name}</p>
+            {revalidating && memories.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 text-brand-600 px-2.5 py-0.5 text-xs font-medium">
+                <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z" />
+                </svg>
+                Updating…
+              </span>
+            )}
             {range && (
               <button
                 onClick={() => setRange(null)}
