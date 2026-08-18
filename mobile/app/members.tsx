@@ -5,7 +5,7 @@ import { useApi } from '../src/hooks/useApi';
 import { useFamily } from '../src/context/FamilyProvider';
 import { getMembers, inviteMember, removeMember } from '../src/lib/members';
 import { getInvitations, revokeInvitation, PERMISSION_LABELS } from '../src/lib/invitations';
-import { Button, Card, Chip, Input, Loading, Screen, Text, Touchable } from '../src/components/ui';
+import { Button, Card, Chip, Input, Loading, Screen, Text, Touchable, useToast } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeProvider';
 import type { Invitation, Member, Permission } from '../src/lib/types';
 
@@ -26,6 +26,7 @@ export default function Members() {
   const api = useApi();
   const { activeFamily, canManage, me } = useFamily();
   const { colors, spacing } = useTheme();
+  const toast = useToast();
   const familyId = activeFamily?.id ?? null;
   const manage = canManage();
 
@@ -87,7 +88,7 @@ export default function Members() {
             await removeMember(api, m.id);
             await load();
           } catch (e: any) {
-            Alert.alert('Could not remove', e?.message ?? 'Please try again.');
+            toast(e?.message ?? 'Could not remove this member. Please try again.', 'error');
           }
         },
       },
@@ -105,7 +106,7 @@ export default function Members() {
             await revokeInvitation(api, inv.id);
             await load();
           } catch (e: any) {
-            Alert.alert('Could not revoke', e?.message ?? 'Please try again.');
+            toast(e?.message ?? 'Could not revoke the invitation. Please try again.', 'error');
           }
         },
       },

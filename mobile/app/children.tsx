@@ -9,7 +9,7 @@ import { createChild, deleteChild, updateChild, uploadChildAvatar } from '../src
 import { formatAge } from '../src/lib/age';
 import { AuthedImage } from '../src/components/AuthedImage';
 import { DatePickerField } from '../src/components/DatePickerField';
-import { BottomSheet, Button, Card, Chip, EmptyState, Input, Screen, Text, Touchable } from '../src/components/ui';
+import { BottomSheet, Button, Card, Chip, EmptyState, Input, Screen, Text, Touchable, useToast } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeProvider';
 import type { Child, Gender } from '../src/lib/types';
 
@@ -45,6 +45,7 @@ export default function Children() {
   const { getToken } = useAuth();
   const { activeFamily, canManage, refresh } = useFamily();
   const { colors, spacing } = useTheme();
+  const toast = useToast();
   const children = activeFamily?.children ?? [];
   const manage = canManage();
 
@@ -62,7 +63,7 @@ export default function Children() {
             await deleteChild(api, child.id);
             await refresh();
           } catch (e: any) {
-            Alert.alert('Could not remove', e?.message ?? 'Please try again.');
+            toast(e?.message ?? 'Could not remove this child. Please try again.', 'error');
           }
         },
       },
@@ -84,7 +85,7 @@ export default function Children() {
       });
       await refresh();
     } catch (e: any) {
-      Alert.alert('Upload failed', e?.message ?? 'Please try again.');
+      toast(e?.message ?? 'Photo upload failed. Please try again.', 'error');
     } finally {
       setBusy(false);
     }
@@ -178,7 +179,7 @@ export default function Children() {
             await refresh();
             setEditing(null);
           } catch (e: any) {
-            Alert.alert('Could not save', e?.message ?? 'Please try again.');
+            toast(e?.message ?? 'Could not save. Please try again.', 'error');
           } finally {
             setBusy(false);
           }

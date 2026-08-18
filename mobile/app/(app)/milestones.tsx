@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useApi } from '../../src/hooks/useApi';
 import { useFamily } from '../../src/context/FamilyProvider';
 import { createMilestone, deleteMilestone, getMilestones, MILESTONE_TYPES } from '../../src/lib/milestones';
-import { BottomSheet, Button, Card, Chip, EmptyState, Input, Loading, Screen, Text, Touchable } from '../../src/components/ui';
+import { BottomSheet, Button, Card, Chip, EmptyState, Input, Loading, Screen, Text, Touchable, useToast } from '../../src/components/ui';
 import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { DatePickerField } from '../../src/components/DatePickerField';
 import { useTheme } from '../../src/theme/ThemeProvider';
@@ -27,6 +27,7 @@ export default function Milestones() {
   const { activeFamily, canManage } = useFamily();
   const { colors, spacing } = useTheme();
   const tabClear = useTabBarClearance();
+  const toast = useToast();
   const children = activeFamily?.children ?? [];
   const childColors = resolveChildColors(children);
   const manage = canManage();
@@ -86,7 +87,7 @@ export default function Milestones() {
             await deleteMilestone(api, m.id);
             await load();
           } catch (e: any) {
-            Alert.alert('Could not delete', e?.message ?? 'Please try again.');
+            toast(e?.message ?? 'Could not delete. Please try again.', 'error');
           }
         },
       },
@@ -174,7 +175,7 @@ export default function Milestones() {
               setAdding(false);
               await load();
             } catch (e: any) {
-              Alert.alert('Could not save', e?.message ?? 'Please try again.');
+              toast(e?.message ?? 'Could not save. Please try again.', 'error');
             }
           }}
         />

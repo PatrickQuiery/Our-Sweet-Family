@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useApi } from '../../src/hooks/useApi';
 import { useFamily } from '../../src/context/FamilyProvider';
 import { AuthedImage } from '../../src/components/AuthedImage';
-import { EmptyState, Loading, Text, Touchable } from '../../src/components/ui';
+import { EmptyState, Loading, Text, Touchable, useToast } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { API_ROOT } from '../../src/lib/config';
 import {
@@ -73,6 +73,7 @@ export default function MemoryDetail() {
   const { colors, spacing, radius, fonts } = useTheme();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const toast = useToast();
   const wide = width > 700; // landscape / tablet: media beside the details
   const { me, canManage, activeFamily } = useFamily();
   const [memory, setMemory] = useState<Memory | null>(null);
@@ -130,7 +131,7 @@ export default function MemoryDetail() {
       const updated = await updateMemory(api, id, { capturedAt: noon });
       setMemory((m) => (m ? { ...m, ...updated } : m));
     } catch (e: any) {
-      Alert.alert('Could not update the date', e?.message ?? 'Please try again.');
+      toast(e?.message ?? 'Could not update the date. Please try again.', 'error');
     }
   };
   const location = [memory.locationCity, memory.locationState].filter(Boolean).join(', ');
@@ -168,7 +169,7 @@ export default function MemoryDetail() {
       setMemory((m) => (m ? { ...m, comments: [...(m.comments ?? []), c] } : m));
       setCommentText('');
     } catch (e: any) {
-      Alert.alert('Could not comment', e?.message ?? 'Please try again.');
+      toast(e?.message ?? 'Could not post your comment. Please try again.', 'error');
     } finally {
       setBusy(false);
     }
@@ -192,7 +193,7 @@ export default function MemoryDetail() {
             await deleteMemory(api, id);
             router.back();
           } catch (e: any) {
-            Alert.alert('Could not delete', e?.message ?? 'Please try again.');
+            toast(e?.message ?? 'Could not delete. Please try again.', 'error');
           }
         },
       },
@@ -329,8 +330,8 @@ export default function MemoryDetail() {
         </View>
       </ScrollView>
 
-      {/* Add comment */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderTopWidth: 1, borderTopColor: colors.borderSubtle, backgroundColor: colors.surface }}>
+      {/* Add comment (M31: keep clear of the home indicator at rest) */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md + insets.bottom, borderTopWidth: 1, borderTopColor: colors.borderSubtle, backgroundColor: colors.surface }}>
         <TextInput
           style={{ flex: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.text, backgroundColor: colors.fill, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: 10 }}
           placeholder="Add a comment…"

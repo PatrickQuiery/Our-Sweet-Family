@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, Share, Switch, View } from 'react-native';
+import { Pressable, ScrollView, Share, Switch, View } from 'react-native';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Card, Screen, Text, Touchable } from '../../src/components/ui';
+import { Button, Card, Screen, Text, Touchable, useToast } from '../../src/components/ui';
 import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useFamily } from '../../src/context/FamilyProvider';
@@ -43,6 +43,7 @@ export default function Settings() {
   const api = useApi();
   const { colors, spacing, radius, scheme, preference, setPreference } = useTheme();
   const tabClear = useTabBarClearance();
+  const toast = useToast();
   const { families, activeFamily, activeFamilyId, setActiveFamilyId, refresh } = useFamily();
   const email = user?.primaryEmailAddress?.emailAddress ?? '';
   const initial = (user?.firstName?.[0] ?? email[0] ?? '?').toUpperCase();
@@ -73,7 +74,7 @@ export default function Settings() {
       await updateFamilySettings(api, activeFamily.id, { showPhotoLocation: val });
       await refresh();
     } catch (e: any) {
-      Alert.alert('Could not update', e?.message ?? 'Please try again.');
+      toast(e?.message ?? 'Could not update the setting. Please try again.', 'error');
     } finally {
       setLocBusy(false);
     }
