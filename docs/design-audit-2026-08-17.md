@@ -1,9 +1,31 @@
 # Our Sweet Family — Design & UX Audit / Improvement Catalog
 
-**Date:** 2026-08-17
+**Date:** 2026-08-17 (implementation status appended 2026-08-18)
 **Author:** Claude (senior design-engineer review)
-**Status:** Catalog for review — nothing here is implemented yet. We come back to this to decide what to build.
+**Status:** In progress — the foundational backbone is built, verified, and shipped. See the status block below; remaining IDs are the tracked backlog.
 **Scope:** Web app (`client/`), Mobile app (`mobile/`). Special focus: **dark mode**, **landscape**, and overall beauty + functionality, top to bottom.
+
+---
+
+## ✅ Implementation status (2026-08-18)
+
+Shipped to `claude/family-photo-sharing-app-RfJto` (web auto-deploys to Vercel, server to Railway; mobile is JS-live via Metro):
+
+| Batch | IDs delivered | Commit |
+|---|---|---|
+| **Foundations** | SYS-1, SYS-2, CC-8/DM-2 (muted-text contrast) | `53ec649` |
+| **Web dark mode** | DM-0, CC-1, CC-2, DM-1 (web toggle), Clerk dark theming; marketing/auth pages light-committed via `.theme-light` scope | `4031933` |
+| **Mobile theme control** | DM-1 (Light/Dark/System selector), DM-3 (44-color audit — all legit over-media/already-dark) | `3e47c80` |
+| **A11y + motion base** | CC-6/A11Y-1 (web focus-visible), CC-7 (web reduce-motion), SYS-4 (motion tokens), A11Y-3 (mobile reduce-motion: Ken Burns/cross-fade/splash), M16 (Reels light status bar) | `583dddb` |
+| **Web perf** | PF-1 (route code-splitting: 500 kB monolith → 330 kB + per-route chunks) | `8d5ccb8` |
+
+This covers top-10 items **#1, #2, #4 (base), #5, #10**, and part of **#8**.
+
+**Deliberate scope decisions:** (a) marketing/legal/auth pages render light-only on purpose — a half-dark Sunrise front door is worse than a deliberately light one; (b) mobile video autoplay-on-scroll is *not* gated by Reduce Motion (it's content the user explicitly asked to keep).
+
+**Verification notes:** web build + mobile `tsc` clean on every batch; web dark-mode flip mechanism + marketing light-scope proven in-browser; authed-web dark mode not live-verified (needs a Clerk login, which I don't perform); mobile theme selector verified by clean bundle + launch (the simulator was stuck in landscape, so no portrait screenshot of the selector).
+
+**Remaining backlog (highest-value first):** #3 bottom-sheet KAV primitive (M46 — keyboard covers inputs on Capture/Milestones/Children), #6 themed dialogs/toasts (CC-9/CC-10/M65 — kill `window.confirm`/`Alert.alert`), #7 scrubber overlap + tab-bar clearance (M1/M2), #9 photo lightbox + real aspect (MD-2/M30/M32), per-screen landscape two-column (M7/M25/M69), mobile VoiceOver labels (M61/A11Y-2), icon system (CC-3), dead `MemoryCard.jsx` (CC-4), input consistency (CC-5), typography ramp (SYS-3), plus the per-screen P2/P3 items in §2/§3.
 
 ## How to read this
 
