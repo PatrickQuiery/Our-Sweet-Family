@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, FlatList, Linking, Modal, Pressable, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
-import * as MediaLibrary from 'expo-media-library';
+// SDK 54 deprecated the top-level functions (they throw); the field-based API we
+// use here lives under /legacy.
+import * as MediaLibrary from 'expo-media-library/legacy';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Text } from './ui';
@@ -69,12 +71,12 @@ export function MediaPicker({
   const loadFirst = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await MediaLibrary.getAssetsAsync({ first: PAGE, mediaType: ['photo', 'video'], sortBy: [['creationTime', false]] });
+      const res = await MediaLibrary.getAssetsAsync({ first: PAGE, mediaType: ['photo', 'video'] });
       setAssets(res.assets);
       setCursor(res.endCursor);
       setHasMore(res.hasNextPage);
-    } catch {
-      /* ignore */
+    } catch (e) {
+      console.warn('[MediaPicker] getAssetsAsync failed:', e);
     } finally {
       setLoading(false);
     }
@@ -84,12 +86,12 @@ export function MediaPicker({
     if (loading || !hasMore || !cursor) return;
     setLoading(true);
     try {
-      const res = await MediaLibrary.getAssetsAsync({ first: PAGE, after: cursor, mediaType: ['photo', 'video'], sortBy: [['creationTime', false]] });
+      const res = await MediaLibrary.getAssetsAsync({ first: PAGE, after: cursor, mediaType: ['photo', 'video'] });
       setAssets((p) => [...p, ...res.assets]);
       setCursor(res.endCursor);
       setHasMore(res.hasNextPage);
-    } catch {
-      /* ignore */
+    } catch (e) {
+      console.warn('[MediaPicker] getAssetsAsync (more) failed:', e);
     } finally {
       setLoading(false);
     }
@@ -161,7 +163,7 @@ export function MediaPicker({
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxl, gap: spacing.md }}>
             <Ionicons name="images-outline" size={40} color={colors.textMuted} />
             <Text variant="body" color="textSecondary" center>Photo access is needed to pick memories.</Text>
-            <Button title="Open Settings" variant="secondary" onPress={() => MediaLibrary.requestPermissionsAsync()} />
+            <Button title="Open Settings" variant="secondary" onPress={() => Linking.openSettings()} />
           </View>
         ) : (
           <FlatList
