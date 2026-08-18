@@ -13,7 +13,7 @@ import { CLERK_PUBLISHABLE_KEY } from '../src/lib/config';
 import { interFontMap } from '../src/theme/fonts';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeProvider';
 import { FamilyProvider } from '../src/context/FamilyProvider';
-import { Loading } from '../src/components/ui';
+import { AnimatedSplash } from '../src/components/AnimatedSplash';
 
 function AuthGate() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -33,7 +33,7 @@ function AuthGate() {
   }, [isLoaded, isSignedIn, segments]);
 
   if (!isLoaded || !fontsLoaded) {
-    return <Loading />;
+    return <AnimatedSplash />;
   }
   return (
     <>
