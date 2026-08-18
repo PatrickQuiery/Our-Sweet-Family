@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Linking, Modal, Pressable, View, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Linking, Modal, Pressable, Switch, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 // SDK 54 deprecated the top-level functions (they throw); the field-based API we
 // use here lives under /legacy.
@@ -17,10 +17,11 @@ export interface PickedAsset {
   isVideo: boolean;
 }
 
-// The field-based asset shape returned by getAssetsAsync (uri/filename/mediaType/…).
 type LibAsset = Awaited<ReturnType<typeof MediaLibrary.getAssetsAsync>>['assets'][number];
+type MediaFilter = 'all' | 'photo' | 'video';
 
 const PAGE = 60;
+const typesFor = (f: MediaFilter): MediaLibrary.MediaTypeValue[] => (f === 'all' ? ['photo', 'video'] : [f]);
 
 function extMime(name: string, isVideo: boolean): string {
   const ext = (name.split('.').pop() || '').toLowerCase();
@@ -37,10 +38,35 @@ function fmtDur(sec: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
+/** iOS-style segmented control. */
+function SegBar({ value, onChange, options }: { value: MediaFilter; onChange: (v: MediaFilter) => void; options: { v: MediaFilter; l: string }[] }) {
+  const { colors, fonts } = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', backgroundColor: colors.fill, borderRadius: 9, padding: 2 }}>
+      {options.map((o) => {
+        const sel = value === o.v;
+        return (
+          <Pressable
+            key={o.v}
+            onPress={() => onChange(o.v)}
+            style={{
+              flex: 1, paddingVertical: 7, borderRadius: 7, alignItems: 'center',
+              backgroundColor: sel ? colors.surface : 'transparent',
+              shadowColor: '#000', shadowOpacity: sel ? 0.1 : 0, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: sel ? 1 : 0,
+            }}
+          >
+            <Text variant="label" style={{ color: sel ? colors.text : colors.textSecondary, fontFamily: sel ? fonts.semibold : fonts.medium }}>{o.l}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 /**
  * A themed, in-app camera-roll picker. Unlike Apple's PHPicker, we render the
- * grid ourselves — so memories already in the family timeline show an "Added"
- * badge right as you browse. Multi-select; returns upload-ready file URIs.
+ * grid ourselves — so already-in-timeline memories show an "Added" badge (or are
+ * hidden), and the user can filter to Photos/Videos. Returns upload-ready URIs.
  */
 export function MediaPicker({
   visible,
@@ -65,13 +91,15 @@ export function MediaPicker({
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<LibAsset[]>([]);
   const [resolving, setResolving] = useState(false);
+  const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
+  const [newOnly, setNewOnly] = useState(true);
 
   const loadFirst = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await MediaLibrary.getAssetsAsync({ first: PAGE, mediaType: ['photo', 'video'] });
+      const res = await MediaLibrary.getAssetsAsync({ first: PAGE, mediaType: typesFor(mediaFilter), sortBy: [[MediaLibrary.SortBy.creationTime, false]] });
       setAssets(res.assets);
       setCursor(res.endCursor);
       setHasMore(res.hasNextPage);
@@ -80,13 +108,13 @@ export function MediaPicker({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [mediaFilter]);
 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore || !cursor) return;
     setLoading(true);
     try {
-      const res = await MediaLibrary.getAssetsAsync({ first: PAGE, after: cursor, mediaType: ['photo', 'video'] });
+      const res = await MediaLibrary.getAssetsAsync({ first: PAGE, after: cursor, mediaType: typesFor(mediaFilter), sortBy: [[MediaLibrary.SortBy.creationTime, false]] });
       setAssets((p) => [...p, ...res.assets]);
       setCursor(res.endCursor);
       setHasMore(res.hasNextPage);
@@ -95,8 +123,9 @@ export function MediaPicker({
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, cursor]);
+  }, [loading, hasMore, cursor, mediaFilter]);
 
+  // Request permission on open; (re)load whenever the media-type filter changes.
   useEffect(() => {
     if (!visible) return undefined;
     let active = true;
@@ -104,22 +133,32 @@ export function MediaPicker({
       const p = await MediaLibrary.requestPermissionsAsync();
       if (!active) return;
       setPerm(p);
-      setSelected([]);
       if (p.granted) loadFirst();
     })();
     return () => { active = false; };
   }, [visible, loadFirst]);
 
-  const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  useEffect(() => { if (visible) setSelected([]); }, [visible]);
+
+  const displayed = useMemo(
+    () => (newOnly ? assets.filter((a) => !uploadedIds.has(a.id)) : assets),
+    [assets, newOnly, uploadedIds],
+  );
+
+  // When hiding already-added items, a whole page can filter down to nothing —
+  // keep paging until we have a screenful of new items (or run out).
+  useEffect(() => {
+    if (perm?.granted && !loading && hasMore && displayed.length < 12) loadMore();
+  }, [displayed.length, hasMore, loading, perm, loadMore]);
+
+  const toggle = (item: LibAsset) =>
+    setSelected((s) => (s.some((x) => x.id === item.id) ? s.filter((x) => x.id !== item.id) : [...s, item]));
 
   const confirm = async () => {
     setResolving(true);
     try {
-      const chosen = selected
-        .map((id) => assets.find((a) => a.id === id))
-        .filter((a): a is LibAsset => Boolean(a));
       const out: PickedAsset[] = [];
-      for (const a of chosen) {
+      for (const a of selected) {
         const info = await MediaLibrary.getAssetInfoAsync(a);
         const isVideo = a.mediaType === 'video';
         out.push({ id: a.id, uri: info.localUri || a.uri, name: a.filename, mimeType: extMime(a.filename, isVideo), isVideo });
@@ -149,6 +188,18 @@ export function MediaPicker({
           </Pressable>
         </View>
 
+        {perm?.granted ? (
+          <>
+            <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.xs }}>
+              <SegBar value={mediaFilter} onChange={setMediaFilter} options={[{ v: 'all', l: 'All' }, { v: 'photo', l: 'Photos' }, { v: 'video', l: 'Videos' }]} />
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs }}>
+              <Text variant="caption" color="textSecondary">Hide already added</Text>
+              <Switch value={newOnly} onValueChange={setNewOnly} trackColor={{ true: colors.primary, false: colors.border }} />
+            </View>
+          </>
+        ) : null}
+
         {limited ? (
           <Pressable
             onPress={() => MediaLibrary.presentPermissionsPickerAsync?.()}
@@ -167,7 +218,7 @@ export function MediaPicker({
           </View>
         ) : (
           <FlatList
-            data={assets}
+            data={displayed}
             keyExtractor={(a) => a.id}
             numColumns={cols}
             columnWrapperStyle={{ gap }}
@@ -177,12 +228,12 @@ export function MediaPicker({
             initialNumToRender={PAGE}
             windowSize={5}
             renderItem={({ item }) => {
-              const order = selected.indexOf(item.id);
+              const order = selected.findIndex((s) => s.id === item.id);
               const isSel = order >= 0;
               const already = uploadedIds.has(item.id);
               const isVideo = item.mediaType === 'video';
               return (
-                <Pressable onPress={() => toggle(item.id)} style={{ width: cell, height: cell }}>
+                <Pressable onPress={() => toggle(item)} style={{ width: cell, height: cell }}>
                   <Image source={{ uri: item.uri }} style={{ width: cell, height: cell }} contentFit="cover" />
 
                   {isVideo ? (
@@ -200,13 +251,22 @@ export function MediaPicker({
                     </View>
                   ) : null}
 
-                  {/* selection indicator */}
                   <View style={{ position: 'absolute', top: 5, right: 5, width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#fff', backgroundColor: isSel ? colors.primary : 'rgba(0,0,0,0.25)', alignItems: 'center', justifyContent: 'center' }}>
                     {isSel ? <Text style={{ color: '#fff', fontFamily: fonts.semibold, fontSize: 11 }}>{order + 1}</Text> : null}
                   </View>
                 </Pressable>
               );
             }}
+            ListEmptyComponent={
+              !loading && perm?.granted ? (
+                <View style={{ padding: spacing.xxl, alignItems: 'center', gap: spacing.sm }}>
+                  <Ionicons name="checkmark-done-outline" size={34} color={colors.textMuted} />
+                  <Text variant="body" color="textSecondary" center>
+                    {newOnly ? 'Everything here is already in your timeline.' : 'Nothing to show.'}
+                  </Text>
+                </View>
+              ) : null
+            }
             ListFooterComponent={loading ? <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} /> : null}
           />
         )}
