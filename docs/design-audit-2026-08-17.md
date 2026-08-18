@@ -20,14 +20,16 @@ Shipped to `claude/family-photo-sharing-app-RfJto` (web auto-deploys to Vercel, 
 | **Web perf** | PF-1 (route code-splitting: 500 kB monolith → 330 kB + per-route chunks) | `8d5ccb8` |
 | **Mobile keyboard fix** | M46 + M10/M22/M36 — `<BottomSheet>` primitive (KAV + safe-area) adopted in Milestones/Children/Capture; DatePickerField safe-area inset | `95be0e8` |
 | **Web dialogs/toasts** | CC-9, CC-10 — themed `useConfirm()` + `useToast()`, replaced all 6 `window.confirm` + 8 `alert()` | `f57f0a1` |
+| **Photo lightbox** | MD-2 (web fullscreen zoom), M30 (mobile real aspect ratio), M32 (mobile pinch-zoom viewer) | `0a34efd` |
+| **Scrubber + clearance** | M1 (shared `useTabBarClearance`), M2 (timeline right gutter so tiles clear the scrubber rail) | `81843f7` |
 
-This covers top-10 items **#1, #2, #3, #4 (base), #5, #6 (web), #10**, and part of **#8**.
+This covers top-10 items **#1, #2, #3, #4 (base), #5, #6 (web), #7, #9, #10**, and part of **#8**.
 
 **Deliberate scope decisions:** (a) marketing/legal/auth pages render light-only on purpose — a half-dark Sunrise front door is worse than a deliberately light one; (b) mobile video autoplay-on-scroll is *not* gated by Reduce Motion (it's content the user explicitly asked to keep).
 
 **Verification notes:** web build + mobile `tsc` clean on every batch; web dark-mode flip mechanism + marketing light-scope proven in-browser; authed-web dark mode not live-verified (needs a Clerk login, which I don't perform); mobile theme selector verified by clean bundle + launch (the simulator was stuck in landscape, so no portrait screenshot of the selector).
 
-**Remaining backlog (highest-value first):** #7 scrubber overlap + tab-bar clearance (M1/M2), #9 photo lightbox + real aspect (MD-2/M30/M32), mobile toast/confirm (M65 — native `Alert.alert` still used; lower priority than the web `window.confirm` now fixed), per-screen landscape two-column (M7/M25/M69), mobile VoiceOver labels (M61/A11Y-2), icon system (CC-3), dead `MemoryCard.jsx` (CC-4), input consistency (CC-5), typography ramp (SYS-3), plus the per-screen P2/P3 items in §2/§3.
+**Remaining backlog (highest-value first):** mobile toast/confirm (M65 — native `Alert.alert` still used; lower priority than the web `window.confirm` now fixed), mobile comment-bar safe-area at rest (M31), per-screen landscape two-column (M7/M25/M69), mobile VoiceOver labels (M61/A11Y-2), icon system (CC-3), dead `MemoryCard.jsx` (CC-4), input consistency (CC-5), typography ramp (SYS-3), plus the per-screen P2/P3 items in §2/§3.
 
 ## How to read this
 
