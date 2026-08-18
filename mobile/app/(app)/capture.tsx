@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useMemo, useState } from 'react';
-import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/clerk-expo';
@@ -33,16 +33,22 @@ export default function Capture() {
   const api = useApi();
   const { family, refresh } = useMemories();
   const [uploadedIds, setUploadedIds] = useState<Set<string>>(new Set());
+  const [limitedAccess, setLimitedAccess] = useState(false);
 
   // Refresh the set of already-uploaded camera-roll ids whenever Capture opens,
-  // so we can flag re-picked items and skip them.
+  // and note if photo access is "Limited" (iOS won't give us asset ids then, so
+  // the already-uploaded flagging can't work).
   useFocusEffect(
     useCallback(() => {
-      if (!family) return undefined;
       let active = true;
-      getUploadedAssetIds(api, family.id)
-        .then((ids) => { if (active) setUploadedIds(new Set(ids)); })
+      ImagePicker.getMediaLibraryPermissionsAsync()
+        .then((p) => { if (active) setLimitedAccess(p.accessPrivileges === 'limited'); })
         .catch(() => { /* best-effort */ });
+      if (family) {
+        getUploadedAssetIds(api, family.id)
+          .then((ids) => { if (active) setUploadedIds(new Set(ids)); })
+          .catch(() => { /* best-effort */ });
+      }
       return () => { active = false; };
     }, [api, family?.id]),
   );
@@ -183,6 +189,18 @@ export default function Capture() {
       <SunriseHeader title="Add memories" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: tabBarH + 96, gap: spacing.lg }} keyboardShouldPersistTaps="handled">
+          {limitedAccess ? (
+            <Pressable
+              onPress={() => Linking.openSettings()}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.primarySoft, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}
+            >
+              <Ionicons name="information-circle" size={20} color={colors.primary} />
+              <Text variant="caption" style={{ flex: 1, color: colors.primary }}>
+                Limited photo access. Tap to allow Full access so we can flag photos you've already added.
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            </Pressable>
+          ) : null}
           {items.length === 0 ? (
             <>
               <Pressable
