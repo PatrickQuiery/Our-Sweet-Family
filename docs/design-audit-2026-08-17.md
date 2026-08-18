@@ -26,6 +26,7 @@ Shipped to `claude/family-photo-sharing-app-RfJto` (web auto-deploys to Vercel, 
 | **Mobile toasts + comment bar** | M65 (themed `<ToastProvider>`/`useToast()` replacing 11 `Alert.alert` error popups; native confirms kept), M31 (comment-bar safe-area at rest) | `e5831f8` |
 | **Web type ramp** | SYS-3 (`.type-*` scale mirroring mobile; 9 page titles migrated) | `36a373a` |
 | **Wide-screen layouts** | M7/M25/M69 — shared `wideColumn` centers Settings/Milestones/Children/Members/Activity in a max-width column in landscape/tablet | `c847a61` |
+| **Web icon system** | CC-3 — `components/icons.jsx` (one canonical Heart/Chat/Trash/Pencil/…); replaced 3 divergent hearts + 2 chats + duplicated trash/pencil | `2b50bbd` |
 
 This covers top-10 items **#1, #2, #3, #4 (base), #5, #6, #7, #9, #10**, and part of **#8**.
 
@@ -33,7 +34,7 @@ This covers top-10 items **#1, #2, #3, #4 (base), #5, #6, #7, #9, #10**, and par
 
 **Verification notes:** web build + mobile `tsc` clean on every batch; web dark-mode flip mechanism + marketing light-scope proven in-browser; authed-web dark mode not live-verified (needs a Clerk login, which I don't perform); mobile theme selector verified by clean bundle + launch (the simulator was stuck in landscape, so no portrait screenshot of the selector).
 
-**Remaining backlog (highest-value first):** web icon-system SVG dedup (CC-3 — maintainability only; deferred as a careful cleanup), remaining lower-traffic icon-button labels (reel controls, capture buttons), broader adoption of the new `.type-*` ramp on secondary headings, sign-in white logo plate in dark (M43), Reels list landscape 2-up (M18), plus the per-screen P2/P3 polish items in §2/§3 (designed empty/loading/error states beyond what's shipped, etc.). Note: the wide-screen column work (M7/M25/M69) is committed but was not live-verified in landscape — the simulator was unbootable at the end of the session; worth a visual glance on a wide device.
+**Remaining backlog (highest-value first):** remaining lower-traffic icon-button labels (reel controls, capture buttons), broader adoption of the new `.type-*` ramp on secondary headings and of `components/icons.jsx` on the remaining single-use inline SVGs, sign-in white logo plate in dark (M43), Reels list landscape 2-up (M18), plus the per-screen P2/P3 polish items in §2/§3 (designed empty/loading/error states beyond what's shipped, etc.). Note: the wide-screen column work (M7/M25/M69) and the icon-consolidation visual changes on MosaicFeed/Activity are committed but not live-verified in the browser/landscape — worth a glance next time the authed app is open.
 
 ## How to read this
 
