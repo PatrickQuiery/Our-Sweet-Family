@@ -283,7 +283,7 @@ export default function Upload() {
                     value={captions[id] || ''}
                     onChange={(e) => setCaptions((p) => ({ ...p, [id]: e.target.value }))}
                     placeholder="Caption for this file…"
-                    className="w-full text-sm border border-black/5 rounded-lg px-2.5 py-1.5 outline-none focus:border-brand-300"
+                    className="w-full text-sm bg-surface text-ink placeholder:text-ink-muted border border-ink/5 rounded-lg px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-brand-300 focus:border-transparent"
                   />
 
                   <TagInput value={tagSel[id] || []} onChange={(t) => setTagSel((p) => ({ ...p, [id]: t }))} />
