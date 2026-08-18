@@ -1,6 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, TextInput, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
@@ -69,7 +71,8 @@ export default function MemoryDetail() {
   const router = useRouter();
   const { getToken } = useAuth();
   const { colors, spacing, radius, fonts } = useTheme();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const wide = width > 700; // landscape / tablet: media beside the details
   const { me, canManage, activeFamily } = useFamily();
   const [memory, setMemory] = useState<Memory | null>(null);
@@ -77,6 +80,11 @@ export default function MemoryDetail() {
   const [error, setError] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
   const [busy, setBusy] = useState(false);
+  // Natural aspect of the photo (M30) + fullscreen viewer (M32).
+  const [imgAspect, setImgAspect] = useState<number | null>(null);
+  const [lightbox, setLightbox] = useState(false);
+  // Clamp so panoramas / very tall portraits stay reasonable in the feed.
+  const photoAspect = Math.min(1.6, Math.max(0.66, imgAspect ?? 1));
 
   const load = useCallback(async () => {
     try {
@@ -198,7 +206,14 @@ export default function MemoryDetail() {
             {isVideo ? (
               <VideoView player={player} style={{ flex: 1, aspectRatio: 1 }} nativeControls />
             ) : (
-              <AuthedImage path={memory.fileUrl} style={{ flex: 1, aspectRatio: 1 }} contentFit="contain" />
+              <Pressable style={{ flex: 1 }} onPress={() => setLightbox(true)} accessibilityRole="imagebutton" accessibilityLabel="View photo full screen">
+                <AuthedImage
+                  path={memory.fileUrl}
+                  style={{ flex: 1, aspectRatio: 1 }}
+                  contentFit="contain"
+                  onLoad={(e) => e.source && setImgAspect(e.source.width / e.source.height)}
+                />
+              </Pressable>
             )}
           </View>
         </View>
@@ -210,7 +225,14 @@ export default function MemoryDetail() {
           {isVideo ? (
             <VideoView player={player} style={{ width: '100%', aspectRatio: 1 }} nativeControls />
           ) : (
-            <AuthedImage path={memory.fileUrl} style={{ width: '100%', aspectRatio: 1 }} contentFit="contain" />
+            <Pressable onPress={() => setLightbox(true)} accessibilityRole="imagebutton" accessibilityLabel="View photo full screen">
+              <AuthedImage
+                path={memory.fileUrl}
+                style={{ width: '100%', aspectRatio: photoAspect }}
+                contentFit="cover"
+                onLoad={(e) => e.source && setImgAspect(e.source.width / e.source.height)}
+              />
+            </Pressable>
           )}
         </View>
         )}
@@ -325,6 +347,37 @@ export default function MemoryDetail() {
         </Touchable>
       </View>
       </View>
+
+      {/* Fullscreen photo viewer with pinch-zoom (M32). */}
+      <Modal visible={lightbox} animationType="fade" onRequestClose={() => setLightbox(false)} statusBarTranslucent>
+        <StatusBar style="light" />
+        <View style={{ flex: 1, backgroundColor: '#000' }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center' }}
+            maximumZoomScale={4}
+            minimumZoomScale={1}
+            centerContent
+            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
+          >
+            <AuthedImage
+              path={memory.fileUrl}
+              style={{ width, height: Math.min(height, width / photoAspect) }}
+              contentFit="contain"
+            />
+          </ScrollView>
+          <Pressable
+            onPress={() => setLightbox(false)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            style={{ position: 'absolute', top: insets.top + 8, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Ionicons name="close" size={24} color="#fff" />
+          </Pressable>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }

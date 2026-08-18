@@ -19,6 +19,7 @@ export default function MemoryDetail() {
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const [familyChildren, setFamilyChildren] = useState([]);
   const [editing, setEditing] = useState(false);
   const [editChildIds, setEditChildIds] = useState([]);
@@ -210,6 +211,16 @@ export default function MemoryDetail() {
   const canDelete = user?.role === 'owner' || memory.uploadedById === user?.id;
   const canEdit = canDelete;
 
+  // Esc closes the fullscreen photo; lock body scroll while it's open.
+  useEffect(() => {
+    if (!zoomOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setZoomOpen(false); };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+  }, [zoomOpen]);
+
   return (
     <div className="max-w-3xl mx-auto">
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-ink-muted hover:text-ink mb-4 transition-colors">
@@ -229,11 +240,18 @@ export default function MemoryDetail() {
               className="max-w-full max-h-[600px] w-full"
             />
           ) : (
-            <AuthedImage
-              src={memory.fileUrl}
-              alt={memory.caption || 'Memory'}
-              className="max-w-full max-h-[600px] object-contain"
-            />
+            <button
+              type="button"
+              onClick={() => setZoomOpen(true)}
+              className="cursor-zoom-in focus-visible:outline-none"
+              aria-label="View photo full screen"
+            >
+              <AuthedImage
+                src={memory.fileUrl}
+                alt={memory.caption || 'Memory'}
+                className="max-w-full max-h-[600px] object-contain"
+              />
+            </button>
           )}
         </div>
 
@@ -475,6 +493,33 @@ export default function MemoryDetail() {
           </form>
         </div>
       </div>
+
+      {/* Fullscreen photo lightbox (MD-2) */}
+      {zoomOpen && memory.fileType !== 'video' && (
+        <div
+          className="fixed inset-0 z-[120] bg-black/90 flex items-center justify-center p-4 animate-[fadeIn_150ms_ease]"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo viewer"
+          onClick={() => setZoomOpen(false)}
+        >
+          <button
+            onClick={() => setZoomOpen(false)}
+            aria-label="Close"
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <AuthedImage
+            src={memory.fileUrl}
+            alt={memory.caption || 'Memory'}
+            className="max-w-full max-h-full object-contain select-none"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

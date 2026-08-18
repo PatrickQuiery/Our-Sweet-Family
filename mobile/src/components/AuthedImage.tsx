@@ -1,4 +1,4 @@
-import { Image, type ImageContentFit } from 'expo-image';
+import { Image, type ImageContentFit, type ImageLoadEventData } from 'expo-image';
 import { useAuth } from '@clerk/clerk-expo';
 import { useEffect, useState } from 'react';
 import type { ImageStyle, StyleProp } from 'react-native';
@@ -14,10 +14,13 @@ export function AuthedImage({
   path,
   style,
   contentFit = 'cover',
+  onLoad,
 }: {
   path: string;
   style?: StyleProp<ImageStyle>;
   contentFit?: ImageContentFit;
+  /** Fires with natural dimensions once loaded — used to size media to real aspect. */
+  onLoad?: (e: ImageLoadEventData) => void;
 }) {
   const { getToken } = useAuth();
   const [token, setToken] = useState<string | null>(null);
@@ -34,6 +37,7 @@ export function AuthedImage({
       source={{ uri, headers: { Authorization: `Bearer ${token}` } }}
       contentFit={contentFit}
       transition={280}
+      onLoad={onLoad}
     />
   );
 }
