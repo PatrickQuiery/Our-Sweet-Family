@@ -22,6 +22,7 @@ Shipped to `claude/family-photo-sharing-app-RfJto` (web auto-deploys to Vercel, 
 | **Web dialogs/toasts** | CC-9, CC-10 — themed `useConfirm()` + `useToast()`, replaced all 6 `window.confirm` + 8 `alert()` | `f57f0a1` |
 | **Photo lightbox** | MD-2 (web fullscreen zoom), M30 (mobile real aspect ratio), M32 (mobile pinch-zoom viewer) | `0a34efd` |
 | **Scrubber + clearance** | M1 (shared `useTabBarClearance`), M2 (timeline right gutter so tiles clear the scrubber rail) | `81843f7` |
+| **Cleanup + a11y labels + input** | CC-4 (deleted dead MemoryCard.jsx), A11Y-2/M61 (aria/accessibilityLabel on icon-only nav/header/action buttons), CC-5 (Upload caption input tokenized + focus ring) | `260da2e`+ |
 
 This covers top-10 items **#1, #2, #3, #4 (base), #5, #6 (web), #7, #9, #10**, and part of **#8**.
 
@@ -29,7 +30,7 @@ This covers top-10 items **#1, #2, #3, #4 (base), #5, #6 (web), #7, #9, #10**, a
 
 **Verification notes:** web build + mobile `tsc` clean on every batch; web dark-mode flip mechanism + marketing light-scope proven in-browser; authed-web dark mode not live-verified (needs a Clerk login, which I don't perform); mobile theme selector verified by clean bundle + launch (the simulator was stuck in landscape, so no portrait screenshot of the selector).
 
-**Remaining backlog (highest-value first):** mobile toast/confirm (M65 — native `Alert.alert` still used; lower priority than the web `window.confirm` now fixed), mobile comment-bar safe-area at rest (M31), per-screen landscape two-column (M7/M25/M69), mobile VoiceOver labels (M61/A11Y-2), icon system (CC-3), dead `MemoryCard.jsx` (CC-4), input consistency (CC-5), typography ramp (SYS-3), plus the per-screen P2/P3 items in §2/§3.
+**Remaining backlog (highest-value first):** mobile toast/confirm (M65 — native `Alert.alert` still used; lower priority than the web `window.confirm` now fixed), mobile comment-bar safe-area at rest (M31), per-screen landscape two-column (M7/M25/M69), web icon-system SVG dedup (CC-3 — maintainability only; deferred as a careful cleanup), typography ramp (SYS-3), remaining lower-traffic icon-button labels (reel controls, capture buttons), plus the per-screen P2/P3 items in §2/§3.
 
 ## How to read this
 
