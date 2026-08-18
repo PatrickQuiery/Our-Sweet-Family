@@ -1,9 +1,79 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { UserButton } from '@clerk/clerk-react';
+import { useClerk } from '@clerk/clerk-react';
 import { useAuth } from '../context/AuthContext';
 import UsageMeter from './UsageMeter';
 import LogoMark from './LogoMark';
+
+const NAV_COLLAPSED_KEY = 'osf:navCollapsed';
+
+// Whole-row account control: clicking anywhere on the user's name/avatar opens a
+// menu with account management (Clerk's profile modal) and sign-out — so the name
+// is a click path, not just the avatar.
+function UserMenu({ collapsed }) {
+  const { user } = useAuth();
+  const clerk = useClerk();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onEsc = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onEsc);
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onEsc); };
+  }, [open]);
+
+  const planColors = { free: 'bg-ink/5 text-ink-soft', plus: 'bg-blue-100 text-blue-700', premium: 'bg-brand-100 text-brand-700' };
+  const initial = (user?.name?.[0] || '?').toUpperCase();
+
+  return (
+    <div className="relative" ref={ref}>
+      {open && (
+        <div className="absolute bottom-full mb-2 left-0 min-w-[210px] rounded-xl bg-white shadow-soft border border-black/5 py-1 z-50">
+          <button
+            onClick={() => { setOpen(false); clerk.openUserProfile(); }}
+            className="w-full text-left px-3 py-2 text-sm text-ink-soft hover:bg-brand-50 hover:text-ink flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13 13 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            Manage account
+          </button>
+          <button
+            onClick={() => { setOpen(false); clerk.signOut({ redirectUrl: '/' }); }}
+            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            Sign out
+          </button>
+        </div>
+      )}
+
+      <button
+        onClick={() => setOpen((v) => !v)}
+        title={collapsed ? user?.name : undefined}
+        className={`flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-brand-50/60 transition-colors ${collapsed ? 'justify-center' : ''}`}
+      >
+        {user?.avatarUrl ? (
+          <img src={user.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-semibold text-sm flex-shrink-0">
+            {initial}
+          </div>
+        )}
+        {!collapsed && (
+          <>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-semibold text-ink truncate">{user?.name}</p>
+              <span className={`badge text-xs ${planColors[user?.plan] || 'bg-ink/5 text-ink-soft'}`}>{user?.plan}</span>
+            </div>
+            <svg className="w-4 h-4 text-ink-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
 
 const navSections = [
   {
@@ -94,26 +164,51 @@ function CogIcon() {
 }
 
 export default function AppLayout() {
-  const { user, family } = useAuth();
+  const { family } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(NAV_COLLAPSED_KEY) === '1'; } catch { return false; }
+  });
   const navigate = useNavigate();
 
-  const planColors = { free: 'bg-ink/5 text-ink-soft', plus: 'bg-blue-100 text-blue-700', premium: 'bg-brand-100 text-brand-700' };
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      try { localStorage.setItem(NAV_COLLAPSED_KEY, next ? '1' : '0'); } catch { /* ignore */ }
+      return next;
+    });
+  };
 
   return (
     <div
       className="min-h-screen flex"
       style={{ background: 'linear-gradient(135deg,#fdeede 0%,#fbe4ef 52%,#e8eefb 100%)', backgroundAttachment: 'fixed' }}
     >
-      {/* Sidebar — frosted glass over the Sunrise wash */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white/60 backdrop-blur-xl border-r border-white/40 flex flex-col transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        {/* Logo */}
-        <div className="flex items-center justify-center px-5 py-5 border-b border-black/5">
-          <img src="/brand/osf-5-compact-sunrise.svg" alt="Our Sweet Family" className="w-full max-w-[210px]" />
+      {/* Sidebar — frosted glass over the Sunrise wash. Width collapses to an icon rail on lg. */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 ${collapsed ? 'lg:w-20' : 'lg:w-64'} bg-white/60 backdrop-blur-xl border-r border-white/40 flex flex-col transition-[width,transform] duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {/* Logo + collapse toggle */}
+        <div className={`flex border-b border-black/5 ${collapsed ? 'flex-col items-center gap-2 px-2 py-4' : 'items-center justify-between px-4 py-4'}`}>
+          {collapsed ? (
+            <LogoMark heart="#ef3f74" fig="#232a45" size={34} />
+          ) : (
+            <img src="/brand/osf-5-compact-sunrise.svg" alt="Our Sweet Family" className="max-w-[176px]" />
+          )}
+          <button
+            onClick={toggleCollapsed}
+            title={collapsed ? 'Expand menu' : 'Collapse menu'}
+            aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
+            className="hidden lg:inline-flex p-1.5 rounded-lg text-ink-muted hover:bg-brand-50 hover:text-ink transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              {collapsed
+                ? <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                : <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />}
+            </svg>
+          </button>
         </div>
 
         {/* Family info */}
-        {family && (
+        {family && !collapsed && (
           <div className="px-4 py-3 border-b border-black/5">
             <p className="text-xs text-ink-muted uppercase tracking-wide font-medium mb-1">Family</p>
             <p className="font-semibold text-ink text-sm truncate">{family.name}</p>
@@ -121,10 +216,10 @@ export default function AppLayout() {
         )}
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
+        <nav className="flex-1 px-3 py-4 overflow-y-auto overflow-x-hidden space-y-4">
           {navSections.map((section, i) => (
             <div key={section.heading || i}>
-              {section.heading && (
+              {section.heading && !collapsed && (
                 <p className="px-3 mb-1 text-xs text-ink-muted uppercase tracking-wide font-medium">
                   {section.heading}
                 </p>
@@ -135,8 +230,9 @@ export default function AppLayout() {
                     <NavLink
                       to={to}
                       onClick={() => setMobileOpen(false)}
+                      title={collapsed ? label : undefined}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                        `flex items-center gap-3 rounded-xl text-sm font-medium transition-colors ${collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2.5'} ${
                           isActive
                             ? 'bg-brand-50 text-brand-600'
                             : 'text-ink-soft hover:bg-brand-50/60 hover:text-ink'
@@ -144,7 +240,7 @@ export default function AppLayout() {
                       }
                     >
                       <Icon />
-                      {label}
+                      {!collapsed && label}
                     </NavLink>
                   </li>
                 ))}
@@ -154,19 +250,11 @@ export default function AppLayout() {
         </nav>
 
         {/* Storage usage vs plan */}
-        <UsageMeter />
+        {!collapsed && <UsageMeter />}
 
-        {/* User — Clerk UserButton handles profile, password, MFA, connected accounts & sign-out */}
-        <div className="px-4 py-4 border-t border-black/5">
-          <div className="flex items-center gap-3">
-            <UserButton afterSignOutUrl="/" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-ink truncate">{user?.name}</p>
-              <span className={`badge text-xs ${planColors[user?.plan] || 'bg-ink/5 text-ink-soft'}`}>
-                {user?.plan}
-              </span>
-            </div>
-          </div>
+        {/* User — whole row is a click path to account management & sign-out */}
+        <div className={`border-t border-black/5 ${collapsed ? 'px-2 py-3' : 'px-4 py-3'}`}>
+          <UserMenu collapsed={collapsed} />
         </div>
       </aside>
 
@@ -179,7 +267,7 @@ export default function AppLayout() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+      <div className={`flex-1 ${collapsed ? 'lg:ml-20' : 'lg:ml-64'} flex flex-col min-h-screen transition-[margin] duration-300`}>
         {/* Mobile header */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/90 backdrop-blur border-b border-black/5 sticky top-0 z-30">
           <button
