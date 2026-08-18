@@ -57,6 +57,26 @@ describe('GET /api/milestones', () => {
     expect(res.body.milestones).toHaveLength(1);
   });
 
+  it('returns 403 when a per-child-restricted member requests another child', async () => {
+    // Loved one is restricted to child2 but asks for child1's private milestones.
+    const restrictedChild = {
+      ...mockChildForPlus,
+      family: {
+        ...mockChildForPlus.family,
+        members: [{ userId: 'member1', accessPerChild: JSON.stringify(['child2']) }],
+      },
+    };
+    prisma.user.findUnique.mockResolvedValue(memberUser);
+    prisma.child.findUnique.mockResolvedValue(restrictedChild);
+
+    const res = await request(app)
+      .get('/api/milestones?childId=child1')
+      .set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(403);
+    expect(prisma.milestone.findMany).not.toHaveBeenCalled();
+  });
+
   it('returns 400 when childId is missing', async () => {
     prisma.user.findUnique.mockResolvedValue(plusUser);
 

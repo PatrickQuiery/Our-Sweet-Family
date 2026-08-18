@@ -25,7 +25,9 @@ const upload = multer({
   limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
   fileFilter: (req, file, cb) => {
     // heic/heif = iPhone's default photo format; converted to JPEG in the handler.
-    const allowed = /jpeg|jpg|png|gif|webp|heic|heif|mp4|mov|avi|mkv|m4v/;
+    // Anchored so an extension merely *containing* a token (e.g. "photo.jpgx")
+    // can't slip through.
+    const allowed = /^(jpe?g|png|gif|webp|hei[cf]|mp4|mov|avi|mkv|m4v)$/;
     const ext = path.extname(file.originalname).toLowerCase().slice(1);
     if (allowed.test(ext)) cb(null, true);
     else cb(new Error('Unsupported file type'));
@@ -400,7 +402,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
     // Check ownership
     const family = await prisma.family.findUnique({
       where: { id: familyId },
-      include: { members: true, owner: { select: { plan: true, planBoostUntil: true } } },
+      include: { members: true, children: { select: { id: true } }, owner: { select: { plan: true, planBoostUntil: true } } },
     });
     if (!family) return res.status(404).json({ error: 'Family not found' });
 
@@ -510,6 +512,12 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
       if (!Array.isArray(parsedChildIds)) {
         return res.status(400).json({ error: 'childIds must be a JSON array' });
       }
+      // Only allow tagging children that actually belong to this family (mirrors
+      // the PATCH validation) so a memory can't be tagged with foreign ids.
+      const validIds = new Set(family.children.map((c) => c.id));
+      if (!parsedChildIds.every((cid) => validIds.has(cid))) {
+        return res.status(400).json({ error: 'childIds must reference children in this family' });
+      }
     }
 
     // Free-text tags: normalized (trimmed, lowercased), de-duped, capped.
@@ -592,7 +600,13 @@ router.delete('/:id', authenticate, async (req, res) => {
       include: { family: { include: { members: true } } },
     });
     if (!memory) return res.status(404).json({ error: 'Memory not found' });
-    if (!isParent(memory.family, req.user.id) && memory.uploadedById !== req.user.id) {
+    // Owner/parent may delete anything; the original uploader may delete their
+    // own — but only while they are STILL a member of the family (a removed
+    // member with a live session must not act on the family's data).
+    const stillMemberDel =
+      memory.family.ownerId === req.user.id ||
+      memory.family.members.some((m) => m.userId === req.user.id);
+    if (!isParent(memory.family, req.user.id) && !(stillMemberDel && memory.uploadedById === req.user.id)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -623,7 +637,10 @@ router.patch('/:id', authenticate, async (req, res) => {
     if (!memory) return res.status(404).json({ error: 'Memory not found' });
 
     const isOwner = isParent(memory.family, req.user.id);
-    const isUploader = memory.uploadedById === req.user.id;
+    const stillMember =
+      memory.family.ownerId === req.user.id ||
+      memory.family.members.some((m) => m.userId === req.user.id);
+    const isUploader = stillMember && memory.uploadedById === req.user.id;
     if (!isOwner && !isUploader) return res.status(403).json({ error: 'Access denied' });
 
     const data = {};

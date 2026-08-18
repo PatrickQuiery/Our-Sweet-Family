@@ -392,7 +392,9 @@ describe('GET /api/memories/:id', () => {
 // ─── DELETE /api/memories/:id ─────────────────────────────────────────────────
 
 describe('DELETE /api/memories/:id', () => {
-  const memoryWithFamily = { ...mockMemory, family: { ownerId: 'owner1' } };
+  // The DELETE handler includes the family's members (to confirm the uploader is
+  // still a member), so the mock family must carry them.
+  const memoryWithFamily = { ...mockMemory, family: { ownerId: 'owner1', members: mockFamily.members } };
 
   it('deletes memory when called by owner', async () => {
     prisma.user.findUnique.mockResolvedValue(ownerUser);
@@ -420,6 +422,20 @@ describe('DELETE /api/memories/:id', () => {
     expect(res.status).toBe(200);
   });
 
+  it('returns 403 when the original uploader has since been removed from the family', async () => {
+    // uploadedById still matches, but they are no longer in family.members.
+    const exMemberMemory = { ...memoryWithFamily, uploadedById: 'member1', family: { ownerId: 'owner1', members: [] } };
+    prisma.user.findUnique.mockResolvedValue(memberUser);
+    prisma.memory.findUnique.mockResolvedValue(exMemberMemory);
+
+    const res = await request(app)
+      .delete('/api/memories/mem1')
+      .set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(403);
+    expect(prisma.memory.delete).not.toHaveBeenCalled();
+  });
+
   it('returns 403 when called by unrelated user', async () => {
     const notUploaderMemory = { ...memoryWithFamily, uploadedById: 'owner1' };
     prisma.user.findUnique.mockResolvedValue(memberUser);
@@ -437,10 +453,11 @@ describe('DELETE /api/memories/:id', () => {
 
 describe('PATCH /api/memories/:id', () => {
   // findUnique for the edit endpoint includes the family's children (for tag
-  // validation + recomputed age labels).
+  // validation + recomputed age labels) and members (to confirm the uploader is
+  // still a member before allowing the edit).
   const editableMemory = {
     ...mockMemory,
-    family: { ownerId: 'owner1', children: mockFamily.children },
+    family: { ownerId: 'owner1', children: mockFamily.children, members: mockFamily.members },
   };
 
   it('updates child tags and caption when called by owner', async () => {

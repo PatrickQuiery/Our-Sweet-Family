@@ -18,6 +18,13 @@ if (missingClerkEnv.length) {
   process.exit(1);
 }
 
+// DATABASE_URL is required for every request that touches data — fail fast at
+// boot rather than throwing on the first Prisma query.
+if (!process.env.DATABASE_URL) {
+  console.error('FATAL: missing required env var DATABASE_URL (Postgres connection string).');
+  process.exit(1);
+}
+
 const app = require('./app');
 const PORT = process.env.PORT || 3001;
 

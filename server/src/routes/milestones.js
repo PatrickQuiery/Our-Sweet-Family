@@ -20,8 +20,18 @@ router.get('/', authenticate, async (req, res) => {
     if (!child) return res.status(404).json({ error: 'Child not found' });
 
     const isOwner = child.family.ownerId === req.user.id;
-    const isMember = child.family.members.some((m) => m.userId === req.user.id);
-    if (!isOwner && !isMember) return res.status(403).json({ error: 'Access denied' });
+    const membership = child.family.members.find((m) => m.userId === req.user.id);
+    if (!isOwner && !membership) return res.status(403).json({ error: 'Access denied' });
+
+    // Enforce per-child access: a loved one restricted to specific children must
+    // not read another child's private milestones (mirrors memories.js). Owners
+    // and unrestricted ('all') members see every child.
+    if (!isOwner && membership.accessPerChild && membership.accessPerChild !== 'all') {
+      const allowed = Array.isArray(membership.accessPerChild)
+        ? membership.accessPerChild
+        : JSON.parse(membership.accessPerChild || '[]');
+      if (!allowed.includes(childId)) return res.status(403).json({ error: 'Access denied' });
+    }
 
     // Feature access is determined by the family OWNER's plan (they hold the
     // subscription), not the viewer's — otherwise invited loved ones, who are

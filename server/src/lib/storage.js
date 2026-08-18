@@ -4,6 +4,20 @@ const { v4: uuidv4 } = require('uuid');
 
 const STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || 'local';
 
+const UPLOADS_ROOT = path.resolve(__dirname, '../../uploads');
+
+// Resolve a storage key to an absolute path AND assert it stays inside the
+// uploads directory. Keys are always server-generated UUIDs today, so this is
+// defense-in-depth: if any future code path ever fed user input into a key,
+// this prevents path traversal (../../etc/passwd) reads/writes/deletes.
+function resolveLocalPath(key) {
+  const filepath = path.resolve(UPLOADS_ROOT, key);
+  if (filepath !== UPLOADS_ROOT && !filepath.startsWith(UPLOADS_ROOT + path.sep)) {
+    throw new Error('Invalid storage key');
+  }
+  return filepath;
+}
+
 // Media is stored under an opaque KEY (e.g. "memories/<uuid>.jpg"). Keys — not
 // public URLs — are persisted, and bytes are only served through the
 // access-controlled streaming endpoint. In production the S3 bucket should be
@@ -60,7 +74,7 @@ async function uploadFile(buffer, originalName, mimeType, folder = 'memories') {
 
   const dir = path.join(__dirname, '../../uploads', folder);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(__dirname, '../../uploads', key), buffer);
+  fs.writeFileSync(resolveLocalPath(key), buffer);
   return key;
 }
 
@@ -73,7 +87,7 @@ async function readFile(key) {
     const out = await s3.send(new GetObjectCommand({ Bucket: process.env.AWS_BUCKET, Key: key }));
     return { stream: out.Body, contentType: out.ContentType || contentTypeForKey(key) };
   }
-  const filepath = path.join(__dirname, '../../uploads', key);
+  const filepath = resolveLocalPath(key);
   return { stream: fs.createReadStream(filepath), contentType: contentTypeForKey(key) };
 }
 
@@ -95,7 +109,7 @@ async function deleteFile(key) {
       const s3 = new S3Client(s3Config());
       await s3.send(new DeleteObjectCommand({ Bucket: process.env.AWS_BUCKET, Key: key }));
     } else {
-      const filepath = path.join(__dirname, '../../uploads', key);
+      const filepath = resolveLocalPath(key);
       if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
     }
   } catch (e) {

@@ -61,7 +61,9 @@ router.post(
     try {
       const result = await sendMail({
         to: CONTACT_TO,
-        replyTo: `${name} <${email}>`,
+        // Strip CR/LF from the display name as defense-in-depth against header
+        // injection when composing the Reply-To address.
+        replyTo: `${name.replace(/[\r\n]+/g, ' ')} <${email}>`,
         subject: displaySubject,
         text: `New message from the Our Sweet Family contact form\n\nName: ${name}\nEmail: ${email}\nSubject: ${subject || '(none)'}\n\n${message}`,
         html: `

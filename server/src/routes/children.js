@@ -105,6 +105,7 @@ router.put(
   authenticate,
   [
     body('name').optional().trim().notEmpty(),
+    body('dateOfBirth').optional().isISO8601(),
     body('gender').optional({ values: 'falsy' }).isIn(['male', 'female']),
     body('color').optional({ values: 'falsy' }).isHexColor(),
   ],
@@ -121,7 +122,11 @@ router.put(
       if (!isParent(child.family, req.user.id))
         return res.status(403).json({ error: 'Only owner can update child' });
 
-      const { name, dateOfBirth, gender, color, avatarUrl } = req.body;
+      // avatarUrl is deliberately NOT settable here — it is managed only by the
+      // dedicated POST/DELETE /:id/avatar endpoints (which store an internal
+      // storage key). Accepting an arbitrary avatarUrl let a parent point the
+      // avatar-stream endpoint's 302 at any external URL (open redirect).
+      const { name, dateOfBirth, gender, color } = req.body;
       const updated = await prisma.child.update({
         where: { id: req.params.id },
         data: {
@@ -129,7 +134,6 @@ router.put(
           ...(dateOfBirth && { dateOfBirth: new Date(dateOfBirth) }),
           ...(gender !== undefined && { gender: gender || null }),
           ...(color !== undefined && { color: color || null }),
-          ...(avatarUrl !== undefined && { avatarUrl }),
         },
       });
       res.json({ child: updated });
