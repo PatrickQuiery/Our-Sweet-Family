@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, Share, Switch, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, Switch, View } from 'react-native';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,13 @@ import { getReferral, type ReferralInfo } from '../../src/lib/referrals';
 import { clearFeedCache } from '../../src/lib/feedCache';
 import { formatBytes, PLAN_LABELS } from '../../src/lib/format';
 import type { FamilyUsage } from '../../src/lib/types';
+import type { ThemePreference } from '../../src/theme/ThemeProvider';
+
+const THEME_OPTS: { key: ThemePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'light', label: 'Light', icon: 'sunny-outline' },
+  { key: 'dark', label: 'Dark', icon: 'moon-outline' },
+  { key: 'system', label: 'Auto', icon: 'phone-portrait-outline' },
+];
 
 function Row({ children }: { children: React.ReactNode }) {
   const { spacing } = useTheme();
@@ -33,7 +40,7 @@ export default function Settings() {
   const { user } = useUser();
   const router = useRouter();
   const api = useApi();
-  const { colors, spacing, scheme } = useTheme();
+  const { colors, spacing, radius, scheme, preference, setPreference } = useTheme();
   const { families, activeFamily, activeFamilyId, setActiveFamilyId, refresh } = useFamily();
   const email = user?.primaryEmailAddress?.emailAddress ?? '';
   const initial = (user?.firstName?.[0] ?? email[0] ?? '?').toUpperCase();
@@ -213,13 +220,61 @@ export default function Settings() {
         ) : null}
 
         {/* Appearance */}
-        <Card style={{ padding: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <IconBubble name="contrast-outline" />
-          <View style={{ flex: 1 }}>
-            <Text variant="bodyMedium">Appearance</Text>
-            <Text variant="caption" color="textSecondary">
-              Automatic — following your device ({scheme})
-            </Text>
+        <Card style={{ padding: spacing.lg, gap: spacing.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <IconBubble name="contrast-outline" />
+            <View style={{ flex: 1 }}>
+              <Text variant="bodyMedium">Appearance</Text>
+              <Text variant="caption" color="textSecondary">
+                {preference === 'system'
+                  ? `Automatic — following your device (${scheme})`
+                  : preference === 'dark'
+                    ? 'Always dark'
+                    : 'Always light'}
+              </Text>
+            </View>
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              backgroundColor: colors.fill,
+              borderRadius: radius.md,
+              padding: 4,
+              gap: 4,
+            }}
+          >
+            {THEME_OPTS.map((opt) => {
+              const active = preference === opt.key;
+              return (
+                <Pressable
+                  key={opt.key}
+                  onPress={() => setPreference(opt.key)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`${opt.label} appearance`}
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    paddingVertical: 8,
+                    borderRadius: radius.sm,
+                    backgroundColor: active ? colors.surface : 'transparent',
+                    ...(active ? { shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1 } : null),
+                  }}
+                >
+                  <Ionicons
+                    name={opt.icon}
+                    size={15}
+                    color={active ? colors.primary : colors.textMuted}
+                  />
+                  <Text variant="label" color={active ? 'text' : 'textMuted'}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </Card>
 
