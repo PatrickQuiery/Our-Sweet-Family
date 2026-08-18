@@ -63,7 +63,7 @@ export default function Reels() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-ink mb-2">Memory Reels</h1>
+      <h1 className="type-title text-ink mb-2">Memory Reels</h1>
       <p className="text-ink-muted text-sm mb-6">Auto-generated slideshows from your best moments.</p>
 
       {/* Type selector */}

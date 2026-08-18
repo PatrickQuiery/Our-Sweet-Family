@@ -184,7 +184,7 @@ export default function Upload() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-ink mb-6">Upload memories</h1>
+      <h1 className="type-title text-ink mb-6">Upload memories</h1>
 
       {preparing && (
         <div className="mb-4 flex items-center gap-3 rounded-xl bg-brand-50 border border-brand-200 px-4 py-3">

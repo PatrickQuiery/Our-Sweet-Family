@@ -56,7 +56,7 @@ export default function Referrals() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-ink">Refer friends</h1>
+        <h1 className="type-title text-ink">Refer friends</h1>
         <p className="text-ink-muted text-sm mt-1">
           Invite another family to Our Sweet Family. When they sign up with your link and start their
           family, <span className="font-semibold text-brand-600">you both get Plus free for {data?.rewardDays || 90} days.</span>

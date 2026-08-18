@@ -191,6 +191,44 @@
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
+
+  /* Semantic type ramp (SYS-3) — one tunable scale, mirroring the mobile
+     `typography` variants (theme/index.ts) so hierarchy matches across web +
+     mobile. Colour stays separate (text-ink / text-ink-soft / …). */
+  .type-display {
+    font-size: 2rem;
+    line-height: 2.375rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .type-title {
+    font-size: 1.5rem;
+    line-height: 1.875rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .type-heading {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+  }
+  .type-body {
+    font-size: 1rem;
+    line-height: 1.4375rem;
+    font-weight: 400;
+  }
+  .type-label {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .type-caption {
+    font-size: 0.8125rem;
+    line-height: 1.125rem;
+    font-weight: 400;
+  }
 }
 
 @layer utilities {

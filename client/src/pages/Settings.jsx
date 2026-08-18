@@ -62,7 +62,7 @@ export default function Settings() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-ink">Settings</h1>
+      <h1 className="type-title text-ink">Settings</h1>
 
       {/* Current plan (app-specific) */}
       <div className={`card p-6 ${plan.color}`}>

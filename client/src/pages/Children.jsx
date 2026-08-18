@@ -249,7 +249,7 @@ export default function Children() {
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Children</h1>
+          <h1 className="type-title text-ink">Children</h1>
           <p className="text-ink-muted text-sm mt-1">{children.length} {children.length === 1 ? 'child' : 'children'} in your family</p>
         </div>
         {isOwner && (

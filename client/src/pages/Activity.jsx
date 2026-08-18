@@ -121,7 +121,7 @@ export default function Activity() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-2">
-        <h1 className="text-2xl font-bold text-ink">Activity</h1>
+        <h1 className="type-title text-ink">Activity</h1>
         <p className="text-ink-muted text-sm mt-1">Loves, comments, and new memories from your family.</p>
       </div>
 
