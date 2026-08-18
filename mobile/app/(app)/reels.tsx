@@ -65,6 +65,8 @@ export default function Reels() {
   const api = useApi();
   const { activeFamily } = useFamily();
   const { colors, spacing, radius } = useTheme();
+  const { width } = useWindowDimensions();
+  const cols = width > 700 ? 2 : 1; // 2-up in landscape / on tablets (M18)
   const familyId = activeFamily?.id ?? null;
 
   const [type, setType] = useState<ReelType>('annual');
@@ -127,12 +129,15 @@ export default function Reels() {
         <EmptyState icon="film-outline" title="No reels yet" subtitle="As you add memories, they'll be grouped into reels here." />
       ) : (
         <FlatList
+          key={cols}
           data={reels}
           keyExtractor={(r) => r.key}
-          contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}
+          numColumns={cols}
+          columnWrapperStyle={cols > 1 ? { gap: spacing.lg } : undefined}
+          contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, ...(cols > 1 ? { alignSelf: 'center', width: '100%', maxWidth: 900 } : null) }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <Touchable onPress={() => setViewing(item)} pressedScale={0.98}>
+            <Touchable onPress={() => setViewing(item)} pressedScale={0.98} style={cols > 1 ? { flex: 1 } : undefined}>
               <Card>
                 <View style={{ height: 190, backgroundColor: colors.surfaceAlt }}>
                   <Collage memories={item.memories} height={190} />
@@ -311,9 +316,9 @@ function ReelViewer({ reel, onClose }: { reel: Reel | null; onClose: () => void 
         <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 140, backgroundColor: 'rgba(0,0,0,0.35)' }} pointerEvents="none" />
 
         {/* tap zones: left=prev, center=pause, right=next */}
-        <Pressable onPress={goPrev} style={{ position: 'absolute', left: 0, top: 90, bottom: 0, width: width * 0.3 }} />
-        <Pressable onPress={() => setPaused((p) => !p)} style={{ position: 'absolute', left: width * 0.3, right: width * 0.3, top: 90, bottom: 0 }} />
-        <Pressable onPress={goNext} style={{ position: 'absolute', right: 0, top: 90, bottom: 0, width: width * 0.3 }} />
+        <Pressable onPress={goPrev} accessibilityRole="button" accessibilityLabel="Previous slide" style={{ position: 'absolute', left: 0, top: 90, bottom: 0, width: width * 0.3 }} />
+        <Pressable onPress={() => setPaused((p) => !p)} accessibilityRole="button" accessibilityLabel={paused ? 'Resume' : 'Pause'} style={{ position: 'absolute', left: width * 0.3, right: width * 0.3, top: 90, bottom: 0 }} />
+        <Pressable onPress={goNext} accessibilityRole="button" accessibilityLabel="Next slide" style={{ position: 'absolute', right: 0, top: 90, bottom: 0, width: width * 0.3 }} />
 
         {/* segmented progress */}
         <View style={{ position: 'absolute', top: 56, left: 12, right: 12, flexDirection: 'row', gap: 4 }}>
@@ -333,7 +338,7 @@ function ReelViewer({ reel, onClose }: { reel: Reel | null; onClose: () => void 
           <Text variant="label" style={{ color: '#fff' }}>
             {reel?.label}
           </Text>
-          <Pressable onPress={onClose} hitSlop={12} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
+          <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close reel" style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="close" size={20} color="#fff" />
           </Pressable>
         </View>

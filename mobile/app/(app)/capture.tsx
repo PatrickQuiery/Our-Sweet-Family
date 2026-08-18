@@ -269,7 +269,7 @@ export default function Capture() {
                         </View>
                       ) : null}
                       {!uploading && !isDone ? (
-                        <Pressable onPress={() => removeItem(it.id)} hitSlop={8} style={{ position: 'absolute', top: 3, right: 3, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' }}>
+                        <Pressable onPress={() => removeItem(it.id)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Remove from selection" style={{ position: 'absolute', top: 3, right: 3, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' }}>
                           <Ionicons name="close" size={14} color="#fff" />
                         </Pressable>
                       ) : null}
