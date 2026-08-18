@@ -62,13 +62,10 @@ function UserMenu({ collapsed }) {
           </div>
         )}
         {!collapsed && (
-          <>
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-semibold text-ink truncate">{user?.name}</p>
-              <span className={`badge text-xs ${planColors[user?.plan] || 'bg-ink/5 text-ink-soft'}`}>{user?.plan}</span>
-            </div>
-            <svg className="w-4 h-4 text-ink-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
-          </>
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-sm font-semibold text-ink truncate">{user?.name}</p>
+            <span className={`badge text-xs ${planColors[user?.plan] || 'bg-ink/5 text-ink-soft'}`}>{user?.plan}</span>
+          </div>
         )}
       </button>
     </div>
@@ -186,25 +183,27 @@ export default function AppLayout() {
     >
       {/* Sidebar — frosted glass over the Sunrise wash. Width collapses to an icon rail on lg. */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 ${collapsed ? 'lg:w-20' : 'lg:w-64'} bg-white/60 backdrop-blur-xl border-r border-white/40 flex flex-col transition-[width,transform] duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        {/* Logo + collapse toggle */}
-        <div className={`flex border-b border-black/5 ${collapsed ? 'flex-col items-center gap-2 px-2 py-4' : 'items-center justify-between px-4 py-4'}`}>
+        {/* Collapse/expand — a bubble straddling the nav's right edge */}
+        <button
+          onClick={toggleCollapsed}
+          title={collapsed ? 'Expand menu' : 'Collapse menu'}
+          aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
+          className="hidden lg:flex absolute top-7 -right-3 z-50 w-6 h-6 items-center justify-center rounded-full bg-white border border-black/10 shadow-md text-ink-muted hover:text-brand-600 hover:border-brand-200 transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            {collapsed
+              ? <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              : <path strokeLinecap="round" strokeLinejoin="round" d="M15 5l-7 7 7 7" />}
+          </svg>
+        </button>
+
+        {/* Logo */}
+        <div className={`flex items-center justify-center border-b border-black/5 ${collapsed ? 'px-2 py-4' : 'px-4 py-5'}`}>
           {collapsed ? (
             <LogoMark heart="#ef3f74" fig="#232a45" size={34} />
           ) : (
             <img src="/brand/osf-5-compact-sunrise.svg" alt="Our Sweet Family" className="max-w-[176px]" />
           )}
-          <button
-            onClick={toggleCollapsed}
-            title={collapsed ? 'Expand menu' : 'Collapse menu'}
-            aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
-            className="hidden lg:inline-flex p-1.5 rounded-lg text-ink-muted hover:bg-brand-50 hover:text-ink transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              {collapsed
-                ? <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                : <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />}
-            </svg>
-          </button>
         </div>
 
         {/* Family info */}
