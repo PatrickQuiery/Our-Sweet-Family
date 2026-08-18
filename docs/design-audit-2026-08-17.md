@@ -27,6 +27,7 @@ Shipped to `claude/family-photo-sharing-app-RfJto` (web auto-deploys to Vercel, 
 | **Web type ramp** | SYS-3 (`.type-*` scale mirroring mobile; 9 page titles migrated) | `36a373a` |
 | **Wide-screen layouts** | M7/M25/M69 — shared `wideColumn` centers Settings/Milestones/Children/Members/Activity in a max-width column in landscape/tablet | `c847a61` |
 | **Web icon system** | CC-3 — `components/icons.jsx` (one canonical Heart/Chat/Trash/Pencil/…); replaced 3 divergent hearts + 2 chats + duplicated trash/pencil | `2b50bbd` |
+| **Remaining a11y + Reels 2-up** | A11Y-2 (reel viewer prev/pause/next/close + capture remove labels), M18 (Reels list 2-up in landscape — portrait render live-verified) | `f9df9d6` |
 
 This covers top-10 items **#1, #2, #3, #4 (base), #5, #6, #7, #9, #10**, and part of **#8**.
 
@@ -34,7 +35,9 @@ This covers top-10 items **#1, #2, #3, #4 (base), #5, #6, #7, #9, #10**, and par
 
 **Verification notes:** web build + mobile `tsc` clean on every batch; web dark-mode flip mechanism + marketing light-scope proven in-browser; authed-web dark mode not live-verified (needs a Clerk login, which I don't perform); mobile theme selector verified by clean bundle + launch (the simulator was stuck in landscape, so no portrait screenshot of the selector).
 
-**Remaining backlog (highest-value first):** remaining lower-traffic icon-button labels (reel controls, capture buttons), broader adoption of the new `.type-*` ramp on secondary headings and of `components/icons.jsx` on the remaining single-use inline SVGs, sign-in white logo plate in dark (M43), Reels list landscape 2-up (M18), plus the per-screen P2/P3 polish items in §2/§3 (designed empty/loading/error states beyond what's shipped, etc.). Note: the wide-screen column work (M7/M25/M69) and the icon-consolidation visual changes on MosaicFeed/Activity are committed but not live-verified in the browser/landscape — worth a glance next time the authed app is open.
+**Remaining backlog (now diffuse, low-priority):** designed per-screen error states with retry (most load-failures currently show a banner/EmptyState — a consistent "couldn't load, tap to retry" treatment would be the next real item), broader adoption of the `.type-*` ramp on secondary headings and of `components/icons.jsx` on remaining single-use inline SVGs. **Intentionally not changing:** M43 (sign-in white logo plate — the plate holds the dark-inked wordmark, so a dark plate would hide the logo).
+
+**Verification gaps to eyeball when convenient:** authed web app in dark mode (couldn't log in), the wide-screen columns (M7/M25/M69) and Reels 2-up in *landscape* specifically (portrait paths were live-verified), and the MosaicFeed/Activity icon-consolidation visual changes.
 
 ## How to read this
 
