@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Modal, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Animated, Easing, FlatList, Modal, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useAuth } from '@clerk/clerk-expo';
@@ -15,8 +15,13 @@ import { API_ROOT } from '../../src/lib/config';
 import type { Reel, ReelType, Memory } from '../../src/lib/types';
 
 const absolute = (path: string) => (path.startsWith('http') ? path : `${API_ROOT}${path}`);
+const stillPath = (m?: Memory) => (m ? (m.thumbnailUrl ?? m.fileUrl) : null);
 
 const TYPES: ReelType[] = ['annual', 'monthly', 'birthday', 'holiday'];
+
+// How long each photo lingers before cross-fading to the next slide.
+const PHOTO_MS = 5000;
+const FADE_MS = 650;
 
 /** Reel cover: 1 image full, 2 side-by-side, 3–4 as a 2×2 grid. */
 function Collage({ memories, height }: { memories: Memory[]; height: number }) {
@@ -87,8 +92,6 @@ export default function Reels() {
     load();
   }, [load]);
 
-  // Refresh when returning to the tab (e.g. after capturing a memory), skipping
-  // the initial mount which the effect above already covers.
   const firstFocus = useRef(true);
   useFocusEffect(
     useCallback(() => {
@@ -157,24 +160,54 @@ export default function Reels() {
   );
 }
 
+/** A photo that slowly zooms + pans (Ken Burns) over its time on screen. */
+function KenBurnsImage({ path, width, height, seed }: { path: string; width: number; height: number; seed: number }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    v.setValue(0);
+    Animated.timing(v, { toValue: 1, duration: PHOTO_MS + FADE_MS, easing: Easing.linear, useNativeDriver: true }).start();
+  }, [path, v]);
+  const dirX = seed % 2 === 0 ? 1 : -1;
+  const dirY = seed % 3 === 0 ? 1 : -1;
+  const scale = v.interpolate({ inputRange: [0, 1], outputRange: [1.03, 1.13] });
+  const translateX = v.interpolate({ inputRange: [0, 1], outputRange: [0, dirX * width * 0.05] });
+  const translateY = v.interpolate({ inputRange: [0, 1], outputRange: [0, dirY * height * 0.035] });
+  return (
+    <Animated.View style={{ width, height, transform: [{ scale }, { translateX }, { translateY }] }}>
+      <AuthedImage path={path} style={{ width, height }} contentFit="cover" />
+    </Animated.View>
+  );
+}
+
 /**
- * Story-style reel player: segmented progress bars, tap left/right to navigate,
- * photos auto-advance and videos play inline (advancing when they finish).
+ * "Generated video" reel player: each slide cross-fades into the next, photos
+ * gently pan/zoom (Ken Burns) and videos play inline. Auto-advances; tap left/
+ * right to skip, tap the center to pause/resume.
  */
 function ReelViewer({ reel, onClose }: { reel: Reel | null; onClose: () => void }) {
   const { width, height } = useWindowDimensions();
   const { getToken } = useAuth();
   const [token, setToken] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [prevMemory, setPrevMemory] = useState<Memory | undefined>(undefined);
+
   const memories = reel?.memories ?? [];
   const current: Memory | undefined = memories[index];
   const isVideo = current?.fileType === 'video';
 
+  const prevIndexRef = useRef(0);
+  const fade = useRef(new Animated.Value(1)).current;
+  const progress = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     getToken().then(setToken);
   }, [getToken]);
+
   useEffect(() => {
     setIndex(0);
+    setPaused(false);
+    prevIndexRef.current = 0;
   }, [reel?.key]);
 
   const goNext = useCallback(() => {
@@ -186,30 +219,55 @@ function ReelViewer({ reel, onClose }: { reel: Reel | null; onClose: () => void 
   }, [memories.length, onClose]);
   const goPrev = useCallback(() => setIndex((i) => Math.max(0, i - 1)), []);
 
-  // Photos auto-advance after a few seconds; videos advance when they finish.
+  // Cross-fade the new slide in over a still of the previous one.
   useEffect(() => {
-    if (!reel || !current || isVideo) return;
-    const t = setTimeout(goNext, 4000);
-    return () => clearTimeout(t);
-  }, [reel?.key, index, current?.id, isVideo, goNext]);
+    setPrevMemory(memories[prevIndexRef.current]);
+    prevIndexRef.current = index;
+    fade.setValue(0);
+    Animated.timing(fade, { toValue: 1, duration: FADE_MS, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, reel?.key]);
 
-  // One player, source swapped as the current item changes.
+  // Photos auto-advance on a timer; videos advance when they finish.
+  useEffect(() => {
+    if (!reel || !current || isVideo || paused) return undefined;
+    const t = setTimeout(goNext, PHOTO_MS);
+    return () => clearTimeout(t);
+  }, [reel?.key, index, current?.id, isVideo, paused, goNext]);
+
+  // Active progress-segment fill (photos animate over their dwell; videos stay full).
+  useEffect(() => {
+    progress.setValue(0);
+    if (isVideo) {
+      progress.setValue(1);
+      return undefined;
+    }
+    if (paused) return undefined;
+    const anim = Animated.timing(progress, { toValue: 1, duration: PHOTO_MS, easing: Easing.linear, useNativeDriver: false });
+    anim.start();
+    return () => anim.stop();
+  }, [index, isVideo, paused, reel?.key, progress]);
+
+  // One video player, source swapped as the current item changes.
   const player = useVideoPlayer(null);
   useEffect(() => {
     if (!player) return;
     if (isVideo && current && token) {
       player.replace({ uri: absolute(current.fileUrl), headers: { Authorization: `Bearer ${token}` } });
-      player.play();
+      if (!paused) player.play();
     } else {
-      try {
-        player.pause();
-      } catch {
-        // player not ready yet
-      }
+      try { player.pause(); } catch { /* not ready */ }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player, current?.id, isVideo, token]);
+
   useEffect(() => {
-    if (!player) return;
+    if (!player || !isVideo) return;
+    try { if (paused) player.pause(); else player.play(); } catch { /* not ready */ }
+  }, [paused, player, isVideo]);
+
+  useEffect(() => {
+    if (!player) return undefined;
     const sub = player.addListener('playToEnd', goNext);
     return () => sub.remove();
   }, [player, goNext]);
@@ -217,22 +275,43 @@ function ReelViewer({ reel, onClose }: { reel: Reel | null; onClose: () => void 
   return (
     <Modal visible={reel !== null} animationType="fade" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: '#000' }}>
-        {current ? (
-          isVideo ? (
-            <VideoView player={player} style={{ width, height }} contentFit="contain" nativeControls={false} />
-          ) : (
-            <AuthedImage path={current.thumbnailUrl ?? current.fileUrl} style={{ width, height }} contentFit="contain" />
-          )
+        {/* under-layer: a still of the previous slide, so the new one cross-fades over it */}
+        {prevMemory && stillPath(prevMemory) ? (
+          <View style={{ position: 'absolute', width, height }}>
+            <AuthedImage path={stillPath(prevMemory) as string} style={{ width, height }} contentFit="cover" />
+          </View>
         ) : null}
 
-        {/* tap zones (rendered before the controls so the close button stays tappable) */}
-        <Pressable onPress={goPrev} style={{ position: 'absolute', left: 0, top: 80, bottom: 0, width: width * 0.35 }} />
-        <Pressable onPress={goNext} style={{ position: 'absolute', right: 0, top: 80, bottom: 0, width: width * 0.65 }} />
+        {/* over-layer: the current slide, fading in */}
+        {current ? (
+          <Animated.View style={{ position: 'absolute', width, height, opacity: fade }}>
+            {isVideo ? (
+              <VideoView player={player} style={{ width, height }} contentFit="cover" nativeControls={false} />
+            ) : (
+              <KenBurnsImage path={stillPath(current) as string} width={width} height={height} seed={index} />
+            )}
+          </Animated.View>
+        ) : null}
+
+        {/* top + bottom scrims for legibility */}
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 150, backgroundColor: 'rgba(0,0,0,0.35)' }} pointerEvents="none" />
+        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 140, backgroundColor: 'rgba(0,0,0,0.35)' }} pointerEvents="none" />
+
+        {/* tap zones: left=prev, center=pause, right=next */}
+        <Pressable onPress={goPrev} style={{ position: 'absolute', left: 0, top: 90, bottom: 0, width: width * 0.3 }} />
+        <Pressable onPress={() => setPaused((p) => !p)} style={{ position: 'absolute', left: width * 0.3, right: width * 0.3, top: 90, bottom: 0 }} />
+        <Pressable onPress={goNext} style={{ position: 'absolute', right: 0, top: 90, bottom: 0, width: width * 0.3 }} />
 
         {/* segmented progress */}
         <View style={{ position: 'absolute', top: 56, left: 12, right: 12, flexDirection: 'row', gap: 4 }}>
           {memories.map((m, i) => (
-            <View key={m.id} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i <= index ? '#fff' : 'rgba(255,255,255,0.35)' }} />
+            <View key={m.id} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.35)', overflow: 'hidden' }}>
+              {i < index ? (
+                <View style={{ height: '100%', width: '100%', backgroundColor: '#fff' }} />
+              ) : i === index ? (
+                <Animated.View style={{ height: '100%', backgroundColor: '#fff', width: progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
+              ) : null}
+            </View>
           ))}
         </View>
 
@@ -255,9 +334,12 @@ function ReelViewer({ reel, onClose }: { reel: Reel | null; onClose: () => void 
           </View>
         ) : null}
 
-        {isVideo ? (
-          <View style={{ position: 'absolute', bottom: 52, right: 20, backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 999, padding: 8 }}>
-            <Ionicons name="videocam" size={16} color="#fff" />
+        {/* paused affordance */}
+        {paused ? (
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }} pointerEvents="none">
+            <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="play" size={34} color="#fff" style={{ marginLeft: 4 }} />
+            </View>
           </View>
         ) : null}
       </View>
