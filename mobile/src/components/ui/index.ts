@@ -8,3 +8,4 @@ export { EmptyState } from './EmptyState';
 export { Loading } from './Loading';
 export { Touchable } from './Touchable';
 export { Skeleton } from './Skeleton';
+export { BottomSheet } from './BottomSheet';

@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useMemo, useState } from 'react';
-import { Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/clerk-expo';
@@ -11,7 +11,7 @@ import { getUploadedAssetIds, uploadMemory } from '../../src/lib/memories';
 import { resolveChildColors } from '../../src/lib/childColor';
 import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { MediaPicker, type PickedAsset } from '../../src/components/MediaPicker';
-import { Button, Chip, Screen, Text } from '../../src/components/ui';
+import { BottomSheet, Button, Chip, Screen, Text } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
 
 let _seq = 0;
@@ -356,59 +356,58 @@ export default function Capture() {
       <MediaPicker visible={pickerOpen} uploadedIds={uploadedIds} onClose={() => setPickerOpen(false)} onDone={onPicked} />
 
       {/* Per-photo override sheet */}
-      <Modal visible={!!editing} transparent animationType="slide" onRequestClose={() => setEditingId(null)}>
-        <Pressable style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }} onPress={() => setEditingId(null)}>
-          <Pressable style={{ backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg, gap: spacing.md }} onPress={() => {}}>
-            {editing ? (
-              <>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                  <Image source={{ uri: editing.uri }} style={{ width: 56, height: 56, borderRadius: radius.md }} />
-                  <Text variant="heading" style={{ flex: 1 }}>Just this photo</Text>
-                  <Pressable onPress={() => setEditingId(null)} hitSlop={8}><Ionicons name="close" size={24} color={colors.textMuted} /></Pressable>
+      <BottomSheet
+        visible={!!editing}
+        onClose={() => setEditingId(null)}
+        footer={editing ? <Button title="Done" onPress={() => setEditingId(null)} /> : undefined}
+      >
+        {editing ? (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <Image source={{ uri: editing.uri }} style={{ width: 56, height: 56, borderRadius: radius.md }} />
+              <Text variant="heading" style={{ flex: 1 }}>Just this photo</Text>
+              <Pressable onPress={() => setEditingId(null)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Close"><Ionicons name="close" size={24} color={colors.textMuted} /></Pressable>
+            </View>
+            {children.length > 0 ? (
+              <View style={{ gap: spacing.sm }}>
+                <Text variant="label" color="textMuted">WHO'S IN THIS ONE?</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                  {children.map((c) => {
+                    const cur = editing.childIds ?? batchChildIds;
+                    const on = cur.includes(c.id);
+                    return (
+                      <Chip
+                        key={c.id}
+                        label={c.name}
+                        color={childColors[c.id]}
+                        selected={on}
+                        onPress={() =>
+                          setItems((prev) => prev.map((i) => {
+                            if (i.id !== editing.id) return i;
+                            const base = i.childIds ?? batchChildIds;
+                            const nextIds = on ? base.filter((x) => x !== c.id) : [...new Set([...base, c.id])];
+                            return { ...i, childIds: nextIds };
+                          }))
+                        }
+                      />
+                    );
+                  })}
                 </View>
-                {children.length > 0 ? (
-                  <View style={{ gap: spacing.sm }}>
-                    <Text variant="label" color="textMuted">WHO'S IN THIS ONE?</Text>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-                      {children.map((c) => {
-                        const cur = editing.childIds ?? batchChildIds;
-                        const on = cur.includes(c.id);
-                        return (
-                          <Chip
-                            key={c.id}
-                            label={c.name}
-                            color={childColors[c.id]}
-                            selected={on}
-                            onPress={() =>
-                              setItems((prev) => prev.map((i) => {
-                                if (i.id !== editing.id) return i;
-                                const base = i.childIds ?? batchChildIds;
-                                const nextIds = on ? base.filter((x) => x !== c.id) : [...new Set([...base, c.id])];
-                                return { ...i, childIds: nextIds };
-                              }))
-                            }
-                          />
-                        );
-                      })}
-                    </View>
-                  </View>
-                ) : null}
-                <View style={{ gap: spacing.sm }}>
-                  <Text variant="label" color="textMuted">CAPTION</Text>
-                  <TextInput
-                    value={editing.caption ?? batchCaption}
-                    onChangeText={(t) => setItems((prev) => prev.map((i) => (i.id === editing.id ? { ...i, caption: t } : i)))}
-                    placeholder="Caption for this photo…"
-                    placeholderTextColor={colors.textMuted}
-                    style={{ backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12, fontFamily: fonts.regular, fontSize: 15, color: colors.text }}
-                  />
-                </View>
-                <Button title="Done" onPress={() => setEditingId(null)} />
-              </>
+              </View>
             ) : null}
-          </Pressable>
-        </Pressable>
-      </Modal>
+            <View style={{ gap: spacing.sm }}>
+              <Text variant="label" color="textMuted">CAPTION</Text>
+              <TextInput
+                value={editing.caption ?? batchCaption}
+                onChangeText={(t) => setItems((prev) => prev.map((i) => (i.id === editing.id ? { ...i, caption: t } : i)))}
+                placeholder="Caption for this photo…"
+                placeholderTextColor={colors.textMuted}
+                style={{ backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12, fontFamily: fonts.regular, fontSize: 15, color: colors.text }}
+              />
+            </View>
+          </>
+        ) : null}
+      </BottomSheet>
     </Screen>
   );
 }

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useApi } from '../../src/hooks/useApi';
 import { useFamily } from '../../src/context/FamilyProvider';
 import { createMilestone, deleteMilestone, getMilestones, MILESTONE_TYPES } from '../../src/lib/milestones';
-import { Button, Card, Chip, EmptyState, Input, Loading, Screen, Text, Touchable } from '../../src/components/ui';
+import { BottomSheet, Button, Card, Chip, EmptyState, Input, Loading, Screen, Text, Touchable } from '../../src/components/ui';
 import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { DatePickerField } from '../../src/components/DatePickerField';
 import { useTheme } from '../../src/theme/ThemeProvider';
@@ -190,7 +190,7 @@ interface MilestoneInput {
 }
 
 function AddMilestoneModal({ visible, onClose, onSave }: { visible: boolean; onClose: () => void; onSave: (input: MilestoneInput) => void }) {
-  const { colors, spacing, radius } = useTheme();
+  const { spacing } = useTheme();
   const [type, setType] = useState('First');
   const [value, setValue] = useState('');
   const [unit, setUnit] = useState('');
@@ -208,28 +208,26 @@ function AddMilestoneModal({ visible, onClose, onSave }: { visible: boolean; onC
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: colors.overlay }} onPress={onClose} />
-      <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg, gap: spacing.md }}>
-        <Text variant="heading" center>
-          Add a milestone
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title="Add a milestone"
+      footer={<Button title="Add milestone" onPress={submit} loading={busy} />}
+    >
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+        {MILESTONE_TYPES.map((t) => (
+          <Chip key={t} label={t} selected={type === t} onPress={() => setType(t)} />
+        ))}
+      </ScrollView>
+      <Input placeholder="Value (e.g. Crawled, 30)" value={value} onChangeText={setValue} />
+      <Input placeholder="Unit (optional, e.g. in, lb)" value={unit} onChangeText={setUnit} autoCapitalize="none" />
+      <Input placeholder="Note (optional)" value={note} onChangeText={setNote} multiline style={{ minHeight: 48, textAlignVertical: 'top' }} />
+      <DatePickerField value={date} onChange={setDate} placeholder="Date" title="Milestone date" />
+      {err ? (
+        <Text variant="caption" color="danger">
+          {err}
         </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
-          {MILESTONE_TYPES.map((t) => (
-            <Chip key={t} label={t} selected={type === t} onPress={() => setType(t)} />
-          ))}
-        </ScrollView>
-        <Input placeholder="Value (e.g. Crawled, 30)" value={value} onChangeText={setValue} />
-        <Input placeholder="Unit (optional, e.g. in, lb)" value={unit} onChangeText={setUnit} autoCapitalize="none" />
-        <Input placeholder="Note (optional)" value={note} onChangeText={setNote} multiline style={{ minHeight: 48, textAlignVertical: 'top' }} />
-        <DatePickerField value={date} onChange={setDate} placeholder="Date" title="Milestone date" />
-        {err ? (
-          <Text variant="caption" color="danger">
-            {err}
-          </Text>
-        ) : null}
-        <Button title="Add milestone" onPress={submit} loading={busy} />
-      </View>
-    </Modal>
+      ) : null}
+    </BottomSheet>
   );
 }

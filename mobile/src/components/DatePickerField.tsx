@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Text, Touchable } from './ui';
 import { useTheme } from '../theme/ThemeProvider';
@@ -33,6 +34,7 @@ interface Props {
  */
 export function DatePickerField({ value, onChange, placeholder = 'Select date', title = 'Select date' }: Props) {
   const { colors, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const now = new Date();
   const init = value ?? new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
@@ -103,13 +105,14 @@ export function DatePickerField({ value, onChange, placeholder = 'Select date', 
       </Pressable>
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <Pressable style={{ flex: 1, backgroundColor: colors.overlay }} onPress={() => setOpen(false)} />
+        <Pressable style={{ flex: 1, backgroundColor: colors.overlay }} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel="Close" />
         <View
           style={{
             backgroundColor: colors.surface,
             borderTopLeftRadius: radius.xl,
             borderTopRightRadius: radius.xl,
             padding: spacing.lg,
+            paddingBottom: spacing.lg + insets.bottom,
             gap: spacing.md,
           }}
         >

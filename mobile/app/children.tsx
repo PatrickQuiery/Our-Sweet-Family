@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -9,7 +9,7 @@ import { createChild, deleteChild, updateChild, uploadChildAvatar } from '../src
 import { formatAge } from '../src/lib/age';
 import { AuthedImage } from '../src/components/AuthedImage';
 import { DatePickerField } from '../src/components/DatePickerField';
-import { Button, Card, Chip, EmptyState, Input, Screen, Text, Touchable } from '../src/components/ui';
+import { BottomSheet, Button, Card, Chip, EmptyState, Input, Screen, Text, Touchable } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeProvider';
 import type { Child, Gender } from '../src/lib/types';
 
@@ -206,26 +206,14 @@ function ChildFormModal({
   onSave: (input: FormInput) => void;
   busy: boolean;
 }) {
-  const { colors, spacing, radius } = useTheme();
   const editingChild = mode && mode !== 'new' ? mode : null;
   // Remount the form each time the target changes so fields reset correctly.
   const key = mode === 'new' ? 'new' : (editingChild?.id ?? 'closed');
 
   return (
-    <Modal visible={mode !== null} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: colors.overlay }} onPress={onClose} />
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderTopLeftRadius: radius.xl,
-          borderTopRightRadius: radius.xl,
-          padding: spacing.lg,
-          gap: spacing.md,
-        }}
-      >
-        <FormBody key={key} editingChild={editingChild} onSave={onSave} busy={busy} isNew={mode === 'new'} />
-      </View>
-    </Modal>
+    <BottomSheet visible={mode !== null} onClose={onClose}>
+      <FormBody key={key} editingChild={editingChild} onSave={onSave} busy={busy} isNew={mode === 'new'} />
+    </BottomSheet>
   );
 }
 
