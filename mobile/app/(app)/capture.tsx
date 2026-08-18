@@ -1,12 +1,13 @@
 import * as ImagePicker from 'expo-image-picker';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
+import { useApi } from '../../src/hooks/useApi';
 import { useMemories } from '../../src/hooks/useMemories';
-import { uploadMemory } from '../../src/lib/memories';
+import { getUploadedAssetIds, uploadMemory } from '../../src/lib/memories';
 import { resolveChildColors } from '../../src/lib/childColor';
 import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { Button, Chip, Screen, Text } from '../../src/components/ui';
@@ -21,6 +22,7 @@ interface Item {
   name: string;
   mimeType: string;
   isVideo: boolean;
+  assetId?: string; // camera-roll id, for "already uploaded" detection + dedupe
   childIds?: string[]; // per-photo override; undefined = use the batch selection
   caption?: string; // per-photo override; undefined = use the batch caption
 }
@@ -28,7 +30,22 @@ interface Item {
 export default function Capture() {
   const { getToken } = useAuth();
   const router = useRouter();
+  const api = useApi();
   const { family, refresh } = useMemories();
+  const [uploadedIds, setUploadedIds] = useState<Set<string>>(new Set());
+
+  // Refresh the set of already-uploaded camera-roll ids whenever Capture opens,
+  // so we can flag re-picked items and skip them.
+  useFocusEffect(
+    useCallback(() => {
+      if (!family) return undefined;
+      let active = true;
+      getUploadedAssetIds(api, family.id)
+        .then((ids) => { if (active) setUploadedIds(new Set(ids)); })
+        .catch(() => { /* best-effort */ });
+      return () => { active = false; };
+    }, [api, family?.id]),
+  );
   const { colors, spacing, radius, fonts } = useTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -56,9 +73,12 @@ export default function Capture() {
       uri: a.uri,
       name: a.fileName ?? (isVideo ? 'upload.mp4' : 'upload.jpg'),
       mimeType: a.mimeType ?? (isVideo ? 'video/mp4' : 'image/jpeg'),
+      assetId: a.assetId ?? undefined,
       isVideo,
     };
   };
+
+  const isUploaded = (it: Item) => !!it.assetId && uploadedIds.has(it.assetId);
 
   const pickLibrary = async () => {
     setError(null);
@@ -100,12 +120,22 @@ export default function Capture() {
     );
   };
 
+  const reset = () => {
+    setItems([]);
+    setDone([]);
+    setProgress({});
+    setBatchChildIds([]);
+    setBatchCaption('');
+    setError(null);
+  };
+
   const upload = async () => {
     if (!family || items.length === 0) return;
+    const pending = items.filter((i) => !done.includes(i.id) && !isUploaded(i));
+    if (pending.length === 0) { setError('These are already in your timeline.'); return; }
     setUploading(true);
     setError(null);
-    const pending = items.filter((i) => !done.includes(i.id));
-    let ok = 0;
+    const succeeded: string[] = [];
     for (const it of pending) {
       try {
         setProgress((p) => ({ ...p, [it.id]: 0 }));
@@ -115,24 +145,34 @@ export default function Capture() {
             familyId: family.id,
             childIds: it.childIds ?? batchChildIds,
             caption: (it.caption ?? batchCaption) || undefined,
-            asset: { uri: it.uri, name: it.name, mimeType: it.mimeType },
+            asset: { uri: it.uri, name: it.name, mimeType: it.mimeType, assetId: it.assetId },
           },
           (pct) => setProgress((p) => ({ ...p, [it.id]: pct })),
         );
         setDone((d) => [...d, it.id]);
-        ok++;
+        succeeded.push(it.id);
       } catch (e: any) {
-        setError(e?.message ?? 'Some uploads failed — tap Upload to retry.');
+        setError(e?.message ?? 'Some uploads failed — tap Share to retry.');
       }
     }
     setUploading(false);
-    if (ok > 0) {
-      await refresh();
+    if (succeeded.length === 0) return; // all failed — keep the batch for retry
+
+    await refresh();
+    if (succeeded.length === pending.length) {
+      // Everything uploaded — clear the batch so returning to Capture starts fresh.
+      reset();
       router.replace('/(app)');
+    } else {
+      // Partial — drop the ones that uploaded, keep failures on screen to retry.
+      setItems((prev) => prev.filter((i) => !succeeded.includes(i.id)));
+      setDone([]);
+      setProgress({});
     }
   };
 
   const total = items.length;
+  const newCount = items.filter((i) => !isUploaded(i)).length;
   const overall = total ? Math.round(items.reduce((s, i) => s + (done.includes(i.id) ? 100 : progress[i.id] ?? 0), 0) / total) : 0;
   const doneCount = done.length;
 
@@ -183,6 +223,14 @@ export default function Capture() {
                       {tagged > 0 ? (
                         <View style={{ position: 'absolute', bottom: 4, left: 4, backgroundColor: colors.overlay, borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 2 }}>
                           <Text style={{ color: '#fff', fontFamily: fonts.medium, fontSize: 10 }}>{tagged} tagged</Text>
+                        </View>
+                      ) : null}
+                      {isUploaded(it) && !isDone ? (
+                        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.overlay, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 }}>
+                            <Ionicons name="checkmark-circle" size={13} color="#fff" />
+                            <Text style={{ color: '#fff', fontFamily: fonts.medium, fontSize: 10 }}>Added</Text>
+                          </View>
                         </View>
                       ) : null}
                       {!uploading && !isDone ? (
@@ -261,7 +309,7 @@ export default function Capture() {
         {items.length > 0 ? (
           <View style={{ position: 'absolute', left: 0, right: 0, bottom: tabBarH, padding: spacing.lg, paddingVertical: spacing.md, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.borderSubtle }}>
             <Button
-              title={uploading ? 'Uploading…' : `Share ${total} ${total === 1 ? 'memory' : 'memories'}`}
+              title={uploading ? 'Uploading…' : newCount === 0 ? 'Already in your timeline' : `Share ${newCount} ${newCount === 1 ? 'memory' : 'memories'}`}
               onPress={upload}
               loading={uploading}
             />

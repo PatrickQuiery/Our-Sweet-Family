@@ -44,6 +44,39 @@ const mockMemory = {
   reactions: [], comments: [],
 };
 
+// ─── GET /api/memories/asset-ids ──────────────────────────────────────────────
+
+describe('GET /api/memories/asset-ids', () => {
+  it('returns the family\'s uploaded client asset ids for a member', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    prisma.family.findUnique.mockResolvedValue(mockFamily);
+    prisma.memory.findMany.mockResolvedValue([{ clientAssetId: 'ph1' }, { clientAssetId: 'ph2' }]);
+
+    const res = await request(app)
+      .get('/api/memories/asset-ids?familyId=family1')
+      .set('x-clerk-user-id', 'clerk-test');
+
+    expect(res.status).toBe(200);
+    expect(res.body.assetIds).toEqual(['ph1', 'ph2']);
+    expect(prisma.memory.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { familyId: 'family1', clientAssetId: { not: null } } }),
+    );
+  });
+
+  it('400 without familyId', async () => {
+    prisma.user.findUnique.mockResolvedValue(ownerUser);
+    const res = await request(app).get('/api/memories/asset-ids').set('x-clerk-user-id', 'clerk-test');
+    expect(res.status).toBe(400);
+  });
+
+  it('403 for a non-member', async () => {
+    prisma.user.findUnique.mockResolvedValue(otherUser);
+    prisma.family.findUnique.mockResolvedValue(mockFamily);
+    const res = await request(app).get('/api/memories/asset-ids?familyId=family1').set('x-clerk-user-id', 'clerk-test');
+    expect(res.status).toBe(403);
+  });
+});
+
 // ─── GET /api/memories ────────────────────────────────────────────────────────
 
 describe('GET /api/memories', () => {

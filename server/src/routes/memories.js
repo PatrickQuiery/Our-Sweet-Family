@@ -221,6 +221,30 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/memories/asset-ids?familyId — the camera-roll asset ids already
+// uploaded for this family, so the mobile picker can flag "already added" items.
+// Defined before '/:id' so it isn't captured as an id.
+router.get('/asset-ids', authenticate, async (req, res) => {
+  const { familyId } = req.query;
+  if (!familyId) return res.status(400).json({ error: 'familyId required' });
+  try {
+    const family = await prisma.family.findUnique({ where: { id: familyId }, include: { members: true } });
+    if (!family) return res.status(404).json({ error: 'Family not found' });
+    const isOwner = isParent(family, req.user.id);
+    const membership = family.members.find((m) => m.userId === req.user.id);
+    if (!isOwner && !membership) return res.status(403).json({ error: 'Access denied' });
+
+    const rows = await prisma.memory.findMany({
+      where: { familyId, clientAssetId: { not: null } },
+      select: { clientAssetId: true },
+    });
+    res.json({ assetIds: rows.map((r) => r.clientAssetId) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Download permission is a ROLE decision, not a plan one: the Parents (owner /
 // full-access) plus any member granted share/download. Everyone can download —
 // the family's PLAN only decides the quality of the file that's stored/served

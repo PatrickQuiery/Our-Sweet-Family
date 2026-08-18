@@ -56,10 +56,18 @@ export async function getMemories(api: Api, q: MemoriesQuery): Promise<Memory[]>
   return data.memories ?? [];
 }
 
+/** Camera-roll asset ids already uploaded for this family (for "already added" flags). */
+export async function getUploadedAssetIds(api: Api, familyId: string): Promise<string[]> {
+  const data = await api.get<{ assetIds: string[] }>(`/memories/asset-ids?familyId=${encodeURIComponent(familyId)}`);
+  return data.assetIds ?? [];
+}
+
 export interface UploadAsset {
   uri: string;
   name: string;
   mimeType: string;
+  /** Camera-roll asset id — sent as clientAssetId so the server can dedupe re-picks. */
+  assetId?: string;
 }
 
 export interface UploadInput {
@@ -80,6 +88,7 @@ export function buildUploadForm(input: UploadInput): FormData {
   form.append('familyId', input.familyId);
   form.append('childIds', JSON.stringify(input.childIds));
   if (input.caption) form.append('caption', input.caption);
+  if (input.asset.assetId) form.append('clientAssetId', input.asset.assetId);
   return form;
 }
 
