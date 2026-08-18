@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeProvider';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 // A colorful Sunrise wash behind a large brand logo, shown while fonts/auth load.
 const LIGHT = ['#ffe7b8', '#ffc2dd', '#c3dbff'] as const;
@@ -12,15 +13,22 @@ export function AnimatedSplash() {
   const isDark = scheme === 'dark';
   const { width } = useWindowDimensions();
 
+  const reduced = useReducedMotion();
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.88)).current;
 
   useEffect(() => {
+    if (reduced) {
+      // A11Y-3: appear instantly, no spring/zoom.
+      opacity.setValue(1);
+      scale.setValue(1);
+      return;
+    }
     Animated.parallel([
       Animated.timing(opacity, { toValue: 1, duration: 520, useNativeDriver: true }),
       Animated.spring(scale, { toValue: 1, friction: 6, tension: 42, useNativeDriver: true }),
     ]).start();
-  }, [opacity, scale]);
+  }, [opacity, scale, reduced]);
 
   // The colored emblem reads on the light wash; on dark we use the white version.
   const logo = isDark

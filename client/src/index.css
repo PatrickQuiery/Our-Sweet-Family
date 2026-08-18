@@ -26,6 +26,12 @@
   --app-gradient: linear-gradient(135deg, #fdeede 0%, #fbe4ef 52%, #e8eefb 100%);
   --shadow-soft: 0 12px 40px -12px rgba(35, 42, 69, 0.18);
   --shadow-glow: 0 10px 30px -8px rgba(239, 63, 116, 0.35);
+  /* Motion tokens (SYS-4) — one source for durations + easings. */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 400ms;
   color-scheme: light;
 }
 
@@ -114,6 +120,36 @@
   body {
     @apply bg-paper text-ink;
     transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Keyboard focus ring on every interactive element (CC-6 / A11Y-1). Mouse
+     clicks don't trigger :focus-visible, so this stays invisible to pointer
+     users while giving keyboard users a clear, on-brand ring everywhere. */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [tabindex]:focus-visible,
+  [role='button']:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px rgb(var(--bg)),
+      0 0 0 4px rgb(var(--primary));
+    border-radius: 0.5rem;
+  }
+}
+
+/* Respect Reduce Motion globally (CC-7 / A11Y-3): near-instant, no large
+   translate/scale animation, but keep opacity so state changes still read. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

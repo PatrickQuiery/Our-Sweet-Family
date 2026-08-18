@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, FlatList, Modal, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { useApi } from '../../src/hooks/useApi';
@@ -10,6 +11,7 @@ import { getReels, REEL_TYPE_LABELS } from '../../src/lib/reels';
 import { AuthedImage } from '../../src/components/AuthedImage';
 import { Card, Chip, EmptyState, Screen, Skeleton, Text, Touchable } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
+import { useReducedMotion } from '../../src/hooks/useReducedMotion';
 import { ApiError } from '../../src/lib/api';
 import { API_ROOT } from '../../src/lib/config';
 import type { Reel, ReelType, Memory } from '../../src/lib/types';
@@ -161,12 +163,16 @@ export default function Reels() {
 }
 
 /** A photo that slowly zooms + pans (Ken Burns) over its time on screen. */
-function KenBurnsImage({ path, width, height, seed }: { path: string; width: number; height: number; seed: number }) {
+function KenBurnsImage({ path, width, height, seed, reduced }: { path: string; width: number; height: number; seed: number; reduced?: boolean }) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
+    if (reduced) return; // A11Y-3: hold a still frame instead of panning/zooming
     v.setValue(0);
     Animated.timing(v, { toValue: 1, duration: PHOTO_MS + FADE_MS, easing: Easing.linear, useNativeDriver: true }).start();
-  }, [path, v]);
+  }, [path, v, reduced]);
+  if (reduced) {
+    return <AuthedImage path={path} style={{ width, height }} contentFit="cover" />;
+  }
   const dirX = seed % 2 === 0 ? 1 : -1;
   const dirY = seed % 3 === 0 ? 1 : -1;
   const scale = v.interpolate({ inputRange: [0, 1], outputRange: [1.03, 1.13] });
@@ -187,6 +193,7 @@ function KenBurnsImage({ path, width, height, seed }: { path: string; width: num
 function ReelViewer({ reel, onClose }: { reel: Reel | null; onClose: () => void }) {
   const { width, height } = useWindowDimensions();
   const { getToken } = useAuth();
+  const reduced = useReducedMotion();
   const [token, setToken] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -223,6 +230,10 @@ function ReelViewer({ reel, onClose }: { reel: Reel | null; onClose: () => void 
   useEffect(() => {
     setPrevMemory(memories[prevIndexRef.current]);
     prevIndexRef.current = index;
+    if (reduced) {
+      fade.setValue(1); // A11Y-3: cut instead of cross-fade
+      return;
+    }
     fade.setValue(0);
     Animated.timing(fade, { toValue: 1, duration: FADE_MS, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -274,6 +285,8 @@ function ReelViewer({ reel, onClose }: { reel: Reel | null; onClose: () => void 
 
   return (
     <Modal visible={reel !== null} animationType="fade" onRequestClose={onClose}>
+      {/* Immersive black viewer — force light status-bar glyphs (M16). */}
+      <StatusBar style="light" animated />
       <View style={{ flex: 1, backgroundColor: '#000' }}>
         {/* under-layer: a still of the previous slide, so the new one cross-fades over it */}
         {prevMemory && stillPath(prevMemory) ? (
@@ -288,7 +301,7 @@ function ReelViewer({ reel, onClose }: { reel: Reel | null; onClose: () => void 
             {isVideo ? (
               <VideoView player={player} style={{ width, height }} contentFit="cover" nativeControls={false} />
             ) : (
-              <KenBurnsImage path={stillPath(current) as string} width={width} height={height} seed={index} />
+              <KenBurnsImage path={stillPath(current) as string} width={width} height={height} seed={index} reduced={reduced} />
             )}
           </Animated.View>
         ) : null}
