@@ -108,7 +108,7 @@ export const lightColors: AppColors = {
   fillPressed: gray[200],
   text: '#232a45', // ink
   textSecondary: '#5a627e',
-  textMuted: '#8890a8',
+  textMuted: '#757d99', // darkened from #8890a8 for AA on light (mirrors /design-tokens.mjs)
   border: gray[200],
   borderSubtle: gray[100],
   danger: '#dc2626',
@@ -134,7 +134,7 @@ export const darkColors: AppColors = {
   fillPressed: '#343a58',
   text: '#f3f2f8',
   textSecondary: '#bfc3d8',
-  textMuted: '#8890a8',
+  textMuted: '#9aa1bd', // lifted from #8890a8 for AA on dark (mirrors /design-tokens.mjs)
   border: '#343a58',
   borderSubtle: '#252a42',
   danger: '#f87171',

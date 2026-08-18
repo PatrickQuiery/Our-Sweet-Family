@@ -1,5 +1,61 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&display=swap');
 
+/* ── Design tokens (single source: /design-tokens.mjs) ───────────────────────
+   Semantic roles as `r g b` channels so Tailwind's /opacity modifiers work
+   (text-ink/70, bg-surface/55, …). Three theme states:
+   • bare :root                → light (default)
+   • prefers-color-scheme:dark → dark, unless an explicit .light class wins
+   • .dark / .light classes    → explicit toggle overrides the OS
+*/
+:root {
+  --bg: 253 252 255;
+  --surface: 255 255 255;
+  --surface-2: 247 244 250;
+  --ink: 35 42 69;
+  --ink-soft: 90 98 126;
+  --ink-muted: 117 125 153;
+  --border: 229 231 235;
+  --border-subtle: 240 237 243;
+  --primary: 255 92 138;
+  --primary-strong: 239 63 116;
+  --danger: 220 38 38;
+  /* Composite (glass / gradient / shadow) tokens */
+  --card-bg: rgba(255, 255, 255, 0.55);
+  --card-bg-strong: rgba(255, 255, 255, 0.7);
+  --card-brd: rgba(255, 255, 255, 0.6);
+  --app-gradient: linear-gradient(135deg, #fdeede 0%, #fbe4ef 52%, #e8eefb 100%);
+  --shadow-soft: 0 12px 40px -12px rgba(35, 42, 69, 0.18);
+  --shadow-glow: 0 10px 30px -8px rgba(239, 63, 116, 0.35);
+  color-scheme: light;
+}
+
+/* NOTE: OS-follow (prefers-color-scheme) is intentionally NOT enabled yet — it
+   turns on in the dark-mode phase once every page's hardcoded whites/gradients
+   are tokenized, so dark-OS users never see a half-migrated app. Until then the
+   default is light for everyone; `.dark` only applies via the (upcoming) toggle.
+   When ready, re-add:  @media (prefers-color-scheme: dark){ :root:not(.light){ …dark tokens… } }  */
+
+:root.dark {
+  --bg: 21 23 38;
+  --surface: 30 33 54;
+  --surface-2: 38 42 66;
+  --ink: 243 242 248;
+  --ink-soft: 191 195 216;
+  --ink-muted: 154 161 189;
+  --border: 52 58 88;
+  --border-subtle: 37 42 66;
+  --primary: 255 111 156;
+  --primary-strong: 255 92 138;
+  --danger: 248 113 113;
+  --card-bg: rgba(30, 33, 54, 0.55);
+  --card-bg-strong: rgba(30, 33, 54, 0.72);
+  --card-brd: rgba(255, 255, 255, 0.1);
+  --app-gradient: linear-gradient(135deg, #1b1626 0%, #20182e 52%, #131a2e 100%);
+  --shadow-soft: 0 14px 40px -12px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 10px 30px -8px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,6 +67,7 @@
 
   body {
     @apply bg-paper text-ink;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
@@ -26,7 +83,7 @@
   }
 
   .btn-secondary {
-    @apply bg-white hover:bg-brand-50 text-ink font-semibold px-4 py-2 rounded-full border border-brand-100 transition-colors duration-150;
+    @apply bg-surface hover:bg-brand-50 text-ink font-semibold px-4 py-2 rounded-full border border-brand-100 transition-colors duration-150;
   }
 
   .btn-ghost {
@@ -34,15 +91,19 @@
   }
 
   .input {
-    @apply w-full px-3 py-2 border border-ink-muted/30 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent text-sm;
+    @apply w-full px-3 py-2 border border-ink-muted/30 rounded-xl bg-surface focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent text-sm;
   }
 
   .card {
-    @apply bg-white/55 backdrop-blur-md rounded-2xl shadow-soft border border-white/60;
+    @apply backdrop-blur-md rounded-2xl shadow-soft;
+    background: var(--card-bg);
+    border: 1px solid var(--card-brd);
   }
 
   .card-glass {
-    @apply bg-white/70 backdrop-blur-md rounded-2xl shadow-soft border border-white/60;
+    @apply backdrop-blur-md rounded-2xl shadow-soft;
+    background: var(--card-bg-strong);
+    border: 1px solid var(--card-brd);
   }
 
   .badge {
