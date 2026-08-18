@@ -56,7 +56,8 @@
         "expo-image-picker",
         {
           "photosPermission": "Allow Our Sweet Family to access your photos to share memories.",
-          "cameraPermission": "Allow Our Sweet Family to use the camera to capture memories."
+          "cameraPermission": "Allow Our Sweet Family to use the camera to capture memories.",
+          "microphonePermission": "Allow Our Sweet Family to use the microphone when recording videos."
         }
       ],
       "expo-font",
