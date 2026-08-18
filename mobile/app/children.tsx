@@ -263,7 +263,7 @@ function FormBody({
         <Chip label="Boy" selected={gender === 'male'} onPress={() => setGender(gender === 'male' ? null : 'male')} />
         <Chip label="Girl" selected={gender === 'female'} onPress={() => setGender(gender === 'female' ? null : 'female')} />
       </View>
-      <DatePickerField value={dob} onChange={setDob} placeholder="Date of birth" />
+      <DatePickerField value={dob} onChange={setDob} placeholder="Date of birth" title="Date of birth" />
       {err ? (
         <Text variant="caption" color="danger">
           {err}

@@ -234,7 +234,7 @@ export default function MemoryDetail() {
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' }}>
             {canEditDate ? (
-              <DatePickerField value={new Date(memory.capturedAt ?? memory.createdAt)} onChange={onDateChange} />
+              <DatePickerField value={new Date(memory.capturedAt ?? memory.createdAt)} onChange={onDateChange} placeholder="Photo date" title="Photo date" />
             ) : (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Ionicons name="calendar-outline" size={15} color={colors.textMuted} />

@@ -222,7 +222,7 @@ function AddMilestoneModal({ visible, onClose, onSave }: { visible: boolean; onC
         <Input placeholder="Value (e.g. Crawled, 30)" value={value} onChangeText={setValue} />
         <Input placeholder="Unit (optional, e.g. in, lb)" value={unit} onChangeText={setUnit} autoCapitalize="none" />
         <Input placeholder="Note (optional)" value={note} onChangeText={setNote} multiline style={{ minHeight: 48, textAlignVertical: 'top' }} />
-        <DatePickerField value={date} onChange={setDate} placeholder="Date" />
+        <DatePickerField value={date} onChange={setDate} placeholder="Date" title="Milestone date" />
         {err ? (
           <Text variant="caption" color="danger">
             {err}

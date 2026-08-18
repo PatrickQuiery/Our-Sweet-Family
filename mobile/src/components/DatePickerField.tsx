@@ -23,13 +23,15 @@ interface Props {
   value: Date | null;
   onChange: (d: Date) => void;
   placeholder?: string;
+  /** Bottom-sheet heading — this picker is reused for birthdays, photo dates, etc. */
+  title?: string;
 }
 
 /**
  * A JS-only date picker (no native module → no dev-client rebuild). Tapping the
- * field opens a bottom sheet with Month/Day/Year columns. Suited to birthdays.
+ * field opens a bottom sheet with Month/Day/Year columns.
  */
-export function DatePickerField({ value, onChange, placeholder = 'Select date' }: Props) {
+export function DatePickerField({ value, onChange, placeholder = 'Select date', title = 'Select date' }: Props) {
   const { colors, spacing, radius } = useTheme();
   const [open, setOpen] = useState(false);
   const now = new Date();
@@ -112,7 +114,7 @@ export function DatePickerField({ value, onChange, placeholder = 'Select date' }
           }}
         >
           <Text variant="heading" center>
-            Date of birth
+            {title}
           </Text>
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.sm }}>
             {renderColumn(monthItems, month, setMonth, 92)}

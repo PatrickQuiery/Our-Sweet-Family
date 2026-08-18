@@ -58,9 +58,18 @@ function Row({ item, meId }) {
         <p className="text-xs text-ink-muted mt-0.5">{formatDistanceToNowStrict(new Date(item.createdAt), { addSuffix: true })}</p>
       </div>
 
-      {/* thumbnail */}
+      {/* thumbnail — videos only ever use their poster thumbnail (never the raw
+          video URL, which would render broken through <img>); no poster → dark tile */}
       <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-ink/5 flex-shrink-0">
-        <AuthedImage src={item.memory.thumbnailUrl ?? item.memory.fileUrl} className="w-full h-full object-cover" alt="" />
+        {item.memory.fileType === 'video' ? (
+          item.memory.thumbnailUrl ? (
+            <AuthedImage src={item.memory.thumbnailUrl} className="w-full h-full object-cover" alt="" />
+          ) : (
+            <div className="w-full h-full bg-ink/80" />
+          )
+        ) : (
+          <AuthedImage src={item.memory.thumbnailUrl ?? item.memory.fileUrl} className="w-full h-full object-cover" alt="" />
+        )}
         {item.memory.fileType === 'video' ? (
           <span className="absolute inset-0 flex items-center justify-center">
             <svg className="w-5 h-5 text-white drop-shadow" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
