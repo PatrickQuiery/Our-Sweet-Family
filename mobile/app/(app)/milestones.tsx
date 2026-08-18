@@ -10,6 +10,7 @@ import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { DatePickerField } from '../../src/components/DatePickerField';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { resolveChildColors } from '../../src/lib/childColor';
+import { useTabBarClearance } from '../../src/lib/layout';
 import { ApiError } from '../../src/lib/api';
 import type { Child, Milestone } from '../../src/lib/types';
 
@@ -25,6 +26,7 @@ export default function Milestones() {
   const api = useApi();
   const { activeFamily, canManage } = useFamily();
   const { colors, spacing } = useTheme();
+  const tabClear = useTabBarClearance();
   const children = activeFamily?.children ?? [];
   const childColors = resolveChildColors(children);
   const manage = canManage();
@@ -117,7 +119,7 @@ export default function Milestones() {
       ) : gate ? (
         <EmptyState icon="lock-closed-outline" title="Included in a plan" subtitle={gate} />
       ) : (
-        <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: 110, flexGrow: 1 }}>
+        <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: tabClear, flexGrow: 1 }}>
           {milestones.length === 0 ? (
             <View style={{ paddingVertical: spacing.xxl }}>
               <EmptyState icon="ribbon-outline" title="No milestones yet" subtitle={manage ? 'Record a first, a height, a special moment.' : 'A parent can add milestones here.'} />

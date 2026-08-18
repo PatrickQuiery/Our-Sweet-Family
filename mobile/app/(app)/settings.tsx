@@ -11,6 +11,7 @@ import { useApi } from '../../src/hooks/useApi';
 import { getFamilyUsage, updateFamilySettings } from '../../src/lib/family';
 import { getReferral, type ReferralInfo } from '../../src/lib/referrals';
 import { clearFeedCache } from '../../src/lib/feedCache';
+import { useTabBarClearance } from '../../src/lib/layout';
 import { formatBytes, PLAN_LABELS } from '../../src/lib/format';
 import type { FamilyUsage } from '../../src/lib/types';
 import type { ThemePreference } from '../../src/theme/ThemeProvider';
@@ -41,6 +42,7 @@ export default function Settings() {
   const router = useRouter();
   const api = useApi();
   const { colors, spacing, radius, scheme, preference, setPreference } = useTheme();
+  const tabClear = useTabBarClearance();
   const { families, activeFamily, activeFamilyId, setActiveFamilyId, refresh } = useFamily();
   const email = user?.primaryEmailAddress?.emailAddress ?? '';
   const initial = (user?.firstName?.[0] ?? email[0] ?? '?').toUpperCase();
@@ -91,7 +93,7 @@ export default function Settings() {
   return (
     <Screen style={{ backgroundColor: 'transparent' }}>
       <SunriseHeader title="Settings" />
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, paddingBottom: tabClear }} showsVerticalScrollIndicator={false}>
         {/* Account */}
         <Card style={{ padding: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
           <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>

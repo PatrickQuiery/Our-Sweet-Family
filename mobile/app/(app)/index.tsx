@@ -10,6 +10,7 @@ import { Button, Chip, EmptyState, Skeleton, Text } from '../../src/components/u
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { buildTimeline } from '../../src/lib/mosaic';
 import { resolveChildColors } from '../../src/lib/childColor';
+import { useTabBarClearance } from '../../src/lib/layout';
 
 const GAP = 6;
 
@@ -20,6 +21,7 @@ export default function Timeline() {
   const [range, setRange] = useState<TimeRange | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const { colors, spacing, radius, fonts } = useTheme();
+  const tabClear = useTabBarClearance();
   const router = useRouter();
   const { width: screenW } = useWindowDimensions();
   const contentW = screenW - spacing.lg * 2;
@@ -170,7 +172,7 @@ export default function Timeline() {
       ) : (
         <SectionList
           style={{ backgroundColor: 'transparent' }}
-          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.xs, paddingBottom: 110, flexGrow: 1 }}
+          contentContainerStyle={{ paddingLeft: spacing.lg, paddingRight: (memories.length > 0 || filtering) ? 40 : spacing.lg, paddingTop: spacing.xs, paddingBottom: tabClear, flexGrow: 1 }}
           sections={sections}
           keyExtractor={(row) => row.key}
           renderItem={({ item: row }) => (

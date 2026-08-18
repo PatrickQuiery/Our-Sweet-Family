@@ -7,6 +7,7 @@ import { relativeTime } from '../../src/lib/activity';
 import { AuthedImage } from '../../src/components/AuthedImage';
 import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { EmptyState, Skeleton, Text, Touchable } from '../../src/components/ui';
+import { useTabBarClearance } from '../../src/lib/layout';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useFamily } from '../../src/context/FamilyProvider';
 import type { ActivityItem } from '../../src/lib/types';
@@ -30,6 +31,7 @@ function dayBucket(iso: string, now: number): string {
 
 export default function Activity() {
   const { colors, spacing, radius, fonts } = useTheme();
+  const tabClear = useTabBarClearance();
   const router = useRouter();
   const { me } = useFamily();
   const { items, loading, refreshing, error, refresh, loadMore } = useActivity();
@@ -133,7 +135,7 @@ export default function Activity() {
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: 110, flexGrow: 1 }}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: tabClear, flexGrow: 1 }}
           renderItem={({ item }) => renderRow(item)}
           renderSectionHeader={({ section }) => (
             <View style={{ backgroundColor: 'transparent', paddingTop: spacing.md, paddingBottom: spacing.xs }}>
