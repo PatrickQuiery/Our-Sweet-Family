@@ -60,6 +60,14 @@
           "microphonePermission": "Allow Our Sweet Family to use the microphone when recording videos."
         }
       ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Our Sweet Family to access your photos so you can pick memories to share.",
+          "savePhotosPermission": "Allow Our Sweet Family to save memories to your photos.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ],
       "expo-font",
       [
         "expo-splash-screen",

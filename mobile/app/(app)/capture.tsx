@@ -10,6 +10,7 @@ import { useMemories } from '../../src/hooks/useMemories';
 import { getUploadedAssetIds, uploadMemory } from '../../src/lib/memories';
 import { resolveChildColors } from '../../src/lib/childColor';
 import { SunriseHeader } from '../../src/components/SunriseHeader';
+import { MediaPicker, type PickedAsset } from '../../src/components/MediaPicker';
 import { Button, Chip, Screen, Text } from '../../src/components/ui';
 import { useTheme } from '../../src/theme/ThemeProvider';
 
@@ -34,6 +35,19 @@ export default function Capture() {
   const { family, refresh } = useMemories();
   const [uploadedIds, setUploadedIds] = useState<Set<string>>(new Set());
   const [limitedAccess, setLimitedAccess] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Append picks from the in-app gallery, de-duping against what's already staged.
+  const onPicked = (picked: PickedAsset[]) => {
+    setPickerOpen(false);
+    setItems((prev) => {
+      const have = new Set(prev.map((i) => i.assetId).filter(Boolean));
+      const additions = picked
+        .filter((a) => !have.has(a.id))
+        .map<Item>((a) => ({ id: nextId(), uri: a.uri, name: a.name, mimeType: a.mimeType, isVideo: a.isVideo, assetId: a.id }));
+      return [...prev, ...additions];
+    });
+  };
 
   // Refresh the set of already-uploaded camera-roll ids whenever Capture opens,
   // and note if photo access is "Limited" (iOS won't give us asset ids then, so
@@ -204,7 +218,7 @@ export default function Capture() {
           {items.length === 0 ? (
             <>
               <Pressable
-                onPress={pickLibrary}
+                onPress={() => setPickerOpen(true)}
                 style={{
                   height: 220, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.border, borderStyle: 'dashed',
                   backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
@@ -214,9 +228,12 @@ export default function Capture() {
                   <Ionicons name="images-outline" size={30} color={colors.primary} />
                 </View>
                 <Text variant="heading">Add photos &amp; videos</Text>
-                <Text variant="caption" color="textSecondary">Pick as many as you like from your library</Text>
+                <Text variant="caption" color="textSecondary">Already-added ones are marked as you browse</Text>
               </Pressable>
               <Button variant="secondary" title="Take a photo or video" icon={<Ionicons name="camera-outline" size={18} color={colors.text} />} onPress={pickCamera} />
+              <Pressable onPress={pickLibrary} style={{ alignSelf: 'center', paddingVertical: spacing.xs }}>
+                <Text variant="caption" color="textMuted">Use the system picker instead</Text>
+              </Pressable>
             </>
           ) : (
             <>
@@ -271,7 +288,7 @@ export default function Capture() {
                 })}
                 {!uploading ? (
                   <Pressable
-                    onPress={pickLibrary}
+                    onPress={() => setPickerOpen(true)}
                     style={{ width: cell, height: cell, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.border, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                   >
                     <Ionicons name="add" size={26} color={colors.textMuted} />
@@ -334,6 +351,9 @@ export default function Capture() {
           </View>
         ) : null}
       </KeyboardAvoidingView>
+
+      {/* In-app camera-roll picker (badges already-added items as you browse) */}
+      <MediaPicker visible={pickerOpen} uploadedIds={uploadedIds} onClose={() => setPickerOpen(false)} onDone={onPicked} />
 
       {/* Per-photo override sheet */}
       <Modal visible={!!editing} transparent animationType="slide" onRequestClose={() => setEditingId(null)}>
