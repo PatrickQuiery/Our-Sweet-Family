@@ -3,7 +3,7 @@
     "name": "Our Sweet Family",
     "slug": "our-sweet-family",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "oursweetfamily",
     "userInterfaceStyle": "automatic",
@@ -19,7 +19,7 @@
     "android": {
       "package": "com.oursweetfamily.app",
       "adaptiveIcon": {
-        "backgroundColor": "#ff5c8a",
+        "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -72,13 +72,13 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/logo-mark.png",
-          "imageWidth": 320,
+          "image": "./assets/splash-emblem.png",
+          "imageWidth": 240,
           "resizeMode": "contain",
-          "backgroundColor": "#ffd9e6",
+          "backgroundColor": "#ffdcea",
           "dark": {
-            "image": "./assets/logo-splash-white.png",
-            "imageWidth": 320,
+            "image": "./assets/splash-emblem-white.png",
+            "imageWidth": 240,
             "backgroundColor": "#1b2540"
           }
         }

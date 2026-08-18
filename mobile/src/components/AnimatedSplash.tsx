@@ -22,11 +22,11 @@ export function AnimatedSplash() {
     ]).start();
   }, [opacity, scale]);
 
-  // The colored mark reads on the light wash; on dark we use the white lockup.
+  // The colored emblem reads on the light wash; on dark we use the white version.
   const logo = isDark
-    ? require('../../assets/logo-splash-white.png')
-    : require('../../assets/logo-mark.png');
-  const logoW = Math.min(360, width * 0.8);
+    ? require('../../assets/splash-emblem-white.png')
+    : require('../../assets/splash-emblem.png');
+  const logoW = Math.min(320, width * 0.66);
 
   return (
     <LinearGradient
@@ -38,7 +38,7 @@ export function AnimatedSplash() {
       <Animated.Image
         source={logo}
         resizeMode="contain"
-        style={{ width: logoW, height: logoW * 0.64, opacity, transform: [{ scale }] }}
+        style={{ width: logoW, height: logoW * 0.785, opacity, transform: [{ scale }] }}
       />
     </LinearGradient>
   );
