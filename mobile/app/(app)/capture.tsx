@@ -82,7 +82,7 @@ export default function Capture() {
 
   const children = family?.children ?? [];
   const childColors = useMemo(() => resolveChildColors(children), [children]);
-  const col = 3;
+  const col = width > 700 ? 6 : 3;
   const gap = spacing.sm;
   const cell = (width - spacing.lg * 2 - gap * (col - 1)) / col;
 

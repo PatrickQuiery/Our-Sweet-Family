@@ -36,6 +36,8 @@ interface LayoutOpts {
   width: number;
   /** Gap between tiles in a row (and between rows). */
   gap: number;
+  /** Wide (landscape / tablet) layouts pack more tiles per row so they aren't huge. */
+  wide?: boolean;
 }
 
 // Row templates: column weight arrays + a height factor (× content width).
@@ -53,23 +55,35 @@ const TEMPLATES: Template[] = [
   { cols: [1, 2], h: 0.52 }, // tall left + big right
 ];
 
-function fallbackTemplate(remaining: number): Template {
-  if (remaining <= 1) return { cols: [1], h: 0.66 };
-  if (remaining === 2) return { cols: [1, 1], h: 0.5 };
-  return { cols: [1, 1, 1], h: 0.36 };
+// Denser rhythm for wide (landscape / tablet) canvases — heights are a fraction
+// of the (large) width, so more tiles per row keeps each one a sensible size.
+const WIDE_TEMPLATES: Template[] = [
+  { cols: [2, 1, 1], h: 0.3 },
+  { cols: [1, 1, 1], h: 0.3 },
+  { cols: [1, 1, 1, 1], h: 0.24 },
+  { cols: [1, 2, 1], h: 0.3 },
+  { cols: [1, 1], h: 0.4 },
+];
+
+function fallbackTemplate(remaining: number, wide: boolean): Template {
+  if (remaining <= 1) return { cols: [1], h: wide ? 0.42 : 0.66 };
+  if (remaining === 2) return { cols: [1, 1], h: wide ? 0.4 : 0.5 };
+  if (wide && remaining >= 4) return { cols: [1, 1, 1, 1], h: 0.24 };
+  return { cols: [1, 1, 1], h: wide ? 0.3 : 0.36 };
 }
 
 /** Pack an ordered list of memories into mosaic rows. `seed` varies the opening shape per section. */
 export function buildRows(memories: Memory[], opts: LayoutOpts, seed = 0): MosaicRow[] {
-  const { width, gap } = opts;
+  const { width, gap, wide = false } = opts;
+  const templates = wide ? WIDE_TEMPLATES : TEMPLATES;
   const rows: MosaicRow[] = [];
   let i = 0;
   let t = seed;
 
   while (i < memories.length) {
     const remaining = memories.length - i;
-    let template = TEMPLATES[t % TEMPLATES.length];
-    if (template.cols.length > remaining) template = fallbackTemplate(remaining);
+    let template = templates[t % templates.length];
+    if (template.cols.length > remaining) template = fallbackTemplate(remaining, wide);
 
     const cols = template.cols;
     const sum = cols.reduce((a, b) => a + b, 0);

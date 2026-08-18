@@ -82,7 +82,7 @@ export function MediaPicker({
   const { colors, spacing, radius, fonts } = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const cols = 4;
+  const cols = width > 700 ? 7 : 4;
   const gap = 2;
   const cell = (width - gap * (cols - 1)) / cols;
 

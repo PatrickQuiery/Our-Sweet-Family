@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, TextInput, useWindowDimensions, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
@@ -69,6 +69,8 @@ export default function MemoryDetail() {
   const router = useRouter();
   const { getToken } = useAuth();
   const { colors, spacing, radius, fonts } = useTheme();
+  const { width } = useWindowDimensions();
+  const wide = width > 700; // landscape / tablet: media beside the details
   const { me, canManage, activeFamily } = useFamily();
   const [memory, setMemory] = useState<Memory | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -189,8 +191,21 @@ export default function MemoryDetail() {
     ]);
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.bg }}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, flexDirection: wide ? 'row' : 'column', backgroundColor: colors.bg }}>
+      {wide ? (
+        <View style={{ flex: 1.1, padding: spacing.lg, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.surfaceAlt, aspectRatio: 1, maxHeight: '96%', maxWidth: '100%' }}>
+            {isVideo ? (
+              <VideoView player={player} style={{ flex: 1, aspectRatio: 1 }} nativeControls />
+            ) : (
+              <AuthedImage path={memory.fileUrl} style={{ flex: 1, aspectRatio: 1 }} contentFit="contain" />
+            )}
+          </View>
+        </View>
+      ) : null}
+      <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }} keyboardShouldPersistTaps="handled">
+        {wide ? null : (
         <View style={{ borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.surfaceAlt }}>
           {isVideo ? (
             <VideoView player={player} style={{ width: '100%', aspectRatio: 1 }} nativeControls />
@@ -198,6 +213,7 @@ export default function MemoryDetail() {
             <AuthedImage path={memory.fileUrl} style={{ width: '100%', aspectRatio: 1 }} contentFit="contain" />
           )}
         </View>
+        )}
 
         {/* Action bar */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
@@ -307,6 +323,7 @@ export default function MemoryDetail() {
             <Ionicons name="arrow-up" size={20} color={colors.onPrimary} />
           </View>
         </Touchable>
+      </View>
       </View>
     </KeyboardAvoidingView>
   );

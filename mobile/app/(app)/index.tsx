@@ -53,7 +53,8 @@ export default function Timeline() {
     }, [refresh]),
   );
 
-  const sections = useMemo(() => buildTimeline(memories, { width: contentW, gap: GAP }), [memories, contentW]);
+  const wide = contentW > 700; // landscape / tablet: pack a denser mosaic
+  const sections = useMemo(() => buildTimeline(memories, { width: contentW, gap: GAP, wide }), [memories, contentW, wide]);
 
   // Track which mosaic rows are on screen so video tiles autoplay while scrolled
   // into view (and pause/unmount when they leave).
