@@ -57,8 +57,9 @@ export default function AppTabs() {
       screenOptions={{
         sceneStyle: { backgroundColor: 'transparent' },
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 11 },
+        // textSecondary (not textMuted) so inactive labels stay legible over the glass.
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarLabelStyle: { fontFamily: fonts.semibold, fontSize: 11 },
         // Floating frosted-glass bar over the content.
         tabBarStyle: {
           position: 'absolute',
@@ -68,8 +69,9 @@ export default function AppTabs() {
         },
         tabBarBackground: () => (
           <View style={StyleSheet.absoluteFill}>
-            <BlurView intensity={60} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(21,23,38,0.28)' : 'rgba(255,255,255,0.28)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.65)' }]} />
+            <BlurView intensity={80} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+            {/* Stronger wash so labels have real contrast against the busy photo feed behind. */}
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(21,23,38,0.55)' : 'rgba(255,255,255,0.62)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.7)' }]} />
           </View>
         ),
         headerShadowVisible: false,
