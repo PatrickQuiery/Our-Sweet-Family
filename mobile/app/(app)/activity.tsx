@@ -7,7 +7,7 @@ import { relativeTime } from '../../src/lib/activity';
 import { AuthedImage } from '../../src/components/AuthedImage';
 import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { EmptyState, Skeleton, Text, Touchable } from '../../src/components/ui';
-import { useTabBarClearance } from '../../src/lib/layout';
+import { useTabBarClearance, wideColumn } from '../../src/lib/layout';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useFamily } from '../../src/context/FamilyProvider';
 import type { ActivityItem } from '../../src/lib/types';
@@ -135,7 +135,7 @@ export default function Activity() {
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: tabClear, flexGrow: 1 }}
+          contentContainerStyle={{ ...wideColumn, paddingHorizontal: spacing.lg, paddingBottom: tabClear, flexGrow: 1 }}
           renderItem={({ item }) => renderRow(item)}
           renderSectionHeader={({ section }) => (
             <View style={{ backgroundColor: 'transparent', paddingTop: spacing.md, paddingBottom: spacing.xs }}>

@@ -7,6 +7,7 @@ import { getMembers, inviteMember, removeMember } from '../src/lib/members';
 import { getInvitations, revokeInvitation, PERMISSION_LABELS } from '../src/lib/invitations';
 import { Button, Card, Chip, Input, Loading, Screen, Text, Touchable, useToast } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeProvider';
+import { wideColumn } from '../src/lib/layout';
 import type { Invitation, Member, Permission } from '../src/lib/types';
 
 const PERMISSION_OPTIONS: Permission[] = ['view_only', 'upload', 'share_download', 'all'];
@@ -126,7 +127,7 @@ export default function Members() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ ...wideColumn, padding: spacing.lg, gap: spacing.lg }} keyboardShouldPersistTaps="handled">
         {/* Invite */}
         <Card style={{ padding: spacing.lg, gap: spacing.md }}>
           <Text variant="heading">Invite a loved one</Text>

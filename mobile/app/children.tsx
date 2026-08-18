@@ -10,6 +10,7 @@ import { formatAge } from '../src/lib/age';
 import { AuthedImage } from '../src/components/AuthedImage';
 import { DatePickerField } from '../src/components/DatePickerField';
 import { BottomSheet, Button, Card, Chip, EmptyState, Input, Screen, Text, Touchable, useToast } from '../src/components/ui';
+import { wideColumn } from '../src/lib/layout';
 import { useTheme } from '../src/theme/ThemeProvider';
 import type { Child, Gender } from '../src/lib/types';
 
@@ -93,7 +94,7 @@ export default function Children() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
+      <ScrollView contentContainerStyle={{ ...wideColumn, padding: spacing.lg, gap: spacing.md }}>
         {children.length === 0 ? (
           <View style={{ paddingVertical: spacing.xxl }}>
             <EmptyState icon="happy-outline" title="No children yet" subtitle={manage ? 'Add a child to start tagging memories.' : 'A parent can add children here.'} />
