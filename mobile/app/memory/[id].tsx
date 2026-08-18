@@ -239,7 +239,7 @@ export default function MemoryDetail() {
 
         {/* Action bar */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
-          <Touchable onPress={toggleHeart} pressedScale={0.9} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Touchable onPress={toggleHeart} pressedScale={0.9} accessibilityRole="button" accessibilityLabel={hearted ? 'Remove love' : 'Love this memory'} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name={hearted ? 'heart' : 'heart-outline'} size={26} color={hearted ? colors.primary : colors.text} />
             {heartCount > 0 ? <Text variant="bodyMedium">{heartCount}</Text> : null}
           </Touchable>
@@ -340,7 +340,7 @@ export default function MemoryDetail() {
           returnKeyType="send"
           onSubmitEditing={submitComment}
         />
-        <Touchable onPress={submitComment} pressedScale={0.9} style={{ opacity: commentText.trim() && !busy ? 1 : 0.4 }}>
+        <Touchable onPress={submitComment} pressedScale={0.9} accessibilityRole="button" accessibilityLabel="Post comment" style={{ opacity: commentText.trim() && !busy ? 1 : 0.4 }}>
           <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-up" size={20} color={colors.onPrimary} />
           </View>

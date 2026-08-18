@@ -346,6 +346,7 @@ export default function AppLayout() {
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-surface/90 backdrop-blur border-b border-ink/5 sticky top-0 z-30">
           <button
             onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
             className="p-2 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-500/10"
           >
             <svg className="w-5 h-5 text-ink-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -355,6 +356,7 @@ export default function AppLayout() {
           <LogoMark white={dark} size={40} />
           <button
             onClick={() => navigate('/upload')}
+            aria-label="Add a memory"
             className="p-2 rounded-lg bg-brand-500 text-white hover:bg-brand-600"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

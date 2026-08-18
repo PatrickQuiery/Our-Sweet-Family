@@ -71,10 +71,10 @@ export default function Timeline() {
       <SunriseHeader
         right={
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
-            <Pressable onPress={() => { if (searchOpen) setQuery(''); setSearchOpen((v) => !v); }} hitSlop={10}>
+            <Pressable onPress={() => { if (searchOpen) setQuery(''); setSearchOpen((v) => !v); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={searchOpen ? 'Close search' : 'Search memories'}>
               <Ionicons name={searchOpen ? 'close' : 'search'} size={22} color={colors.text} />
             </Pressable>
-            <Pressable onPress={() => router.push('/reels')} hitSlop={10}>
+            <Pressable onPress={() => router.push('/reels')} hitSlop={10} accessibilityRole="button" accessibilityLabel="Reels">
               <Ionicons name="film-outline" size={22} color={colors.text} />
             </Pressable>
           </View>

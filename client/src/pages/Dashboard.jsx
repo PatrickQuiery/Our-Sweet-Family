@@ -197,7 +197,7 @@ export default function Dashboard() {
           className="w-full pl-9 pr-8 py-2 bg-surface/60 backdrop-blur border border-ink/5 rounded-xl text-sm text-ink placeholder:text-ink-muted outline-none focus:border-brand-300"
         />
         {search && (
-          <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-soft text-lg leading-none">×</button>
+          <button onClick={() => setSearch('')} aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-soft text-lg leading-none">×</button>
         )}
       </div>
 
