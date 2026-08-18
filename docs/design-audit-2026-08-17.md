@@ -23,14 +23,16 @@ Shipped to `claude/family-photo-sharing-app-RfJto` (web auto-deploys to Vercel, 
 | **Photo lightbox** | MD-2 (web fullscreen zoom), M30 (mobile real aspect ratio), M32 (mobile pinch-zoom viewer) | `0a34efd` |
 | **Scrubber + clearance** | M1 (shared `useTabBarClearance`), M2 (timeline right gutter so tiles clear the scrubber rail) | `81843f7` |
 | **Cleanup + a11y labels + input** | CC-4 (deleted dead MemoryCard.jsx), A11Y-2/M61 (aria/accessibilityLabel on icon-only nav/header/action buttons), CC-5 (Upload caption input tokenized + focus ring) | `260da2e`+ |
+| **Mobile toasts + comment bar** | M65 (themed `<ToastProvider>`/`useToast()` replacing 11 `Alert.alert` error popups; native confirms kept), M31 (comment-bar safe-area at rest) | `e5831f8` |
+| **Web type ramp** | SYS-3 (`.type-*` scale mirroring mobile; 9 page titles migrated) | `36a373a` |
 
-This covers top-10 items **#1, #2, #3, #4 (base), #5, #6 (web), #7, #9, #10**, and part of **#8**.
+This covers top-10 items **#1, #2, #3, #4 (base), #5, #6, #7, #9, #10**, and part of **#8**.
 
 **Deliberate scope decisions:** (a) marketing/legal/auth pages render light-only on purpose — a half-dark Sunrise front door is worse than a deliberately light one; (b) mobile video autoplay-on-scroll is *not* gated by Reduce Motion (it's content the user explicitly asked to keep).
 
 **Verification notes:** web build + mobile `tsc` clean on every batch; web dark-mode flip mechanism + marketing light-scope proven in-browser; authed-web dark mode not live-verified (needs a Clerk login, which I don't perform); mobile theme selector verified by clean bundle + launch (the simulator was stuck in landscape, so no portrait screenshot of the selector).
 
-**Remaining backlog (highest-value first):** mobile toast/confirm (M65 — native `Alert.alert` still used; lower priority than the web `window.confirm` now fixed), mobile comment-bar safe-area at rest (M31), per-screen landscape two-column (M7/M25/M69), web icon-system SVG dedup (CC-3 — maintainability only; deferred as a careful cleanup), typography ramp (SYS-3), remaining lower-traffic icon-button labels (reel controls, capture buttons), plus the per-screen P2/P3 items in §2/§3.
+**Remaining backlog (highest-value first):** per-screen landscape two-column layouts (M7/M25/M69 — Activity/Settings/Children/Milestones single-column on wide), web icon-system SVG dedup (CC-3 — maintainability only; deferred as a careful cleanup), remaining lower-traffic icon-button labels (reel controls, capture buttons), broader adoption of the new `.type-*` ramp on secondary headings, plus the per-screen P2/P3 polish items in §2/§3 (designed empty/loading/error states beyond what's shipped, etc.).
 
 ## How to read this
 
