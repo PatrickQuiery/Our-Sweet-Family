@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useConfirm, useToast } from '../context/DialogProvider';
 import api from '../lib/api';
 
 const MILESTONE_TYPES = [
@@ -14,6 +15,8 @@ const MILESTONE_TYPES = [
 ];
 
 export default function Milestones() {
+  const confirm = useConfirm();
+  const toast = useToast();
   const { user, family } = useAuth();
   const [children, setChildren] = useState([]);
   const [selectedChild, setSelectedChild] = useState(null);
@@ -69,12 +72,13 @@ export default function Milestones() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this milestone?')) return;
+    const ok = await confirm({ title: 'Delete this milestone?', confirmLabel: 'Delete', destructive: true });
+    if (!ok) return;
     try {
       await api.delete(`/milestones/${id}`);
       setMilestones((prev) => prev.filter((m) => m.id !== id));
     } catch (err) {
-      alert('Failed to delete');
+      toast('Failed to delete', 'error');
     }
   };
 

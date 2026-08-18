@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useConfirm, useToast } from '../context/DialogProvider';
 import api from '../lib/api';
 
 const PERMISSION_LABELS = {
@@ -17,6 +18,8 @@ const PERMISSION_COLORS = {
 };
 
 export default function Family() {
+  const confirm = useConfirm();
+  const toast = useToast();
   const { user, family, refreshFamily } = useAuth();
   const [members, setMembers] = useState([]);
   const [invitations, setInvitations] = useState([]);
@@ -86,12 +89,13 @@ export default function Family() {
   };
 
   const handleRevokeInvite = async (id) => {
-    if (!window.confirm('Revoke this pending invitation?')) return;
+    const ok = await confirm({ title: 'Revoke this pending invitation?', confirmLabel: 'Revoke', destructive: true });
+    if (!ok) return;
     try {
       await api.delete(`/invitations/${id}`);
       setInvitations((prev) => prev.filter((i) => i.id !== id));
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to revoke');
+      toast(err.response?.data?.error || 'Failed to revoke', 'error');
     }
   };
 
@@ -100,17 +104,18 @@ export default function Family() {
       const { data } = await api.put(`/members/${memberId}`, { permissions });
       setMembers((prev) => prev.map((m) => (m.id === memberId ? data.member : m)));
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to update');
+      toast(err.response?.data?.error || 'Failed to update', 'error');
     }
   };
 
   const handleRevoke = async (memberId) => {
-    if (!window.confirm('Revoke this person\'s access?')) return;
+    const ok = await confirm({ title: "Revoke this person's access?", confirmLabel: 'Revoke', destructive: true });
+    if (!ok) return;
     try {
       await api.delete(`/members/${memberId}`);
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to revoke');
+      toast(err.response?.data?.error || 'Failed to revoke', 'error');
     }
   };
 

@@ -194,6 +194,17 @@
 }
 
 @layer utilities {
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
   /* The recolorable inline logo mark fills its container. */
   .logo-mark {
     display: inline-block;

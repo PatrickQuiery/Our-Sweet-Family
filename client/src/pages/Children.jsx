@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format, differenceInYears, differenceInMonths } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+import { useConfirm, useToast } from '../context/DialogProvider';
 import { AuthedImage } from '../components/AuthedMedia';
 import { PICKER_PALETTE, resolveChildColors, nextColorForGender } from '../lib/childColor';
 import api from '../lib/api';
@@ -113,6 +114,8 @@ function ageLabel(dob) {
 }
 
 export default function Children() {
+  const confirm = useConfirm();
+  const toast = useToast();
   const { user, family } = useAuth();
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -220,12 +223,18 @@ export default function Children() {
   };
 
   const handleDelete = async (childId) => {
-    if (!window.confirm('Remove this child? Their memories will remain.')) return;
+    const ok = await confirm({
+      title: 'Remove this child?',
+      message: 'Their memories will remain.',
+      confirmLabel: 'Remove',
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await api.delete(`/children/${childId}`);
       setChildren((prev) => prev.filter((c) => c.id !== childId));
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to remove');
+      toast(err.response?.data?.error || 'Failed to remove', 'error');
     }
   };
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserProfile } from '@clerk/clerk-react';
 import { useAuth } from '../context/AuthContext';
+import { useConfirm, useToast } from '../context/DialogProvider';
 import api from '../lib/api';
 
 const LOCATION_CONFIRM =
@@ -33,6 +34,8 @@ const PLAN_DETAILS = {
 };
 
 export default function Settings() {
+  const confirm = useConfirm();
+  const toast = useToast();
   const { user, family, refreshFamily } = useAuth();
   const plan = PLAN_DETAILS[user?.plan] || PLAN_DETAILS.free;
   const isOwner = user?.role === 'owner';
@@ -42,13 +45,16 @@ export default function Settings() {
   const toggleLocation = async () => {
     const next = !locationOn;
     // Only confirm when turning it ON (enabling a sensitive display).
-    if (next && !window.confirm(LOCATION_CONFIRM)) return;
+    if (next) {
+      const ok = await confirm({ title: 'Show photo locations?', message: LOCATION_CONFIRM, confirmLabel: 'Enable' });
+      if (!ok) return;
+    }
     setSavingLoc(true);
     try {
       await api.patch(`/families/${family.id}/settings`, { showPhotoLocation: next });
       await refreshFamily();
     } catch (err) {
-      alert(err.response?.data?.error || 'Could not update the setting');
+      toast(err.response?.data?.error || 'Could not update the setting', 'error');
     } finally {
       setSavingLoc(false);
     }

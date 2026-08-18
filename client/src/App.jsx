@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { AuthProvider } from './context/AuthContext';
+import { DialogProvider } from './context/DialogProvider';
 
 // Landing is the signed-out first paint — keep it eager so the marketing hero
 // renders instantly. Everything else is route-split (PF-1) to shrink the initial
@@ -84,7 +85,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <DialogProvider>
+          <AppRoutes />
+        </DialogProvider>
       </AuthProvider>
     </BrowserRouter>
   );

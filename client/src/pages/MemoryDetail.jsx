@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useConfirm, useToast } from '../context/DialogProvider';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
@@ -10,6 +11,8 @@ export default function MemoryDetail() {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const confirm = useConfirm();
+  const toast = useToast();
   const [memory, setMemory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -136,12 +139,18 @@ export default function MemoryDetail() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Delete this memory? This cannot be undone.')) return;
+    const ok = await confirm({
+      title: 'Delete this memory?',
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await api.delete(`/memories/${id}`);
       navigate('/dashboard');
     } catch (err) {
-      alert(err.response?.data?.error || 'Delete failed');
+      toast(err.response?.data?.error || 'Delete failed', 'error');
     }
   };
 
@@ -166,7 +175,7 @@ export default function MemoryDetail() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert(err.response?.data?.error || 'Download failed');
+      toast(err.response?.data?.error || 'Download failed', 'error');
     } finally {
       setDownloading(false);
     }
