@@ -55,6 +55,14 @@ export default function Timeline() {
 
   const sections = useMemo(() => buildTimeline(memories, { width: contentW, gap: GAP }), [memories, contentW]);
 
+  // Track which mosaic rows are on screen so video tiles autoplay while scrolled
+  // into view (and pause/unmount when they leave).
+  const [visibleRows, setVisibleRows] = useState<Set<string>>(new Set());
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ key?: string }> }) => {
+    setVisibleRows(new Set(viewableItems.map((v) => v.key).filter((k): k is string => Boolean(k))));
+  }).current;
+
   return (
     <View style={{ flex: 1, backgroundColor: 'transparent' }}>
       <SunriseHeader
@@ -167,10 +175,12 @@ export default function Timeline() {
           renderItem={({ item: row }) => (
             <View style={{ flexDirection: 'row', gap: GAP, marginBottom: GAP }}>
               {row.tiles.map((tile) => (
-                <MosaicTile key={tile.memory.id} tile={tile} />
+                <MosaicTile key={tile.memory.id} tile={tile} active={visibleRows.has(row.key)} />
               ))}
             </View>
           )}
+          viewabilityConfig={viewabilityConfig}
+          onViewableItemsChanged={onViewableItemsChanged}
           renderSectionHeader={({ section }) => (
             <View
               style={{
