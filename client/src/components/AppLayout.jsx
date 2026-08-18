@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useClerk } from '@clerk/clerk-react';
+import { useClerk, useUser } from '@clerk/clerk-react';
 import { useAuth } from '../context/AuthContext';
 import UsageMeter from './UsageMeter';
 import LogoMark from './LogoMark';
@@ -12,9 +12,14 @@ const NAV_COLLAPSED_KEY = 'osf:navCollapsed';
 // is a click path, not just the avatar.
 function UserMenu({ collapsed }) {
   const { user } = useAuth();
+  const { user: clerkUser } = useUser();
   const clerk = useClerk();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+
+  // The profile photo is set through Clerk (Manage account), so prefer Clerk's
+  // uploaded image; fall back to our local avatar, then initials.
+  const avatarUrl = (clerkUser?.hasImage && clerkUser.imageUrl) || user?.avatarUrl || null;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -54,8 +59,8 @@ function UserMenu({ collapsed }) {
         title={collapsed ? user?.name : undefined}
         className={`flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-brand-50/60 transition-colors ${collapsed ? 'justify-center' : ''}`}
       >
-        {user?.avatarUrl ? (
-          <img src={user.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
         ) : (
           <div className="w-9 h-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-semibold text-sm flex-shrink-0">
             {initial}
