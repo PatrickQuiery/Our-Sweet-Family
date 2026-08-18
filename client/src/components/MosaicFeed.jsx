@@ -4,22 +4,7 @@ import { format } from 'date-fns';
 import { AuthedImage, AuthedVideo } from './AuthedMedia';
 import { buildTimeline } from '../lib/mosaic';
 import api from '../lib/api';
-
-function HeartIcon({ filled, className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21s-7.5-4.6-10-9.2C.6 8.9 2 5.5 5.2 5.1 7 4.9 8.7 5.9 12 9c3.3-3.1 5-4.1 6.8-3.9C22 5.5 23.4 8.9 22 11.8 19.5 16.4 12 21 12 21z" />
-    </svg>
-  );
-}
-
-function CommentIcon({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.5a8.5 8.5 0 01-11.9 7.8L3 21l1.7-6A8.5 8.5 0 1121 11.5z" />
-    </svg>
-  );
-}
+import { HeartIcon, ChatIcon } from './icons';
 
 function Tile({ memory, weight, currentUser }) {
   const isVideo = memory.fileType === 'video';
@@ -164,7 +149,7 @@ function Tile({ memory, weight, currentUser }) {
             className="flex items-center gap-1 text-white/95 hover:text-white transition-colors"
             aria-label="Comment"
           >
-            <CommentIcon className="w-[17px] h-[17px] drop-shadow" />
+            <ChatIcon className="w-[17px] h-[17px] drop-shadow" />
             {comments.length > 0 && <span className="text-xs font-semibold drop-shadow tabular-nums">{comments.length}</span>}
           </button>
           {comments.length > 0 && !composerOpen && (

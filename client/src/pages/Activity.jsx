@@ -4,9 +4,11 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 import { AuthedImage } from '../components/AuthedMedia';
+import { HeartIcon as HeartGlyph, ChatIcon as ChatGlyph } from '../components/icons';
 
-const HeartIcon = (p) => (<svg viewBox="0 0 24 24" fill="currentColor" {...p}><path d="M12 21s-7.5-4.9-10-9.4C.6 8.9 2 5.5 5.2 5.5c1.8 0 3 .9 3.8 2 .8-1.1 2-2 3.8-2 3.2 0 4.6 3.4 3.2 6.1C19.5 16.1 12 21 12 21z" /></svg>);
-const ChatIcon = (p) => (<svg viewBox="0 0 24 24" fill="currentColor" {...p}><path d="M4 4h16a1 1 0 011 1v11a1 1 0 01-1 1H8l-4 4V5a1 1 0 011-1z" /></svg>);
+// Solid badge variants of the shared canonical glyphs (CC-3).
+const HeartIcon = (p) => <HeartGlyph filled {...p} />;
+const ChatIcon = (p) => <ChatGlyph filled {...p} />;
 const ImageIcon = (p) => (<svg viewBox="0 0 24 24" fill="currentColor" {...p}><path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm2 12l3.5-4.5 2.5 3L15 11l3 5H6z" /><circle cx="8.5" cy="8.5" r="1.5" /></svg>);
 
 // love / comment / memory → verb + badge color + icon

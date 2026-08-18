@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useConfirm, useToast } from '../context/DialogProvider';
+import { HeartIcon } from '../components/icons';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
@@ -418,9 +419,7 @@ export default function MemoryDetail() {
               onClick={handleLike}
               className={`flex items-center gap-2 font-medium text-sm transition-colors ${liked ? 'text-brand-500' : 'text-ink-muted hover:text-brand-400'}`}
             >
-              <svg className="w-5 h-5" fill={liked ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
+              <HeartIcon className="w-5 h-5" filled={liked} />
               {memory.reactions?.length > 0
                 ? `${memory.reactions.length} ${memory.reactions.length === 1 ? 'love' : 'loves'}`
                 : 'Love'}
