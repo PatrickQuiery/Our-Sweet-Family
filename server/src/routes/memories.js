@@ -15,6 +15,7 @@ const { enqueueTranscode } = require('../lib/transcodeQueue');
 const { isHeicUpload, heicToJpeg } = require('../lib/heic');
 const { sendPushToUsers } = require('../lib/push');
 const { generateThumbnail } = require('../lib/thumbnails');
+const { extractPosterBuffer } = require('../lib/videoPoster');
 
 const router = express.Router();
 
@@ -460,12 +461,18 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
     }
     const fileUrl = await uploadFile(uploadBuffer, uploadName, uploadMime, 'memories');
 
-    // Generate & upload thumbnail (photos only) — derived from the normalized image.
+    // Generate & upload a thumbnail. Photos derive it from the normalized image;
+    // videos get a poster frame (a still) so the feed/activity show real content.
     let thumbnailUrl = null;
     if (fileType === 'photo') {
       const thumb = await generateThumbnail(srcBuffer, srcMime, srcName);
       if (thumb) {
         thumbnailUrl = await uploadFile(thumb.buffer, thumb.name, 'image/jpeg', 'thumbnails');
+      }
+    } else if (fileType === 'video') {
+      const poster = await extractPosterBuffer(srcBuffer);
+      if (poster) {
+        thumbnailUrl = await uploadFile(poster, 'poster.jpg', 'image/jpeg', 'thumbnails');
       }
     }
 

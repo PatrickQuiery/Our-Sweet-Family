@@ -1,9 +1,10 @@
 const { uploadFile, deleteFile, readFile, isAbsoluteUrl } = require('./storage');
 const { generateThumbnail } = require('./thumbnails');
+const { extractPosterBuffer } = require('./videoPoster');
 
-// One-time, self-converging backfill: regenerate old (400px) photo thumbnails at
-// the current hi-res size and flip `thumbHiRes`. Runs non-blocking on boot; once
-// every photo is upgraded the driving query returns nothing and it's a no-op.
+// One-time, self-converging backfill: give photos the current hi-res (800px)
+// thumbnail and give videos a poster-frame still, then flip `thumbHiRes`. Runs
+// non-blocking on boot; once everything is upgraded the query returns nothing.
 
 async function readKeyToBuffer(key) {
   const { stream } = await readFile(key);
@@ -16,7 +17,7 @@ async function readKeyToBuffer(key) {
 
 // Returns 'upgraded' | 'skipped'. Throws on unexpected failure (caller retries later).
 async function upgradeOne(prisma, m) {
-  const { id, fileUrl, thumbnailUrl } = m;
+  const { id, fileUrl, thumbnailUrl, fileType } = m;
 
   // External/seed images (absolute URLs) aren't ours to rewrite — mark done.
   if (!fileUrl || isAbsoluteUrl(fileUrl)) {
@@ -25,14 +26,18 @@ async function upgradeOne(prisma, m) {
   }
 
   const srcBuffer = await readKeyToBuffer(fileUrl);
-  const thumb = await generateThumbnail(srcBuffer, 'image/jpeg', fileUrl);
-  if (!thumb) {
-    // Source wasn't a decodable image — nothing to do, don't retry forever.
+  // Photos: a hi-res thumbnail from the image. Videos: a poster-frame still.
+  const newBuffer = fileType === 'video'
+    ? await extractPosterBuffer(srcBuffer)
+    : (await generateThumbnail(srcBuffer, 'image/jpeg', fileUrl))?.buffer ?? null;
+
+  if (!newBuffer) {
+    // Couldn't derive a still (undecodable / no frame) — don't retry forever.
     await prisma.memory.update({ where: { id }, data: { thumbHiRes: true } });
     return 'skipped';
   }
 
-  const newKey = await uploadFile(thumb.buffer, thumb.name, 'image/jpeg', 'thumbnails');
+  const newKey = await uploadFile(newBuffer, fileType === 'video' ? 'poster.jpg' : 'thumb.jpg', 'image/jpeg', 'thumbnails');
   await prisma.memory.update({ where: { id }, data: { thumbnailUrl: newKey, thumbHiRes: true } });
 
   // Clean up the old thumbnail if it was one of ours and got replaced.
@@ -56,12 +61,11 @@ async function backfillThumbnails(prisma, { batchSize = 25, maxTotal = 2000 } = 
   while (processed < maxTotal) {
     const batch = await prisma.memory.findMany({
       where: {
-        fileType: 'photo',
         thumbHiRes: false,
         ...(failedIds.length ? { id: { notIn: failedIds } } : {}),
       },
       take: batchSize,
-      select: { id: true, fileUrl: true, thumbnailUrl: true },
+      select: { id: true, fileUrl: true, thumbnailUrl: true, fileType: true },
     });
     if (batch.length === 0) break;
 
