@@ -1,26 +1,30 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { AuthProvider } from './context/AuthContext';
 
+// Landing is the signed-out first paint — keep it eager so the marketing hero
+// renders instantly. Everything else is route-split (PF-1) to shrink the initial
+// bundle; each page loads on navigation behind the <Suspense> fallback below.
 import Landing from './pages/Landing';
-import Contact from './pages/Contact';
-import Privacy from './pages/Privacy';
-import AcceptInvite from './pages/AcceptInvite';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Onboarding from './pages/Onboarding';
-import Dashboard from './pages/Dashboard';
-import Activity from './pages/Activity';
-import Upload from './pages/Upload';
-import MemoryDetail from './pages/MemoryDetail';
-import Children from './pages/Children';
-import Family from './pages/Family';
-import Reels from './pages/Reels';
-import Milestones from './pages/Milestones';
-import Settings from './pages/Settings';
-import Referrals from './pages/Referrals';
 import AppLayout from './components/AppLayout';
+
+const Contact = lazy(() => import('./pages/Contact'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const AcceptInvite = lazy(() => import('./pages/AcceptInvite'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Activity = lazy(() => import('./pages/Activity'));
+const Upload = lazy(() => import('./pages/Upload'));
+const MemoryDetail = lazy(() => import('./pages/MemoryDetail'));
+const Children = lazy(() => import('./pages/Children'));
+const Family = lazy(() => import('./pages/Family'));
+const Reels = lazy(() => import('./pages/Reels'));
+const Milestones = lazy(() => import('./pages/Milestones'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Referrals = lazy(() => import('./pages/Referrals'));
 
 function Spinner() {
   return (
@@ -46,6 +50,7 @@ function PublicRoute({ children }) {
 
 function AppRoutes() {
   return (
+    <Suspense fallback={<Spinner />}>
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/contact" element={<Contact />} />
@@ -71,6 +76,7 @@ function AppRoutes() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 }
 
