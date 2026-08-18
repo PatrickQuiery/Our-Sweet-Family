@@ -194,7 +194,7 @@ export default function Dashboard() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search captions and #tags…"
-          className="w-full pl-9 pr-8 py-2 border border-black/5 rounded-xl text-sm outline-none focus:border-brand-300"
+          className="w-full pl-9 pr-8 py-2 bg-surface/60 backdrop-blur border border-ink/5 rounded-xl text-sm text-ink placeholder:text-ink-muted outline-none focus:border-brand-300"
         />
         {search && (
           <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-soft text-lg leading-none">×</button>
@@ -206,7 +206,7 @@ export default function Dashboard() {
         <button
           onClick={() => setSelectedChild('')}
           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-            !selectedChild ? 'bg-brand-500 text-white' : 'bg-white/60 backdrop-blur text-ink-soft border border-white/60 hover:bg-white/80'
+            !selectedChild ? 'bg-brand-500 text-white' : 'bg-surface/60 backdrop-blur text-ink-soft border border-white/60 dark:border-white/10 hover:bg-surface/80'
           }`}
         >
           All children
@@ -220,7 +220,7 @@ export default function Dashboard() {
               onClick={() => setSelectedChild(active ? '' : child.id)}
               style={active ? { backgroundColor: color } : undefined}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                active ? 'text-white' : 'bg-white/60 backdrop-blur text-ink-soft border border-white/60 hover:bg-white/80'
+                active ? 'text-white' : 'bg-surface/60 backdrop-blur text-ink-soft border border-white/60 dark:border-white/10 hover:bg-surface/80'
               }`}
             >
               {!active && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />}
@@ -234,7 +234,7 @@ export default function Dashboard() {
               key={t}
               onClick={() => setSelectedType(t)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                selectedType === t ? 'bg-ink text-white' : 'bg-white/60 backdrop-blur text-ink-soft border border-white/60 hover:bg-white/80'
+                selectedType === t ? 'bg-ink text-paper' : 'bg-surface/60 backdrop-blur text-ink-soft border border-white/60 dark:border-white/10 hover:bg-surface/80'
               }`}
             >
               {t === '' ? 'All' : t === 'photo' ? 'Photos' : 'Videos'}

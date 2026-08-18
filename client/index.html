@@ -7,6 +7,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#ef3f74" />
 
+    <!-- Apply the saved theme before first paint to avoid a light/dark flash.
+         Mirrors client/src/context/ThemeContext.jsx (key 'osf-theme'). -->
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem('osf-theme');
+          var dark =
+            pref === 'dark' ||
+            ((pref === null || pref === 'system') &&
+              window.matchMedia &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var root = document.documentElement;
+          root.classList.toggle('dark', dark);
+          root.classList.toggle('light', !dark);
+          if (dark) {
+            var m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.setAttribute('content', '#151726');
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- Primary SEO -->
     <title>Our Sweet Family — Private Photo & Video Sharing for Your Kids</title>
     <meta

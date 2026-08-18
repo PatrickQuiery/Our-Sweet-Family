@@ -184,7 +184,7 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
     : format(dateAt(labelF), 'MMM yyyy');
 
   return (
-    <div className="rounded-2xl border border-white/60 bg-white/55 backdrop-blur-md overflow-hidden select-none">
+    <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-surface/55 backdrop-blur-md overflow-hidden select-none">
       <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Timeline</span>
         {!full && (
@@ -208,7 +208,7 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
           className="relative w-8 flex-shrink-0 rounded-lg bg-ink/5 self-stretch"
         >
           {yearTicks.map((t) => (
-            <div key={t.y} className="absolute left-0 right-0 border-t border-black/5" style={{ top: `${t.f * 100}%` }} />
+            <div key={t.y} className="absolute left-0 right-0 border-t border-ink/5" style={{ top: `${t.f * 100}%` }} />
           ))}
 
           {/* selected band (drag to pan) */}
@@ -225,7 +225,7 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
             onPointerDown={onDown('top')}
             {...dragHandlers}
           >
-            <span className="w-3 h-px bg-white/80" />
+            <span className="w-3 h-px bg-ink/25" />
           </div>
           <div
             className="absolute left-1/2 -translate-x-1/2 w-6 h-3 -mt-1.5 rounded bg-brand-500 shadow cursor-ns-resize flex items-center justify-center touch-none"
@@ -233,7 +233,7 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
             onPointerDown={onDown('bot')}
             {...dragHandlers}
           >
-            <span className="w-3 h-px bg-white/80" />
+            <span className="w-3 h-px bg-ink/25" />
           </div>
 
           {/* floating date label while dragging (Google-Photos style) */}
@@ -273,7 +273,7 @@ export default function DashboardTimeline({ kids = [], memories = [], range = nu
                 {ages.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1">
                     {ages.map((a) => (
-                      <span key={a.name} title={`${a.name} · ${a.age}`} className="inline-flex items-center gap-1 rounded-full bg-paper border border-black/5 pl-1 pr-1.5 py-0.5 text-[11px] text-ink-soft">
+                      <span key={a.name} title={`${a.name} · ${a.age}`} className="inline-flex items-center gap-1 rounded-full bg-paper border border-ink/5 pl-1 pr-1.5 py-0.5 text-[11px] text-ink-soft">
                         <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: a.color }} />
                         <span className="truncate max-w-[56px]">{a.name.split(' ')[0]}</span>
                         <span className="text-ink-muted tabular-nums">{a.age}</span>

@@ -80,7 +80,7 @@ export default function Reels() {
                 reelType === rt.value
                   ? 'bg-brand-500 text-white'
                   : allowed
-                  ? 'bg-white border border-black/5 text-ink-soft hover:bg-brand-50/60'
+                  ? 'bg-surface border border-ink/5 text-ink-soft hover:bg-brand-50/60 dark:hover:bg-brand-500/10'
                   : 'bg-ink/5 text-ink-muted cursor-not-allowed'
               }`}
             >
@@ -96,7 +96,7 @@ export default function Reels() {
         <div className="flex gap-2 flex-wrap mb-6">
           <button
             onClick={() => setSelectedChild('')}
-            className={`px-3 py-1 rounded-full text-xs font-medium ${!selectedChild ? 'bg-gray-900 text-white' : 'bg-white border border-black/5 text-ink-soft hover:bg-brand-50/60'}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium ${!selectedChild ? 'bg-ink text-paper' : 'bg-surface border border-ink/5 text-ink-soft hover:bg-brand-50/60 dark:hover:bg-brand-500/10'}`}
           >
             All
           </button>
@@ -104,7 +104,7 @@ export default function Reels() {
             <button
               key={c.id}
               onClick={() => setSelectedChild(c.id === selectedChild ? '' : c.id)}
-              className={`px-3 py-1 rounded-full text-xs font-medium ${selectedChild === c.id ? 'bg-gray-900 text-white' : 'bg-white border border-black/5 text-ink-soft hover:bg-brand-50/60'}`}
+              className={`px-3 py-1 rounded-full text-xs font-medium ${selectedChild === c.id ? 'bg-ink text-paper' : 'bg-surface border border-ink/5 text-ink-soft hover:bg-brand-50/60 dark:hover:bg-brand-500/10'}`}
             >
               {c.name}
             </button>

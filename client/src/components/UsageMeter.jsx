@@ -32,7 +32,7 @@ export default function UsageMeter() {
   const barColor = pct >= 90 ? 'bg-red-500' : pct >= 75 ? 'bg-amber-500' : 'bg-brand-500';
 
   return (
-    <Link to="/settings" className="block px-4 py-3 border-t border-black/5 hover:bg-brand-50/60 transition-colors" title="View plan & storage">
+    <Link to="/settings" className="block px-4 py-3 border-t border-ink/5 hover:bg-brand-50/60 dark:hover:bg-brand-500/10 transition-colors" title="View plan & storage">
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-xs font-medium text-ink-muted">Video storage</span>
         <span className="text-[10px] uppercase font-semibold tracking-wide text-ink-muted">{plan}</span>

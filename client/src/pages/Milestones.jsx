@@ -106,7 +106,7 @@ export default function Milestones() {
               key={c.id}
               onClick={() => setSelectedChild(c)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                selectedChild?.id === c.id ? 'bg-brand-500 text-white' : 'bg-white border border-black/5 text-ink-soft hover:bg-brand-50/60'
+                selectedChild?.id === c.id ? 'bg-brand-500 text-white' : 'bg-surface border border-ink/5 text-ink-soft hover:bg-brand-50/60 dark:hover:bg-brand-500/10'
               }`}
             >
               {c.name}

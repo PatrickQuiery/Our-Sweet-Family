@@ -29,11 +29,32 @@
   color-scheme: light;
 }
 
-/* NOTE: OS-follow (prefers-color-scheme) is intentionally NOT enabled yet — it
-   turns on in the dark-mode phase once every page's hardcoded whites/gradients
-   are tokenized, so dark-OS users never see a half-migrated app. Until then the
-   default is light for everyone; `.dark` only applies via the (upcoming) toggle.
-   When ready, re-add:  @media (prefers-color-scheme: dark){ :root:not(.light){ …dark tokens… } }  */
+/* OS-follow. ThemeContext + the index.html pre-paint script normally stamp an
+   explicit `.light`/`.dark` on <html>, so this mainly covers the no-JS case and
+   the very first paint. `.theme-light` pages (marketing/auth) opt out via their
+   own light var scope, and an explicit `.light` toggle always wins. */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --bg: 21 23 38;
+    --surface: 30 33 54;
+    --surface-2: 38 42 66;
+    --ink: 243 242 248;
+    --ink-soft: 191 195 216;
+    --ink-muted: 154 161 189;
+    --border: 52 58 88;
+    --border-subtle: 37 42 66;
+    --primary: 255 111 156;
+    --primary-strong: 255 92 138;
+    --danger: 248 113 113;
+    --card-bg: rgba(30, 33, 54, 0.55);
+    --card-bg-strong: rgba(30, 33, 54, 0.72);
+    --card-brd: rgba(255, 255, 255, 0.1);
+    --app-gradient: linear-gradient(135deg, #1b1626 0%, #20182e 52%, #131a2e 100%);
+    --shadow-soft: 0 14px 40px -12px rgba(0, 0, 0, 0.55);
+    --shadow-glow: 0 10px 30px -8px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+}
 
 :root.dark {
   --bg: 21 23 38;
@@ -54,6 +75,31 @@
   --shadow-soft: 0 14px 40px -12px rgba(0, 0, 0, 0.55);
   --shadow-glow: 0 10px 30px -8px rgba(0, 0, 0, 0.5);
   color-scheme: dark;
+}
+
+/* Light-committed scope. Pre-auth marketing / legal / auth pages are the brand's
+   Sunrise front door and are designed light-only; wrapping their root in
+   `.theme-light` re-declares the light token values so the global `.dark` toggle
+   never half-migrates them. (They use no `dark:` utilities, so vars are enough.) */
+.theme-light {
+  --bg: 253 252 255;
+  --surface: 255 255 255;
+  --surface-2: 247 244 250;
+  --ink: 35 42 69;
+  --ink-soft: 90 98 126;
+  --ink-muted: 117 125 153;
+  --border: 229 231 235;
+  --border-subtle: 240 237 243;
+  --primary: 255 92 138;
+  --primary-strong: 239 63 116;
+  --danger: 220 38 38;
+  --card-bg: rgba(255, 255, 255, 0.55);
+  --card-bg-strong: rgba(255, 255, 255, 0.7);
+  --card-brd: rgba(255, 255, 255, 0.6);
+  --app-gradient: linear-gradient(135deg, #fdeede 0%, #fbe4ef 52%, #e8eefb 100%);
+  --shadow-soft: 0 12px 40px -12px rgba(35, 42, 69, 0.18);
+  --shadow-glow: 0 10px 30px -8px rgba(239, 63, 116, 0.35);
+  color-scheme: light;
 }
 
 @tailwind base;

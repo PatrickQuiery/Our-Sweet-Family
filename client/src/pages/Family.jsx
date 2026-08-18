@@ -140,7 +140,7 @@ export default function Family() {
         <div className="card p-4 mb-4 bg-brand-50 border-brand-200">
           <p className="text-sm font-medium text-ink-soft mb-2">Invite link — share it with your loved one:</p>
           <div className="flex gap-2">
-            <input readOnly value={inviteLink} onFocus={(e) => e.target.select()} className="input flex-1 text-xs bg-white" />
+            <input readOnly value={inviteLink} onFocus={(e) => e.target.select()} className="input flex-1 text-xs" />
             <button onClick={copyInviteLink} className="btn-primary text-sm whitespace-nowrap">
               {copied ? 'Copied!' : 'Copy link'}
             </button>

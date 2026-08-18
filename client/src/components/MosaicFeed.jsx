@@ -181,7 +181,7 @@ function Tile({ memory, weight, currentUser }) {
       {/* Inline comment composer popover */}
       {composerOpen && (
         <div
-          className="absolute bottom-12 left-2 right-2 z-30 rounded-xl bg-white text-ink shadow-soft border border-black/5 overflow-hidden"
+          className="absolute bottom-12 left-2 right-2 z-30 rounded-xl bg-surface text-ink shadow-soft border border-ink/5 overflow-hidden"
           onClick={stop}
         >
           {comments.length > 0 && (
@@ -191,13 +191,13 @@ function Tile({ memory, weight, currentUser }) {
               ))}
             </div>
           )}
-          <form onSubmit={submitComment} className="flex items-center gap-1.5 p-2 border-t border-black/5">
+          <form onSubmit={submitComment} className="flex items-center gap-1.5 p-2 border-t border-ink/5">
             <input
               autoFocus
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Add a comment…"
-              className="flex-1 min-w-0 text-[13px] px-2.5 py-1.5 rounded-full bg-paper border border-black/5 focus:outline-none focus:ring-2 focus:ring-brand-300"
+              className="flex-1 min-w-0 text-[13px] px-2.5 py-1.5 rounded-full bg-paper border border-ink/5 focus:outline-none focus:ring-2 focus:ring-brand-300"
             />
             <button type="submit" disabled={busy || !text.trim()} className="flex-shrink-0 text-brand-600 disabled:text-ink-muted font-semibold text-sm px-2 py-1">
               {busy ? '…' : 'Post'}

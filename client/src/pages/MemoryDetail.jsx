@@ -243,7 +243,7 @@ export default function MemoryDetail() {
                   value={dateVal}
                   max={new Date().toISOString().split('T')[0]}
                   onChange={(e) => setDateVal(e.target.value)}
-                  className="border border-ink-muted/30 rounded-lg bg-white/70 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-brand-400"
+                  className="border border-ink-muted/30 rounded-lg bg-surface/70 text-ink px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-brand-400"
                 />
                 <button onClick={handleSaveDate} disabled={savingDate} className="font-medium text-brand-600 hover:text-brand-700">
                   {savingDate ? 'Saving…' : 'Save'}
@@ -336,7 +336,7 @@ export default function MemoryDetail() {
 
           {/* Edit mode */}
           {editing && (
-            <div className="mb-4 rounded-xl border border-black/5 p-4">
+            <div className="mb-4 rounded-xl border border-ink/5 p-4">
               {editErr && (
                 <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-3">{editErr}</div>
               )}
@@ -386,7 +386,7 @@ export default function MemoryDetail() {
           )}
 
           {/* Reactions row */}
-          <div className="flex items-center justify-between py-3 border-t border-b border-black/5 mb-4">
+          <div className="flex items-center justify-between py-3 border-t border-b border-ink/5 mb-4">
             <button
               onClick={handleLike}
               className={`flex items-center gap-2 font-medium text-sm transition-colors ${liked ? 'text-brand-500' : 'text-ink-muted hover:text-brand-400'}`}

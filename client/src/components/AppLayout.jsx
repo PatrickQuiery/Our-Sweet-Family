@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useClerk, useUser } from '@clerk/clerk-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import UsageMeter from './UsageMeter';
 import LogoMark from './LogoMark';
 
@@ -10,6 +11,66 @@ const NAV_COLLAPSED_KEY = 'osf:navCollapsed';
 // Whole-row account control: clicking anywhere on the user's name/avatar opens a
 // menu with account management (Clerk's profile modal) and sign-out — so the name
 // is a click path, not just the avatar.
+const THEME_OPTIONS = [
+  { key: 'light', label: 'Light', icon: SunIcon },
+  { key: 'dark', label: 'Dark', icon: MoonIcon },
+  { key: 'system', label: 'Auto', icon: AutoIcon },
+];
+
+// Compact segmented Light / Dark / Auto control for the account dropdown (DM-1).
+function ThemeSegment() {
+  const { theme, setTheme } = useTheme();
+  return (
+    <div className="px-3 py-2">
+      <div className="flex items-center gap-1 rounded-lg bg-ink/5 p-1">
+        {THEME_OPTIONS.map(({ key, label, icon: Icon }) => {
+          const active = theme === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTheme(key)}
+              aria-pressed={active}
+              className={`flex-1 flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                active
+                  ? 'bg-surface text-ink shadow-sm'
+                  : 'text-ink-muted hover:text-ink-soft'
+              }`}
+            >
+              <Icon />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SunIcon() {
+  return (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <circle cx="12" cy="12" r="4" strokeLinecap="round" strokeLinejoin="round" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41" />
+    </svg>
+  );
+}
+function MoonIcon() {
+  return (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+    </svg>
+  );
+}
+function AutoIcon() {
+  return (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <rect x="3" y="4" width="18" height="12" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 20h8M12 16v4" />
+    </svg>
+  );
+}
+
 function UserMenu({ collapsed }) {
   const { user } = useAuth();
   const { user: clerkUser } = useUser();
@@ -36,17 +97,20 @@ function UserMenu({ collapsed }) {
   return (
     <div className="relative" ref={ref}>
       {open && (
-        <div className="absolute bottom-full mb-2 left-0 min-w-[210px] rounded-xl bg-white shadow-soft border border-black/5 py-1 z-50">
+        <div className="absolute bottom-full mb-2 left-0 min-w-[210px] rounded-xl bg-surface shadow-soft border border-ink/5 py-1 z-50">
           <button
             onClick={() => { setOpen(false); clerk.openUserProfile(); }}
-            className="w-full text-left px-3 py-2 text-sm text-ink-soft hover:bg-brand-50 hover:text-ink flex items-center gap-2"
+            className="w-full text-left px-3 py-2 text-sm text-ink-soft hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-ink flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13 13 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             Manage account
           </button>
+          <div className="my-1 border-t border-ink/5" />
+          <ThemeSegment />
+          <div className="my-1 border-t border-ink/5" />
           <button
             onClick={() => { setOpen(false); clerk.signOut({ redirectUrl: '/' }); }}
-            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+            className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
             Sign out
@@ -57,7 +121,7 @@ function UserMenu({ collapsed }) {
       <button
         onClick={() => setOpen((v) => !v)}
         title={collapsed ? user?.name : undefined}
-        className={`flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-brand-50/60 transition-colors ${collapsed ? 'justify-center' : ''}`}
+        className={`flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-brand-50/60 dark:hover:bg-brand-500/10 transition-colors ${collapsed ? 'justify-center' : ''}`}
       >
         {avatarUrl ? (
           <img src={avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
@@ -167,6 +231,8 @@ function CogIcon() {
 
 export default function AppLayout() {
   const { family } = useAuth();
+  const { resolved } = useTheme();
+  const dark = resolved === 'dark';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem(NAV_COLLAPSED_KEY) === '1'; } catch { return false; }
@@ -184,16 +250,16 @@ export default function AppLayout() {
   return (
     <div
       className="min-h-screen flex"
-      style={{ background: 'linear-gradient(135deg,#fdeede 0%,#fbe4ef 52%,#e8eefb 100%)', backgroundAttachment: 'fixed' }}
+      style={{ background: 'var(--app-gradient)', backgroundAttachment: 'fixed' }}
     >
       {/* Sidebar — frosted glass over the Sunrise wash. Width collapses to an icon rail on lg. */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 ${collapsed ? 'lg:w-20' : 'lg:w-64'} bg-white/60 backdrop-blur-xl border-r border-white/40 flex flex-col transition-[width,transform] duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 ${collapsed ? 'lg:w-20' : 'lg:w-64'} bg-surface/70 backdrop-blur-xl border-r border-white/40 dark:border-white/10 flex flex-col transition-[width,transform] duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Collapse/expand — a bubble straddling the nav's right edge */}
         <button
           onClick={toggleCollapsed}
           title={collapsed ? 'Expand menu' : 'Collapse menu'}
           aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
-          className="hidden lg:flex absolute top-7 -right-3 z-50 w-6 h-6 items-center justify-center rounded-full bg-white border border-black/10 shadow-md text-ink-muted hover:text-brand-600 hover:border-brand-200 transition-colors"
+          className="hidden lg:flex absolute top-7 -right-3 z-50 w-6 h-6 items-center justify-center rounded-full bg-surface border border-ink/10 shadow-md text-ink-muted hover:text-brand-500 hover:border-brand-300 transition-colors"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             {collapsed
@@ -203,17 +269,21 @@ export default function AppLayout() {
         </button>
 
         {/* Logo */}
-        <div className={`flex items-center justify-center border-b border-black/5 ${collapsed ? 'px-2 py-4' : 'px-4 py-5'}`}>
+        <div className={`flex items-center justify-center border-b border-ink/5 ${collapsed ? 'px-2 py-4' : 'px-4 py-5'}`}>
           {collapsed ? (
-            <LogoMark heart="#ef3f74" fig="#232a45" size={34} />
+            <LogoMark white={dark} size={34} />
           ) : (
-            <img src="/brand/osf-5-compact-sunrise.svg" alt="Our Sweet Family" className="max-w-[176px]" />
+            <img
+              src="/brand/osf-5-compact-sunrise.svg"
+              alt="Our Sweet Family"
+              className="max-w-[176px] dark:brightness-0 dark:invert"
+            />
           )}
         </div>
 
         {/* Family info */}
         {family && !collapsed && (
-          <div className="px-4 py-3 border-b border-black/5">
+          <div className="px-4 py-3 border-b border-ink/5">
             <p className="text-xs text-ink-muted uppercase tracking-wide font-medium mb-1">Family</p>
             <p className="font-semibold text-ink text-sm truncate">{family.name}</p>
           </div>
@@ -238,8 +308,8 @@ export default function AppLayout() {
                       className={({ isActive }) =>
                         `flex items-center gap-3 rounded-xl text-sm font-medium transition-colors ${collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2.5'} ${
                           isActive
-                            ? 'bg-brand-50 text-brand-600'
-                            : 'text-ink-soft hover:bg-brand-50/60 hover:text-ink'
+                            ? 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-200'
+                            : 'text-ink-soft hover:bg-brand-50/60 dark:hover:bg-brand-500/10 hover:text-ink'
                         }`
                       }
                     >
@@ -257,7 +327,7 @@ export default function AppLayout() {
         {!collapsed && <UsageMeter />}
 
         {/* User — whole row is a click path to account management & sign-out */}
-        <div className={`border-t border-black/5 ${collapsed ? 'px-2 py-3' : 'px-4 py-3'}`}>
+        <div className={`border-t border-ink/5 ${collapsed ? 'px-2 py-3' : 'px-4 py-3'}`}>
           <UserMenu collapsed={collapsed} />
         </div>
       </aside>
@@ -273,16 +343,16 @@ export default function AppLayout() {
       {/* Main content */}
       <div className={`flex-1 ${collapsed ? 'lg:ml-20' : 'lg:ml-64'} flex flex-col min-h-screen transition-[margin] duration-300`}>
         {/* Mobile header */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/90 backdrop-blur border-b border-black/5 sticky top-0 z-30">
+        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-surface/90 backdrop-blur border-b border-ink/5 sticky top-0 z-30">
           <button
             onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-lg hover:bg-brand-50"
+            className="p-2 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-500/10"
           >
             <svg className="w-5 h-5 text-ink-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <LogoMark heart="#ef3f74" fig="#232a45" size={40} />
+          <LogoMark white={dark} size={40} />
           <button
             onClick={() => navigate('/upload')}
             className="p-2 rounded-lg bg-brand-500 text-white hover:bg-brand-600"
