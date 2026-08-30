@@ -1,4 +1,4 @@
-const sharp = require('sharp');
+const sharp = require('./sharpSafe');
 const path = require('path');
 
 // The feed shows this thumbnail. 800px (not 400) keeps mosaic tiles crisp on
@@ -11,6 +11,7 @@ const THUMB_QUALITY = 82;
  * Returns { buffer, name } or null (non-image input / failure).
  */
 async function generateThumbnail(buffer, mimetype, originalName) {
+  if (!sharp) return null; // sharp unavailable — no thumbnail (original still serves)
   if (!mimetype || !mimetype.startsWith('image/')) return null;
 
   try {

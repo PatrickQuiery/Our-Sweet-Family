@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const sharp = require('sharp');
+const sharp = require('../lib/sharpSafe');
 const path = require('path');
 const { body, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
@@ -162,12 +162,14 @@ router.post('/:id/avatar', authenticate, avatarUpload.single('file'), async (req
     let buffer = req.file.buffer;
     let mimeType = req.file.mimetype;
     let name = req.file.originalname;
-    try {
-      buffer = await sharp(req.file.buffer).rotate().resize(512, 512, { fit: 'cover' }).jpeg({ quality: 82 }).toBuffer();
-      mimeType = 'image/jpeg';
-      name = 'avatar.jpg';
-    } catch {
-      // keep the original bytes
+    if (sharp) {
+      try {
+        buffer = await sharp(req.file.buffer).rotate().resize(512, 512, { fit: 'cover' }).jpeg({ quality: 82 }).toBuffer();
+        mimeType = 'image/jpeg';
+        name = 'avatar.jpg';
+      } catch {
+        // keep the original bytes
+      }
     }
 
     const key = await uploadFile(buffer, name, mimeType, 'avatars');

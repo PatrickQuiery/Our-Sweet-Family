@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const sharp = require('sharp');
+const sharp = require('../lib/sharpSafe');
 const path = require('path');
 const { authenticate } = require('../middleware/auth');
 const prisma = require('../lib/prisma');
@@ -70,6 +70,7 @@ async function extractExifGps(buffer, mimetype) {
 // A display-quality compressed photo (max 1600px, JPEG q72) — what free plans
 // store in place of the original, to save storage.
 async function compressPhoto(buffer) {
+  if (!sharp) return null; // sharp unavailable — store the original instead
   try {
     const out = await sharp(buffer)
       .rotate()
