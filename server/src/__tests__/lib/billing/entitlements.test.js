@@ -40,32 +40,39 @@ describe('mapEvent', () => {
     expect(m).toMatchObject({ plan: 'free', subscriptionStatus: 'expired', subscriptionWillRenew: false });
   });
 
-  it('maps the live our_sweet_family_pro entitlement to premium (top tier)', () => {
+  it('maps a yearly premium App Store purchase to the premium tier', () => {
     const m = mapEvent({
       event: {
         type: 'INITIAL_PURCHASE',
-        app_user_id: 'user_pro',
-        entitlement_ids: ['our_sweet_family_pro'],
-        product_id: 'yearly',
+        app_user_id: 'user_prem',
+        entitlement_ids: ['premium'],
+        product_id: 'premium_yearly',
         store: 'APP_STORE',
         expiration_at_ms: F.EXP_MS,
       },
     });
     expect(m).toMatchObject({
-      appUserId: 'user_pro',
+      appUserId: 'user_prem',
       plan: 'premium',
       subscriptionStatus: 'active',
       subscriptionStore: 'app_store',
-      subscriptionProductId: 'yearly',
+      subscriptionProductId: 'premium_yearly',
       subscriptionWillRenew: true,
     });
   });
 
-  it('falls back to premium from a bare monthly/yearly product id when entitlement ids are absent', () => {
+  it('maps a yearly plus purchase to the plus tier (not premium)', () => {
     const m = mapEvent({
-      event: { type: 'RENEWAL', app_user_id: 'user_pro', product_id: 'monthly', store: 'APP_STORE', expiration_at_ms: F.EXP_MS },
+      event: { type: 'INITIAL_PURCHASE', app_user_id: 'user_plus', entitlement_ids: ['plus'], product_id: 'plus_yearly', store: 'APP_STORE', expiration_at_ms: F.EXP_MS },
     });
-    expect(m).toMatchObject({ plan: 'premium', subscriptionStatus: 'active' });
+    expect(m).toMatchObject({ plan: 'plus', subscriptionStatus: 'active' });
+  });
+
+  it('falls back to the right tier from a plus_/premium_ product id when entitlement ids are absent', () => {
+    const plus = mapEvent({ event: { type: 'RENEWAL', app_user_id: 'u', product_id: 'plus_monthly', store: 'APP_STORE', expiration_at_ms: F.EXP_MS } });
+    const prem = mapEvent({ event: { type: 'RENEWAL', app_user_id: 'u', product_id: 'premium_monthly', store: 'APP_STORE', expiration_at_ms: F.EXP_MS } });
+    expect(plus).toMatchObject({ plan: 'plus' });
+    expect(prem).toMatchObject({ plan: 'premium' });
   });
 
   it('maps a plus purchase to the plus plan', () => {

@@ -135,7 +135,7 @@ export default function Reels() {
           icon="lock-closed-outline"
           title="Included in a plan"
           subtitle={gateMessage}
-          action={<Button title="Go Pro" onPress={onUpgrade} icon={<Ionicons name="sparkles" size={18} color={colors.onPrimary} />} />}
+          action={<Button title="Upgrade" onPress={onUpgrade} icon={<Ionicons name="sparkles" size={18} color={colors.onPrimary} />} />}
         />
       ) : reels.length === 0 ? (
         <EmptyState icon="film-outline" title="No reels yet" subtitle="As you add memories, they'll be grouped into reels here." />

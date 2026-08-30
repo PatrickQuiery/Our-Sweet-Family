@@ -10,5 +10,6 @@ export const REVENUECAT_IOS_KEY =
 export const REVENUECAT_ANDROID_KEY =
   process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? process.env.EXPO_PUBLIC_REVENUECAT_KEY ?? '';
 
-// The single paid entitlement configured in the RevenueCat dashboard.
-export const RC_ENTITLEMENT_ID = 'our_sweet_family_pro';
+// The two paid entitlements configured in the RevenueCat dashboard.
+export const RC_PLUS_ENTITLEMENT = 'plus';
+export const RC_PREMIUM_ENTITLEMENT = 'premium';

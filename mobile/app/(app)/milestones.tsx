@@ -129,7 +129,7 @@ export default function Milestones() {
           icon="lock-closed-outline"
           title="Included in a plan"
           subtitle={gate}
-          action={<Button title="Go Pro" onPress={onUpgrade} icon={<Ionicons name="sparkles" size={18} color={colors.onPrimary} />} />}
+          action={<Button title="Upgrade" onPress={onUpgrade} icon={<Ionicons name="sparkles" size={18} color={colors.onPrimary} />} />}
         />
       ) : (
         <ScrollView contentContainerStyle={{ ...wideColumn, padding: spacing.lg, gap: spacing.md, paddingBottom: tabClear, flexGrow: 1 }}>

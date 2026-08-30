@@ -82,8 +82,8 @@ export default function Settings() {
         </ul>
         {user?.plan !== 'premium' && (
           <div className="flex gap-2">
-            {user?.plan === 'free' && <button className="btn-primary text-sm">Upgrade to Plus — $6/mo</button>}
-            <button className="btn-secondary text-sm">Upgrade to Premium — $14/mo</button>
+            {user?.plan === 'free' && <button className="btn-primary text-sm">Upgrade to Plus — $5.99/mo</button>}
+            <button className="btn-secondary text-sm">Upgrade to Premium — $13.99/mo</button>
           </div>
         )}
       </div>

@@ -46,13 +46,13 @@ export default function Settings() {
   const tabClear = useTabBarClearance();
   const toast = useToast();
   const { families, activeFamily, activeFamilyId, setActiveFamilyId, refresh } = useFamily();
-  const { ready: rcReady, isPro, presentPaywall, presentCustomerCenter, restore: rcRestore } = usePurchases();
+  const { ready: rcReady, tier, isPaid, presentPaywall, presentCustomerCenter, restore: rcRestore } = usePurchases();
 
   const onUpgrade = useCallback(async () => {
     const purchased = await presentPaywall();
     if (purchased) {
       await Promise.all([refresh(), loadExtras()]);
-      toast('Welcome to Pro! 🎉', 'success');
+      toast('Subscription active — thank you! 🎉', 'success');
     }
   }, [presentPaywall, refresh]);
 
@@ -207,23 +207,33 @@ export default function Settings() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
               <IconBubble name="sparkles-outline" />
               <View style={{ flex: 1 }}>
-                <Text variant="bodyMedium">{isPro ? 'Our Sweet Family Pro' : 'Upgrade to Pro'}</Text>
+                <Text variant="bodyMedium">
+                  {tier === 'premium'
+                    ? 'Our Sweet Family Premium'
+                    : tier === 'plus'
+                      ? 'Our Sweet Family Plus'
+                      : 'Upgrade'}
+                </Text>
                 <Text variant="caption" color="textSecondary">
-                  {isPro ? 'Your subscription is active' : 'Unlock Reels, Milestones, HD photos & more'}
+                  {isPaid
+                    ? tier === 'plus'
+                      ? 'Your Plus subscription is active'
+                      : 'Your Premium subscription is active'
+                    : 'Unlock Milestones, Reels, HD photos & more'}
                 </Text>
               </View>
             </View>
-            {isPro ? (
+            {isPaid ? (
               <Button
                 variant="secondary"
-                title="Manage subscription"
-                onPress={presentCustomerCenter}
-                icon={<Ionicons name="settings-outline" size={18} color={colors.text} />}
+                title={tier === 'plus' ? 'Upgrade or manage' : 'Manage subscription'}
+                onPress={tier === 'plus' ? onUpgrade : presentCustomerCenter}
+                icon={<Ionicons name={tier === 'plus' ? 'sparkles' : 'settings-outline'} size={18} color={colors.text} />}
               />
             ) : (
               <>
                 <Button
-                  title="Go Pro"
+                  title="See plans"
                   onPress={onUpgrade}
                   icon={<Ionicons name="sparkles" size={18} color={colors.onPrimary} />}
                 />

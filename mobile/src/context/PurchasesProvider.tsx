@@ -12,13 +12,17 @@ import { useAuth } from '@clerk/clerk-expo';
 import Purchases, { type CustomerInfo } from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { configureRevenueCat, purchasesSupported } from '../lib/purchases';
-import { RC_ENTITLEMENT_ID } from '../lib/config';
+import { RC_PLUS_ENTITLEMENT, RC_PREMIUM_ENTITLEMENT } from '../lib/config';
+
+export type Tier = 'free' | 'plus' | 'premium';
 
 export interface PurchasesContextValue {
   /** SDK configured + usable on this platform. */
   ready: boolean;
-  /** Whether the RevenueCat `our_sweet_family_pro` entitlement is active (client-optimistic). */
-  isPro: boolean;
+  /** Active paid tier from RevenueCat entitlements (client-optimistic; backend `plan` is the gate). */
+  tier: Tier;
+  /** Convenience: any paid tier is active. */
+  isPaid: boolean;
   customerInfo: CustomerInfo | null;
   /** Present the dashboard-configured paywall. Resolves true if the user purchased/restored. */
   presentPaywall: () => Promise<boolean>;
@@ -32,8 +36,13 @@ export interface PurchasesContextValue {
 
 const PurchasesContext = createContext<PurchasesContextValue | null>(null);
 
-const hasPro = (info: CustomerInfo | null): boolean =>
-  !!info?.entitlements.active[RC_ENTITLEMENT_ID];
+// Premium outranks Plus if (somehow) both are active.
+const tierOf = (info: CustomerInfo | null): Tier => {
+  const active = info?.entitlements.active ?? {};
+  if (active[RC_PREMIUM_ENTITLEMENT]) return 'premium';
+  if (active[RC_PLUS_ENTITLEMENT]) return 'plus';
+  return 'free';
+};
 
 /**
  * Owns the RevenueCat lifecycle: configure once, identify the Clerk user, and
@@ -129,24 +138,26 @@ export function PurchasesProvider({ children }: { children: ReactNode }) {
     try {
       const info = await Purchases.restorePurchases();
       setCustomerInfo(info);
-      return hasPro(info);
+      return tierOf(info) !== 'free';
     } catch (e: any) {
       console.warn('[RevenueCat] restore error:', e?.message ?? e);
       return false;
     }
   }, []);
 
+  const tier = tierOf(customerInfo);
   const value = useMemo<PurchasesContextValue>(
     () => ({
       ready,
-      isPro: hasPro(customerInfo),
+      tier,
+      isPaid: tier !== 'free',
       customerInfo,
       presentPaywall,
       presentCustomerCenter,
       restore,
       refresh,
     }),
-    [ready, customerInfo, presentPaywall, presentCustomerCenter, restore, refresh],
+    [ready, tier, customerInfo, presentPaywall, presentCustomerCenter, restore, refresh],
   );
 
   return <PurchasesContext.Provider value={value}>{children}</PurchasesContext.Provider>;

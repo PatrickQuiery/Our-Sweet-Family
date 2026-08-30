@@ -5,10 +5,9 @@
 // fields are descriptive (status/renewal for the manage-subscription UI).
 
 // Entitlement identifiers configured in RevenueCat → our plan tiers. Comma-lists,
-// overridable via env so we don't hardcode the dashboard naming. `our_sweet_family_pro`
-// is the single paid entitlement in the live RevenueCat project and maps to the
-// top tier (premium), unlocking every gated feature.
-const PREMIUM_ENTS = (process.env.REVENUECAT_PREMIUM_ENTITLEMENT || 'premium,our_sweet_family_pro')
+// overridable via env so we don't hardcode the dashboard naming. The live project
+// uses two entitlements, `plus` and `premium`, sold monthly + yearly.
+const PREMIUM_ENTS = (process.env.REVENUECAT_PREMIUM_ENTITLEMENT || 'premium')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
@@ -36,10 +35,10 @@ function tierFor(event) {
   const ents = event.entitlement_ids || (event.entitlement_id ? [event.entitlement_id] : []);
   if (ents.some((e) => PREMIUM_ENTS.includes(e))) return 'premium';
   if (ents.some((e) => PLUS_ENTS.includes(e))) return 'plus';
-  // Fallback: infer from the product identifier when entitlement ids are absent.
-  // The live project sells one paid tier as `monthly` / `yearly` products.
+  // Fallback: infer from the product identifier when entitlement ids are absent
+  // (products are named `plus_monthly`, `premium_yearly`, etc.).
   const pid = String(event.product_id || '').toLowerCase();
-  if (pid.includes('premium') || pid.includes('pro') || pid === 'monthly' || pid === 'yearly') return 'premium';
+  if (pid.includes('premium')) return 'premium';
   if (pid.includes('plus')) return 'plus';
   return null;
 }
