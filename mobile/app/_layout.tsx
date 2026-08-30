@@ -57,6 +57,7 @@ function AuthGate() {
         >
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(app)" />
+          <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen
             name="memory/[id]"
             options={{ headerShown: true, title: 'Memory', headerBackButtonDisplayMode: 'minimal' }}

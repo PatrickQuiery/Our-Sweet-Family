@@ -46,15 +46,9 @@ export default function Settings() {
   const tabClear = useTabBarClearance();
   const toast = useToast();
   const { families, activeFamily, activeFamilyId, setActiveFamilyId, refresh } = useFamily();
-  const { ready: rcReady, tier, isPaid, presentPaywall, presentCustomerCenter, restore: rcRestore } = usePurchases();
+  const { ready: rcReady, tier, isPaid, presentCustomerCenter, restore: rcRestore } = usePurchases();
 
-  const onUpgrade = useCallback(async () => {
-    const purchased = await presentPaywall();
-    if (purchased) {
-      await Promise.all([refresh(), loadExtras()]);
-      toast('Subscription active — thank you! 🎉', 'success');
-    }
-  }, [presentPaywall, refresh]);
+  const onUpgrade = useCallback(() => router.push('/paywall'), [router]);
 
   const onRestore = useCallback(async () => {
     const ok = await rcRestore();

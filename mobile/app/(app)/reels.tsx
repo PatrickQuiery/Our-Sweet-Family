@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, FlatList, Modal, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '@clerk/clerk-expo';
@@ -10,7 +10,6 @@ import { useFamily } from '../../src/context/FamilyProvider';
 import { getReels, REEL_TYPE_LABELS } from '../../src/lib/reels';
 import { AuthedImage } from '../../src/components/AuthedImage';
 import { Button, Card, Chip, EmptyState, Screen, Skeleton, Text, Touchable } from '../../src/components/ui';
-import { usePurchases } from '../../src/context/PurchasesProvider';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useReducedMotion } from '../../src/hooks/useReducedMotion';
 import { ApiError } from '../../src/lib/api';
@@ -64,8 +63,8 @@ function Collage({ memories, height }: { memories: Memory[]; height: number }) {
 
 export default function Reels() {
   const api = useApi();
+  const router = useRouter();
   const { activeFamily } = useFamily();
-  const { presentPaywall } = usePurchases();
   const { colors, spacing, radius } = useTheme();
   const { width } = useWindowDimensions();
   const cols = width > 700 ? 2 : 1; // 2-up in landscape / on tablets (M18)
@@ -98,10 +97,7 @@ export default function Reels() {
     load();
   }, [load]);
 
-  const onUpgrade = useCallback(async () => {
-    const purchased = await presentPaywall();
-    if (purchased) load(); // gate lifts once the plan syncs
-  }, [presentPaywall, load]);
+  const onUpgrade = useCallback(() => router.push('/paywall'), [router]);
 
   const firstFocus = useRef(true);
   useFocusEffect(
