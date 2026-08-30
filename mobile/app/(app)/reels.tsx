@@ -9,7 +9,8 @@ import { useApi } from '../../src/hooks/useApi';
 import { useFamily } from '../../src/context/FamilyProvider';
 import { getReels, REEL_TYPE_LABELS } from '../../src/lib/reels';
 import { AuthedImage } from '../../src/components/AuthedImage';
-import { Card, Chip, EmptyState, Screen, Skeleton, Text, Touchable } from '../../src/components/ui';
+import { Button, Card, Chip, EmptyState, Screen, Skeleton, Text, Touchable } from '../../src/components/ui';
+import { usePurchases } from '../../src/context/PurchasesProvider';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useReducedMotion } from '../../src/hooks/useReducedMotion';
 import { ApiError } from '../../src/lib/api';
@@ -64,6 +65,7 @@ function Collage({ memories, height }: { memories: Memory[]; height: number }) {
 export default function Reels() {
   const api = useApi();
   const { activeFamily } = useFamily();
+  const { presentPaywall } = usePurchases();
   const { colors, spacing, radius } = useTheme();
   const { width } = useWindowDimensions();
   const cols = width > 700 ? 2 : 1; // 2-up in landscape / on tablets (M18)
@@ -96,6 +98,11 @@ export default function Reels() {
     load();
   }, [load]);
 
+  const onUpgrade = useCallback(async () => {
+    const purchased = await presentPaywall();
+    if (purchased) load(); // gate lifts once the plan syncs
+  }, [presentPaywall, load]);
+
   const firstFocus = useRef(true);
   useFocusEffect(
     useCallback(() => {
@@ -124,7 +131,12 @@ export default function Reels() {
           <Skeleton style={{ height: 190, borderRadius: radius.lg }} />
         </View>
       ) : gateMessage ? (
-        <EmptyState icon="lock-closed-outline" title="Included in a plan" subtitle={gateMessage} />
+        <EmptyState
+          icon="lock-closed-outline"
+          title="Included in a plan"
+          subtitle={gateMessage}
+          action={<Button title="Go Pro" onPress={onUpgrade} icon={<Ionicons name="sparkles" size={18} color={colors.onPrimary} />} />}
+        />
       ) : reels.length === 0 ? (
         <EmptyState icon="film-outline" title="No reels yet" subtitle="As you add memories, they'll be grouped into reels here." />
       ) : (

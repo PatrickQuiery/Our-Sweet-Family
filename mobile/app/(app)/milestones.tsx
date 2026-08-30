@@ -11,6 +11,7 @@ import { DatePickerField } from '../../src/components/DatePickerField';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { resolveChildColors } from '../../src/lib/childColor';
 import { useTabBarClearance, wideColumn } from '../../src/lib/layout';
+import { usePurchases } from '../../src/context/PurchasesProvider';
 import { ApiError } from '../../src/lib/api';
 import type { Child, Milestone } from '../../src/lib/types';
 
@@ -28,6 +29,7 @@ export default function Milestones() {
   const { colors, spacing } = useTheme();
   const tabClear = useTabBarClearance();
   const toast = useToast();
+  const { presentPaywall } = usePurchases();
   const children = activeFamily?.children ?? [];
   const childColors = resolveChildColors(children);
   const manage = canManage();
@@ -63,6 +65,11 @@ export default function Milestones() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const onUpgrade = useCallback(async () => {
+    const purchased = await presentPaywall();
+    if (purchased) load(); // gate lifts once the plan syncs
+  }, [presentPaywall, load]);
 
   // Refresh on refocus (e.g. after adding a child elsewhere), skipping the mount.
   const firstFocus = useRef(true);
@@ -118,7 +125,12 @@ export default function Milestones() {
       {loading ? (
         <Loading />
       ) : gate ? (
-        <EmptyState icon="lock-closed-outline" title="Included in a plan" subtitle={gate} />
+        <EmptyState
+          icon="lock-closed-outline"
+          title="Included in a plan"
+          subtitle={gate}
+          action={<Button title="Go Pro" onPress={onUpgrade} icon={<Ionicons name="sparkles" size={18} color={colors.onPrimary} />} />}
+        />
       ) : (
         <ScrollView contentContainerStyle={{ ...wideColumn, padding: spacing.lg, gap: spacing.md, paddingBottom: tabClear, flexGrow: 1 }}>
           {milestones.length === 0 ? (
