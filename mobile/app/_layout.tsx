@@ -13,6 +13,7 @@ import { CLERK_PUBLISHABLE_KEY } from '../src/lib/config';
 import { interFontMap } from '../src/theme/fonts';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeProvider';
 import { FamilyProvider } from '../src/context/FamilyProvider';
+import { PurchasesProvider } from '../src/context/PurchasesProvider';
 import { ToastProvider } from '../src/components/ui';
 import { AnimatedSplash } from '../src/components/AnimatedSplash';
 
@@ -40,6 +41,7 @@ function AuthGate() {
     <>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <ToastProvider>
+      <PurchasesProvider>
       <FamilyProvider>
         <Stack
           screenOptions={{
@@ -73,6 +75,7 @@ function AuthGate() {
           />
         </Stack>
       </FamilyProvider>
+      </PurchasesProvider>
       </ToastProvider>
     </>
   );

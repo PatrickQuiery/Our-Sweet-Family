@@ -4,10 +4,18 @@
 // `plan` is the authoritative gate the rest of the app reads; the `subscription*`
 // fields are descriptive (status/renewal for the manage-subscription UI).
 
-// Entitlement identifiers configured in RevenueCat → our plan tiers. Overridable
-// via env so we don't hardcode the dashboard naming.
-const PREMIUM_ENT = process.env.REVENUECAT_PREMIUM_ENTITLEMENT || 'premium';
-const PLUS_ENT = process.env.REVENUECAT_PLUS_ENTITLEMENT || 'plus';
+// Entitlement identifiers configured in RevenueCat → our plan tiers. Comma-lists,
+// overridable via env so we don't hardcode the dashboard naming. `our_sweet_family_pro`
+// is the single paid entitlement in the live RevenueCat project and maps to the
+// top tier (premium), unlocking every gated feature.
+const PREMIUM_ENTS = (process.env.REVENUECAT_PREMIUM_ENTITLEMENT || 'premium,our_sweet_family_pro')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+const PLUS_ENTS = (process.env.REVENUECAT_PLUS_ENTITLEMENT || 'plus')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 const STORE_MAP = {
   APP_STORE: 'app_store',
@@ -26,11 +34,12 @@ const EXPIRE_TYPES = new Set(['EXPIRATION', 'SUBSCRIPTION_PAUSED']);
 
 function tierFor(event) {
   const ents = event.entitlement_ids || (event.entitlement_id ? [event.entitlement_id] : []);
-  if (ents.includes(PREMIUM_ENT)) return 'premium';
-  if (ents.includes(PLUS_ENT)) return 'plus';
-  // Fallback: infer from the product identifier.
+  if (ents.some((e) => PREMIUM_ENTS.includes(e))) return 'premium';
+  if (ents.some((e) => PLUS_ENTS.includes(e))) return 'plus';
+  // Fallback: infer from the product identifier when entitlement ids are absent.
+  // The live project sells one paid tier as `monthly` / `yearly` products.
   const pid = String(event.product_id || '').toLowerCase();
-  if (pid.includes('premium')) return 'premium';
+  if (pid.includes('premium') || pid.includes('pro') || pid === 'monthly' || pid === 'yearly') return 'premium';
   if (pid.includes('plus')) return 'plus';
   return null;
 }

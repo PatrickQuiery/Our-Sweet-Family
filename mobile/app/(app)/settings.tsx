@@ -7,6 +7,7 @@ import { Button, Card, Screen, Text, Touchable, useToast } from '../../src/compo
 import { SunriseHeader } from '../../src/components/SunriseHeader';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useFamily } from '../../src/context/FamilyProvider';
+import { usePurchases } from '../../src/context/PurchasesProvider';
 import { useApi } from '../../src/hooks/useApi';
 import { getFamilyUsage, updateFamilySettings } from '../../src/lib/family';
 import { getReferral, type ReferralInfo } from '../../src/lib/referrals';
@@ -45,6 +46,25 @@ export default function Settings() {
   const tabClear = useTabBarClearance();
   const toast = useToast();
   const { families, activeFamily, activeFamilyId, setActiveFamilyId, refresh } = useFamily();
+  const { ready: rcReady, isPro, presentPaywall, presentCustomerCenter, restore: rcRestore } = usePurchases();
+
+  const onUpgrade = useCallback(async () => {
+    const purchased = await presentPaywall();
+    if (purchased) {
+      await Promise.all([refresh(), loadExtras()]);
+      toast('Welcome to Pro! 🎉', 'success');
+    }
+  }, [presentPaywall, refresh]);
+
+  const onRestore = useCallback(async () => {
+    const ok = await rcRestore();
+    if (ok) {
+      await Promise.all([refresh(), loadExtras()]);
+      toast('Purchases restored', 'success');
+    } else {
+      toast('No purchases to restore', 'info');
+    }
+  }, [rcRestore, refresh]);
   const email = user?.primaryEmailAddress?.emailAddress ?? '';
   const initial = (user?.firstName?.[0] ?? email[0] ?? '?').toUpperCase();
   const childCount = activeFamily?.children?.length ?? 0;
@@ -178,6 +198,42 @@ export default function Settings() {
               {formatBytes(usedVideo)}
               {limit ? ` of ${formatBytes(limit)} video` : ' video · unlimited'} · {usage.photoCount} photos · {usage.videoCount} videos
             </Text>
+          </Card>
+        ) : null}
+
+        {/* Subscription */}
+        {rcReady ? (
+          <Card style={{ padding: spacing.lg, gap: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <IconBubble name="sparkles-outline" />
+              <View style={{ flex: 1 }}>
+                <Text variant="bodyMedium">{isPro ? 'Our Sweet Family Pro' : 'Upgrade to Pro'}</Text>
+                <Text variant="caption" color="textSecondary">
+                  {isPro ? 'Your subscription is active' : 'Unlock Reels, Milestones, HD photos & more'}
+                </Text>
+              </View>
+            </View>
+            {isPro ? (
+              <Button
+                variant="secondary"
+                title="Manage subscription"
+                onPress={presentCustomerCenter}
+                icon={<Ionicons name="settings-outline" size={18} color={colors.text} />}
+              />
+            ) : (
+              <>
+                <Button
+                  title="Go Pro"
+                  onPress={onUpgrade}
+                  icon={<Ionicons name="sparkles" size={18} color={colors.onPrimary} />}
+                />
+                <Touchable onPress={onRestore} pressedScale={0.98} style={{ alignSelf: 'center', paddingVertical: spacing.xs }}>
+                  <Text variant="caption" color="primary">
+                    Restore purchases
+                  </Text>
+                </Touchable>
+              </>
+            )}
           </Card>
         ) : null}
 

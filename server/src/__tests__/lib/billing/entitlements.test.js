@@ -40,6 +40,34 @@ describe('mapEvent', () => {
     expect(m).toMatchObject({ plan: 'free', subscriptionStatus: 'expired', subscriptionWillRenew: false });
   });
 
+  it('maps the live our_sweet_family_pro entitlement to premium (top tier)', () => {
+    const m = mapEvent({
+      event: {
+        type: 'INITIAL_PURCHASE',
+        app_user_id: 'user_pro',
+        entitlement_ids: ['our_sweet_family_pro'],
+        product_id: 'yearly',
+        store: 'APP_STORE',
+        expiration_at_ms: F.EXP_MS,
+      },
+    });
+    expect(m).toMatchObject({
+      appUserId: 'user_pro',
+      plan: 'premium',
+      subscriptionStatus: 'active',
+      subscriptionStore: 'app_store',
+      subscriptionProductId: 'yearly',
+      subscriptionWillRenew: true,
+    });
+  });
+
+  it('falls back to premium from a bare monthly/yearly product id when entitlement ids are absent', () => {
+    const m = mapEvent({
+      event: { type: 'RENEWAL', app_user_id: 'user_pro', product_id: 'monthly', store: 'APP_STORE', expiration_at_ms: F.EXP_MS },
+    });
+    expect(m).toMatchObject({ plan: 'premium', subscriptionStatus: 'active' });
+  });
+
   it('maps a plus purchase to the plus plan', () => {
     const m = mapEvent(F.initialPurchasePlus);
     expect(m).toMatchObject({ appUserId: 'user_2', plan: 'plus', subscriptionStatus: 'active' });
