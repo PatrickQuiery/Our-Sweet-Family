@@ -27,10 +27,6 @@ const CLEARED = {
   subscriptionWillRenew: false,
 };
 
-// Last authenticated webhook we processed — PII-free (no user ids), in-memory only.
-// Lets a deploy be verified end-to-end without shipping logs or user tokens around.
-let lastWebhook = null;
-
 // RevenueCat webhook receiver. RevenueCat is the entitlement source of truth; this
 // endpoint syncs the change onto our User row. Idempotent (events may be redelivered)
 // and it answers 200 even for unknown users so RevenueCat stops retrying — but 500s
@@ -46,8 +42,6 @@ router.post('/revenuecat', async (req, res) => {
   }
 
   const mapped = mapEvent(req.body);
-  const eventType = req.body?.event?.type ?? null;
-  const environment = req.body?.event?.environment ?? null;
 
   try {
     if (mapped.transfer) {
@@ -61,23 +55,15 @@ router.post('/revenuecat', async (req, res) => {
         subscriptionExpiresAt: mapped.subscriptionExpiresAt,
         subscriptionWillRenew: mapped.subscriptionWillRenew,
       });
-      lastWebhook = { at: new Date().toISOString(), eventType, environment, transfer: true, applied: grant.applied, reason: grant.reason ?? null, plan: grant.plan ?? null };
       return res.status(200).json({ ok: true, transfer: true, ...grant });
     }
 
     const result = await applyEntitlement(prisma, mapped);
-    lastWebhook = { at: new Date().toISOString(), eventType, environment, transfer: false, applied: result.applied, reason: result.reason ?? null, plan: result.plan ?? null };
     return res.status(200).json({ ok: true, ...result });
   } catch (e) {
     console.error('billing webhook error:', e.message);
     return res.status(500).json({ error: 'Failed to apply entitlement' });
   }
-});
-
-// Read-only view of the most recent authenticated webhook (PII-free). Used to
-// verify the RevenueCat → server → DB path end-to-end after a test purchase.
-router.get('/_debug/last-webhook', (req, res) => {
-  res.json({ lastWebhook });
 });
 
 // Current user's subscription snapshot for the manage-subscription UI.
