@@ -110,7 +110,16 @@ app.use('/api/activity', activityRoutes);
 app.use('/api/billing', billingRoutes);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  // `config` reports only whether critical env vars are PRESENT (boolean) — never
+  // their values — so deploys can be diagnosed without leaking secrets.
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    config: {
+      databaseUrl: Boolean(process.env.DATABASE_URL),
+      revenuecatWebhookSecret: Boolean(process.env.REVENUECAT_WEBHOOK_SECRET),
+    },
+  });
 });
 
 // eslint-disable-next-line no-unused-vars
