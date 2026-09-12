@@ -25,7 +25,7 @@ Configure a webhook for all relevant events at `https://<API-host>/api/billing/r
 
 ## Dashboard state verified September 12, 2026
 
-Project `c6c99b64` (Our Sweet Family) currently has Test Store products only. Its default offering contains the four product IDs above. No real app store configuration or web payment provider is connected. The Web screen states the signed-in account cannot add app configurations.
+Project `c6c99b64` (Our Sweet Family) currently has Test Store products only. Its default offering contains the four product IDs above. No real app store configuration or web payment provider is connected. The Web screen showed a permissions tooltip, but follow-up verification confirmed the project lists the account as Owner and the App Store creation form is accessible. The tooltip alone was not a reliable indication of blocked access. Apple and Stripe sign-ins are required to complete the live connections.
 
 Saved Customer Center configuration: screen title “Manage your family subscription” and purchase history enabled. Existing missing-purchase, plan-change, management and refund flows remain available.
 
