@@ -403,7 +403,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
     // Check ownership
     const family = await prisma.family.findUnique({
       where: { id: familyId },
-      include: { members: true, children: { select: { id: true } }, owner: { select: { plan: true, planBoostUntil: true } } },
+      include: { members: true, children: { select: { id: true } }, owner: { select: { plan: true, planBoostUntil: true, subscriptionSnapshot: true, subscriptionStatus: true, subscriptionExpiresAt: true } } },
     });
     if (!family) return res.status(404).json({ error: 'Family not found' });
 

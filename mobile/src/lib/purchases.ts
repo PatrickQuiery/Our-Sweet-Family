@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
+import { isNativePublicKey } from './purchaseKeys';
 import { REVENUECAT_ANDROID_KEY, REVENUECAT_IOS_KEY } from './config';
 
 /** RevenueCat's native SDK only runs on iOS/Android — guard so `expo start --web` won't crash. */
@@ -19,8 +20,8 @@ export function configureRevenueCat(): boolean {
   if (configured) return true;
   if (!purchasesSupported) return false;
   const key = apiKey();
-  if (!key) {
-    console.warn('[RevenueCat] No API key — set EXPO_PUBLIC_REVENUECAT_KEY in mobile/.env / EAS.');
+  if (!isNativePublicKey(key, Platform.OS, __DEV__, process.env.EXPO_PUBLIC_REVENUECAT_ALLOW_SANDBOX)) {
+    console.warn('[RevenueCat] A valid public store key is required. Test Store keys require development or a dedicated sandbox build.');
     return false;
   }
   if (__DEV__) Purchases.setLogLevel(LOG_LEVEL.DEBUG);
