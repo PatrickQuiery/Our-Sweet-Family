@@ -24,3 +24,10 @@ describe('memory detail loading', () => {
     expect(document.body.style.overflow).toBe('');
   });
 });
+it('opens video memories with muted inline autoplay and a fullscreen option', async () => {
+  api.get.mockResolvedValue({data:{memory:{id:'video',fileType:'video',fileUrl:'https://example.com/video.mp4',capturedAt:'2026-09-01T12:00:00Z',uploadedById:'owner',reactions:[],comments:[]}}});
+  const {container}=render(<MemoryRouter initialEntries={['/memories/video']} future={{v7_startTransition:true,v7_relativeSplatPath:true}}><Routes><Route path="/memories/:id" element={<MemoryDetail/>}/></Routes></MemoryRouter>);
+  expect(await screen.findByRole('button',{name:'Full screen'})).toBeTruthy();
+  const player=container.querySelector('video');
+  expect(player.autoplay).toBe(true);expect(player.muted).toBe(true);expect(player.playsInline).toBe(true);
+});
