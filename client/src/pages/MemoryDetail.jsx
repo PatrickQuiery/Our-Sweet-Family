@@ -192,6 +192,16 @@ export default function MemoryDetail() {
     }
   };
 
+  // Esc closes the fullscreen photo; lock body scroll while it's open.
+  useEffect(() => {
+    if (!zoomOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setZoomOpen(false); };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+  }, [zoomOpen]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -211,16 +221,6 @@ export default function MemoryDetail() {
 
   const canDelete = user?.role === 'owner' || memory.uploadedById === user?.id;
   const canEdit = canDelete;
-
-  // Esc closes the fullscreen photo; lock body scroll while it's open.
-  useEffect(() => {
-    if (!zoomOpen) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') setZoomOpen(false); };
-    document.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
-  }, [zoomOpen]);
 
   return (
     <div className="max-w-3xl mx-auto">

@@ -1,0 +1,26 @@
+// @vitest-environment jsdom
+import React from 'react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, screen, act, fireEvent, cleanup } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import MemoryDetail from './MemoryDetail';
+import api from '../lib/api';
+vi.mock('../lib/api', () => ({ default: { get: vi.fn() } }));
+vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ user: { id: 'owner', role: 'owner' } }) }));
+vi.mock('../context/DialogProvider', () => ({ useConfirm: () => vi.fn(), useToast: () => vi.fn() }));
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+describe('memory detail loading', () => {
+  it('renders a fetched photo then opens and closes fullscreen without crashing', async () => {
+    let resolve;
+    const response = new Promise(r => { resolve = r; });
+    api.get.mockImplementation(path => path === '/memories/photo' ? response : Promise.resolve({data:{children:[]}}));
+    render(<MemoryRouter initialEntries={['/memories/photo']} future={{v7_startTransition:true,v7_relativeSplatPath:true}}><Routes><Route path="/memories/:id" element={<MemoryDetail/>}/></Routes></MemoryRouter>);
+    expect(screen.queryByRole('button',{name:'View photo full screen'})).toBeNull();
+    await act(async () => { resolve({data:{memory:{id:'photo',familyId:'family',fileType:'photo',fileUrl:'https://example.com/photo.jpg',caption:'A family afternoon',capturedAt:'2026-09-01T12:00:00Z',uploadedById:'owner',uploadedBy:{name:'Parent'},reactions:[],comments:[],childIds:[],tags:[],ageLabels:[]}}}); });
+    expect(screen.getByText('A family afternoon')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button',{name:'View photo full screen'}));
+    expect(document.body.style.overflow).toBe('hidden');
+    fireEvent.keyDown(document,{key:'Escape'});
+    expect(document.body.style.overflow).toBe('');
+  });
+});
