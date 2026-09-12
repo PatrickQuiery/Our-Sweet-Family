@@ -233,10 +233,14 @@ export default function MemoryDetail() {
 
       <div className="card overflow-hidden">
         {/* Media */}
-        <div className="bg-black flex items-center justify-center min-h-64 max-h-[600px] overflow-hidden">
+        <div className="bg-black flex items-center justify-center min-h-64 overflow-hidden">
           {memory.fileType === 'video' ? (
             <AuthedVideo
               src={memory.fileUrl}
+              autoPlay
+              muted
+              playsInline
+              showFullscreenButton
               controls
               className="max-w-full max-h-[600px] w-full"
             />
