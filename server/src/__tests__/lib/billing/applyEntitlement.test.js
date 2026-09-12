@@ -1,75 +1,12 @@
-jest.mock('../../../lib/prisma');
-
-const prisma = require('../../../lib/prisma');
 const { applyEntitlement } = require('../../../lib/billing/applyEntitlement');
-
-const activePremium = {
-  appUserId: 'user_1',
-  plan: 'premium',
-  subscriptionStatus: 'active',
-  subscriptionStore: 'app_store',
-  subscriptionProductId: 'osf_premium_monthly',
-  subscriptionExpiresAt: new Date('2030-01-01'),
-  subscriptionWillRenew: true,
-};
-
-describe('applyEntitlement', () => {
-  it('writes the plan + subscription fields to a user found by id', async () => {
-    prisma.user.findUnique.mockResolvedValueOnce({ id: 'user_1' });
-    const res = await applyEntitlement(prisma, activePremium);
-
-    expect(res).toEqual({ applied: true, userId: 'user_1', plan: 'premium' });
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: 'user_1' },
-      data: {
-        plan: 'premium',
-        subscriptionStatus: 'active',
-        subscriptionStore: 'app_store',
-        subscriptionProductId: 'osf_premium_monthly',
-        subscriptionExpiresAt: activePremium.subscriptionExpiresAt,
-        subscriptionWillRenew: true,
-      },
-    });
-  });
-
-  it('falls back to matching by clerkUserId', async () => {
-    prisma.user.findUnique
-      .mockResolvedValueOnce(null) // by id
-      .mockResolvedValueOnce({ id: 'real_id' }); // by clerkUserId
-    const res = await applyEntitlement(prisma, activePremium);
-
-    expect(res).toMatchObject({ applied: true, userId: 'real_id' });
-    expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'real_id' } }));
-  });
-
-  it('returns not-found (without throwing or updating) for an unknown user', async () => {
-    prisma.user.findUnique.mockResolvedValue(null);
-    const res = await applyEntitlement(prisma, activePremium);
-
-    expect(res).toEqual({ applied: false, reason: 'user_not_found' });
-    expect(prisma.user.update).not.toHaveBeenCalled();
-  });
-
-  it('skips ignored mappings', async () => {
-    const res = await applyEntitlement(prisma, { ignored: true, type: 'TEST' });
-    expect(res).toEqual({ applied: false, reason: 'ignored' });
-    expect(prisma.user.findUnique).not.toHaveBeenCalled();
-  });
-
-  it('expiration sets plan free but never clears the referral boost', async () => {
-    prisma.user.findUnique.mockResolvedValueOnce({ id: 'user_1' });
-    await applyEntitlement(prisma, {
-      appUserId: 'user_1',
-      plan: 'free',
-      subscriptionStatus: 'expired',
-      subscriptionStore: 'app_store',
-      subscriptionProductId: 'osf_premium_monthly',
-      subscriptionExpiresAt: new Date('2020-01-01'),
-      subscriptionWillRenew: false,
-    });
-
-    const data = prisma.user.update.mock.calls[0][0].data;
-    expect(data.plan).toBe('free');
-    expect(data).not.toHaveProperty('planBoostUntil');
-  });
+const mapped = {plan:'premium',subscriptionStatus:'active',subscriptionStore:'app_store',subscriptionProductId:'premium_yearly',subscriptionExpiresAt:new Date('2030-01-01'),subscriptionWillRenew:true,subscriptionSyncedAt:new Date('2026-09-12'),subscriptionManagementUrl:'https://apps.apple.com/account/subscriptions',subscriptionSnapshot:{version:1,entitlements:[],subscriptions:[]}};
+it('conditionally persists only a newer trusted snapshot and leaves referral boosts untouched',async()=>{
+ const db={user:{updateMany:jest.fn().mockResolvedValue({count:1})}};
+ await applyEntitlement(db,{id:'u1'},mapped);
+ expect(db.user.updateMany).toHaveBeenCalledWith({where:{id:'u1',OR:[{subscriptionSyncedAt:null},{subscriptionSyncedAt:{lt:new Date('2026-09-12')}}]},data:expect.objectContaining({plan:'premium',subscriptionSyncedAt:new Date('2026-09-12')})});
+ expect(db.user.updateMany.mock.calls[0][0].data).not.toHaveProperty('planBoostUntil');
+});
+it('reports duplicate or older snapshots without claiming a new grant',async()=>{
+ const db={user:{updateMany:jest.fn().mockResolvedValue({count:0})}};
+ expect(await applyEntitlement(db,{id:'u1'},mapped)).toMatchObject({applied:false,reason:'stale_snapshot'});
 });

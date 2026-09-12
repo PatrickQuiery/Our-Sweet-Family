@@ -3,6 +3,7 @@ import { UserProfile } from '@clerk/clerk-react';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm, useToast } from '../context/DialogProvider';
 import api from '../lib/api';
+import SubscriptionManagement from '../components/SubscriptionManagement';
 
 const LOCATION_CONFIRM =
   "Turn on photo location?\n\n" +
@@ -12,32 +13,10 @@ const LOCATION_CONFIRM =
   "Heads up: a photo's location can reveal sensitive places like your home or your child's school. Only turn this on if you're comfortable seeing that.\n\n" +
   "Enable photo location?";
 
-const PLAN_DETAILS = {
-  free: {
-    name: 'Free',
-    color: 'bg-ink/5',
-    badge: 'bg-ink/10 text-ink-soft',
-    features: ['Unlimited photos (compressed)', '20GB video', 'Annual Memory Reel', 'Loved one access'],
-  },
-  plus: {
-    name: 'Plus',
-    color: 'bg-blue-50',
-    badge: 'bg-blue-100 text-blue-700',
-    features: ['Everything in Free', '200GB video', 'HD photos', 'Monthly Reels', 'Milestones', 'Export originals'],
-  },
-  premium: {
-    name: 'Premium',
-    color: 'bg-amber-50',
-    badge: 'bg-amber-100 text-amber-700',
-    features: ['Everything in Plus', 'Unlimited video', 'All Reel types', 'AI face tagging', 'Classified memories'],
-  },
-};
-
 export default function Settings() {
   const confirm = useConfirm();
   const toast = useToast();
   const { user, family, refreshFamily } = useAuth();
-  const plan = PLAN_DETAILS[user?.plan] || PLAN_DETAILS.free;
   const isOwner = user?.role === 'owner';
   const locationOn = !!family?.showPhotoLocation;
   const [savingLoc, setSavingLoc] = useState(false);
@@ -64,29 +43,7 @@ export default function Settings() {
     <div className="max-w-3xl mx-auto space-y-6">
       <h1 className="type-title text-ink">Settings</h1>
 
-      {/* Current plan (app-specific) */}
-      <div className={`card p-6 ${plan.color}`}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-ink">Your Plan</h2>
-          <span className={`badge ${plan.badge} font-semibold`}>{plan.name}</span>
-        </div>
-        <ul className="space-y-1.5 mb-4">
-          {plan.features.map((f) => (
-            <li key={f} className="flex items-center gap-2 text-sm text-ink-soft">
-              <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              {f}
-            </li>
-          ))}
-        </ul>
-        {user?.plan !== 'premium' && (
-          <div className="flex gap-2">
-            {user?.plan === 'free' && <button className="btn-primary text-sm">Upgrade to Plus — $5.99/mo</button>}
-            <button className="btn-secondary text-sm">Upgrade to Premium — $13.99/mo</button>
-          </div>
-        )}
-      </div>
+      <SubscriptionManagement />
 
       {/* Privacy — photo location (owner only) */}
       {isOwner && (
