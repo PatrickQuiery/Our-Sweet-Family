@@ -247,7 +247,7 @@ export default function Landing() {
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
                   <svg viewBox="0 0 100 100" className="w-7 h-7" fill="#ef3f74" aria-hidden="true"><path d="M50 82 C22 62 10 45 10 30 C10 18 19 11 29 11 C39 11 45 18 50 26 C55 18 61 11 71 11 C81 11 90 18 90 30 C90 45 78 62 50 82 Z" /></svg>
-                  <span className="font-extrabold text-xl text-ink tracking-tight">The Quiery Family</span>
+                  <span className="font-extrabold text-xl text-ink tracking-tight">The Bennett Family</span>
                 </div>
                 <span className="text-xs font-bold text-white bg-gradient-to-r from-brand-500 to-sun-400 px-3.5 py-1.5 rounded-full">Today</span>
               </div>
