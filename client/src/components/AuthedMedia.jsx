@@ -41,10 +41,9 @@ export function AuthedImage({ src, className = '', alt = '', ...props }) {
   return <img src={url} className={className} alt={alt} {...props} />;
 }
 
-export function AuthedVideo({ src, className = '', muted, loadingClassName, showFullscreenButton = false, ...props }) {
+export function AuthedVideo({ src, className = '', muted, loadingClassName, ...props }) {
   const url = useBlobUrl(src);
   const ref = useRef(null);
-  const [fullscreenError, setFullscreenError] = useState('');
   // React's `muted` attribute alone is unreliable — browsers often ignore it and
   // block muted autoplay. Set the DOM property directly so autoplay is allowed.
   useEffect(() => {
@@ -57,28 +56,5 @@ export function AuthedVideo({ src, className = '', muted, loadingClassName, show
       </div>
     );
   }
-  const video = <video ref={ref} src={url} className={className} muted={muted} {...props} />;
-  if (!showFullscreenButton) return video;
-  const openFullscreen = async () => {
-    setFullscreenError('');
-    const player = ref.current;
-    try {
-      // iPhone exposes native video fullscreen separately from the standard API.
-      if (typeof player?.webkitEnterFullscreen === 'function') player.webkitEnterFullscreen();
-      else if (typeof player?.requestFullscreen === 'function') await player.requestFullscreen();
-      else throw new Error('Fullscreen unavailable');
-    } catch {
-      setFullscreenError('Full screen is unavailable here. You can still watch using the video controls.');
-    }
-  };
-  return (
-    <div className="w-full">
-      {video}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-black px-4 py-3 text-white">
-        {props.autoPlay && muted && <span className="text-xs text-white/75">Starts muted · use the sound control to unmute</span>}
-        <button type="button" onClick={openFullscreen} className="rounded-full border border-white/40 px-4 py-2 text-sm font-medium hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Full screen</button>
-        {fullscreenError && <p role="status" className="w-full text-sm">{fullscreenError}</p>}
-      </div>
-    </div>
-  );
+  return <video ref={ref} src={url} className={className} muted={muted} {...props} />;
 }
