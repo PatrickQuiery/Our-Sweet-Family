@@ -1,15 +1,14 @@
-// Effective plan = the base plan, upgraded to at least Plus while a temporary
-// boost (the referral reward) is still active. Gating everywhere reads the
-// effective plan, so a 90-day Plus reward transparently unlocks Plus features
-// and reverts on its own when planBoostUntil passes.
+const { projectSnapshot } = require('./billing/entitlements');
 const RANK = { free: 0, plus: 1, premium: 2 };
 
-function effectivePlan(user) {
-  const base = user?.plan || 'free';
-  const boostActive =
-    user?.planBoostUntil && new Date(user.planBoostUntil).getTime() > Date.now();
-  if (boostActive && RANK.plus > (RANK[base] ?? 0)) return 'plus';
-  return base;
+function effectivePlan(user, now = Date.now()) {
+  let base = user?.plan || 'free';
+  if (user?.subscriptionSnapshot?.version === 1) {
+    base = projectSnapshot(user.subscriptionSnapshot, now).plan;
+  } else if (user?.subscriptionStatus && user?.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt).getTime() <= now) {
+    base = 'free';
+  }
+  const boostActive = user?.planBoostUntil && new Date(user.planBoostUntil).getTime() > now;
+  return boostActive && RANK.plus > (RANK[base] ?? 0) ? 'plus' : base;
 }
-
 module.exports = { effectivePlan };

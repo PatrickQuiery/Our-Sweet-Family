@@ -1,17 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Purchases, {
-  PACKAGE_TYPE,
+import {
   type PurchasesOffering,
   type PurchasesPackage,
 } from 'react-native-purchases';
 import { Button, Card, Text, useToast } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeProvider';
-import { useFamily } from '../src/context/FamilyProvider';
+import { useBilling } from '../src/hooks/useBilling';
+import { canPurchase, classifyPackage } from '../src/lib/billing';
+import { SubscriptionStatus } from '../src/components/SubscriptionStatus';
 import { usePurchases } from '../src/context/PurchasesProvider';
 
 // Sunrise wash (matches the rest of the app's headers).
@@ -22,7 +23,7 @@ const PRIVACY_URL = 'https://oursweetfamily.com/privacy';
 // Apple's standard EULA — required Terms link on the paywall unless we host our own.
 const TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 
-type TierId = 'plus' | 'premium' | 'pro';
+type TierId = 'plus' | 'premium';
 type Period = 'monthly' | 'annual';
 
 const TIER_META: Record<TierId, { name: string; blurb: string; features: string[]; accent: boolean; badge?: string }> = {
@@ -35,44 +36,22 @@ const TIER_META: Record<TierId, { name: string; blurb: string; features: string[
   premium: {
     name: 'Premium',
     blurb: 'Everything, unlimited',
-    features: ['Everything in Plus', 'Unlimited video', 'Every reel type', 'AI face tagging', 'Private memories'],
+    features: ['Everything in Plus', 'Unlimited video', 'Every reel type', 'Private memories'],
     accent: true,
     badge: 'Most popular',
   },
-  // Fallback when the offering isn't split into Plus/Premium yet.
-  pro: {
-    name: 'Our Sweet Family Pro',
-    blurb: 'Unlock everything',
-    features: ['Unlimited video', 'HD photos', 'All memory reels', 'Milestones & growth', 'Private memories'],
-    accent: true,
-  },
+
 };
-
-function classify(pkg: PurchasesPackage): { tier: TierId; period: Period } | null {
-  const s = `${pkg.identifier} ${pkg.product?.identifier ?? ''}`.toLowerCase();
-  const tier: TierId | null = s.includes('premium') ? 'premium' : s.includes('plus') ? 'plus' : null;
-  if (!tier) return null;
-  const annual = pkg.packageType === PACKAGE_TYPE.ANNUAL || /annual|year/.test(s);
-  const monthly = pkg.packageType === PACKAGE_TYPE.MONTHLY || /month/.test(s);
-  if (annual) return { tier, period: 'annual' };
-  if (monthly) return { tier, period: 'monthly' };
-  return null;
-}
-
-function periodOf(pkg: PurchasesPackage): Period | null {
-  const s = `${pkg.identifier} ${pkg.product?.identifier ?? ''}`.toLowerCase();
-  if (pkg.packageType === PACKAGE_TYPE.ANNUAL || /annual|year/.test(s)) return 'annual';
-  if (pkg.packageType === PACKAGE_TYPE.MONTHLY || /month/.test(s)) return 'monthly';
-  return null;
-}
 
 export default function Paywall() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, spacing, radius, scheme } = useTheme();
   const toast = useToast();
-  const { refresh } = usePurchases();
-  const { refresh: refreshFamily } = useFamily();
+  const purchases = usePurchases();
+  const billing = useBilling();
+  const actionLock = useRef(false);
+  const allowed = canPurchase(billing.status, purchases.ready, purchases.hasSubscription) && !billing.pending;
 
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,10 +60,11 @@ export default function Paywall() {
   const [buyingId, setBuyingId] = useState<string | null>(null);
 
   const loadOfferings = useCallback(async () => {
+    if (!allowed) { setLoading(false); setOffering(null); return; }
     setLoading(true);
     setError(null);
     try {
-      const offerings = await Purchases.getOfferings();
+      const offerings = await purchases.getOfferings();
       setOffering(offerings.current ?? null);
       if (!offerings.current || offerings.current.availablePackages.length === 0) {
         setError('Plans are being set up — please check back soon.');
@@ -94,40 +74,29 @@ export default function Paywall() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [allowed, purchases.getOfferings]);
 
   useEffect(() => {
     loadOfferings();
   }, [loadOfferings]);
 
-  // Bucket packages by tier + period; fall back to a single "pro" tier if the
-  // offering isn't split into Plus/Premium yet.
+  // Unknown products stay unavailable until their exact store IDs are configured.
   const { tiers, byTierPeriod, hasAnnual, hasMonthly } = useMemo(() => {
     const pkgs = offering?.availablePackages ?? [];
     const map: Partial<Record<TierId, Partial<Record<Period, PurchasesPackage>>>> = {};
-    let sawTier = false;
+
     let annual = false;
     let monthly = false;
     for (const p of pkgs) {
-      const c = classify(p);
+      const c = classifyPackage(p);
       if (c) {
-        sawTier = true;
+
         (map[c.tier] ??= {})[c.period] = p;
         if (c.period === 'annual') annual = true;
         else monthly = true;
       }
     }
-    if (!sawTier) {
-      // Fallback: treat everything as one tier.
-      for (const p of pkgs) {
-        const per = periodOf(p);
-        if (!per) continue;
-        (map.pro ??= {})[per] = p;
-        if (per === 'annual') annual = true;
-        else monthly = true;
-      }
-    }
-    const order: TierId[] = sawTier ? ['plus', 'premium'] : ['pro'];
+    const order: TierId[] = ['plus', 'premium'];
     return {
       tiers: order.filter((t) => map[t]),
       byTierPeriod: map,
@@ -142,38 +111,23 @@ export default function Paywall() {
     if (period === 'monthly' && !hasMonthly && hasAnnual) setPeriod('annual');
   }, [hasAnnual, hasMonthly]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const onBuy = useCallback(
-    async (pkg: PurchasesPackage) => {
-      setBuyingId(pkg.identifier);
-      try {
-        await Purchases.purchasePackage(pkg);
-        await Promise.all([refresh(), refreshFamily()]);
-        toast('Subscription active — thank you! 🎉', 'success');
-        router.back();
-      } catch (e: any) {
-        if (!e?.userCancelled) toast(e?.message ?? 'Purchase failed. Please try again.', 'error');
-      } finally {
-        setBuyingId(null);
-      }
-    },
-    [refresh, refreshFamily, router, toast],
-  );
-
-  const onRestore = useCallback(async () => {
+  const onBuy = useCallback(async (pkg: PurchasesPackage) => {
+    if (!allowed || actionLock.current || !classifyPackage(pkg)) return;
+    actionLock.current = true; setBuyingId(pkg.identifier);
     try {
-      const info = await Purchases.restorePurchases();
-      const active = Object.keys(info.entitlements.active).length > 0;
-      await Promise.all([refresh(), refreshFamily()]);
-      if (active) {
-        toast('Purchases restored', 'success');
+      // Reconcile with RevenueCat immediately before opening the store checkout.
+      const latest = await billing.sync();
+      if (!canPurchase(latest, purchases.ready, purchases.hasSubscription)) return;
+      await purchases.purchase(pkg);
+      try {
+        await billing.sync(true, classifyPackage(pkg)?.tier);
+        toast('Subscription confirmed for your family.', 'success');
         router.back();
-      } else {
-        toast('No purchases to restore', 'info');
-      }
-    } catch {
-      toast('Could not restore purchases', 'error');
-    }
-  }, [refresh, refreshFamily, router, toast]);
+      } catch { toast('Purchase received. Family access confirmation is pending.', 'info'); }
+    } catch (e: any) {
+      if (!e?.userCancelled) toast(e?.message?.includes('subscription already exists') ? 'A subscription already exists. Use Manage subscription to make changes.' : 'Purchase could not be completed. Please try again.', 'error');
+    } finally { actionLock.current = false; setBuyingId(null); }
+  }, [allowed, billing, purchases, router, toast]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -209,7 +163,9 @@ export default function Paywall() {
       </LinearGradient>
 
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.xl, gap: spacing.md }}>
-        {loading ? (
+        <SubscriptionStatus />
+        {billing.pending ? <Button title="Retry purchase confirmation" onPress={async () => { try { await billing.sync(); toast("Family access confirmed.", "success"); } catch {} }} /> : null}
+        {!allowed ? null : loading ? (
           <View style={{ paddingVertical: spacing.xxl, alignItems: 'center' }}>
             <ActivityIndicator color={colors.primary} />
           </View>
@@ -239,25 +195,19 @@ export default function Paywall() {
                       <Text variant="bodyMedium" color={active ? 'text' : 'textMuted'}>
                         {p === 'monthly' ? 'Monthly' : 'Annual'}
                       </Text>
-                      {p === 'annual' ? (
-                        <View style={{ backgroundColor: colors.primarySoft, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 }}>
-                          <Text variant="label" color="primary">
-                            Save 17%
-                          </Text>
-                        </View>
-                      ) : null}
                     </Pressable>
                   );
                 })}
               </View>
             ) : null}
 
+            {tiers.length === 0 ? <Text>No supported plans are available yet.</Text> : null}
             {/* Tier cards */}
             {tiers.map((tierId) => {
               const meta = TIER_META[tierId];
               const pkg = byTierPeriod[tierId]?.[period] ?? byTierPeriod[tierId]?.monthly ?? byTierPeriod[tierId]?.annual;
               if (!pkg) return null;
-              const isAnnual = periodOf(pkg) === 'annual';
+              const isAnnual = classifyPackage(pkg)?.period === 'annual';
               const busy = buyingId === pkg.identifier;
               return (
                 <Card
@@ -305,6 +255,7 @@ export default function Paywall() {
                     title={`Choose ${meta.name}`}
                     variant={meta.accent ? 'primary' : 'secondary'}
                     loading={busy}
+                    disabled={!allowed || !!buyingId}
                     onPress={() => onBuy(pkg)}
                   />
                 </Card>
@@ -312,13 +263,8 @@ export default function Paywall() {
             })}
 
             {/* Footer */}
-            <Pressable onPress={onRestore} hitSlop={8} style={{ alignSelf: 'center', paddingVertical: spacing.sm }}>
-              <Text variant="bodyMedium" color="primary">
-                Restore purchases
-              </Text>
-            </Pressable>
             <Text variant="caption" color="textMuted" center>
-              Plans auto-renew until canceled. Manage anytime in your App Store settings.
+              Plans auto-renew until canceled. Manage anytime in your store subscription settings.
             </Text>
             <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.md }}>
               <Pressable onPress={() => Linking.openURL(TERMS_URL)} hitSlop={8}>

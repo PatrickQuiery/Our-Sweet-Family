@@ -1,97 +1,63 @@
-const { mapEvent } = require('../../../lib/billing/entitlements');
-const F = require('./fixtures');
+const { mapSubscriber, projectSnapshot } = require('../../../lib/billing/entitlements');
+const { effectivePlan } = require('../../../lib/plan');
+const NOW = Date.parse('2026-09-12T12:00:00Z');
+const future = '2026-10-12T12:00:00Z';
+const past = '2026-08-12T12:00:00Z';
+function snapshot(entitlements = {}, subscriptions = {}) {
+  return { request_date_ms: NOW, subscriber: { entitlements, subscriptions, non_subscriptions: {}, management_url: 'https://apps.apple.com/account/subscriptions' } };
+}
+function entitlement(product, expires = future) { return { product_identifier: product, expires_date: expires, grace_period_expires_date: null, purchase_date: past }; }
+function sub(overrides = {}) { return { store:'app_store', expires_date:future, is_sandbox:false, unsubscribe_detected_at:null, billing_issues_detected_at:null, grace_period_expires_date:null, refunded_at:null, ...overrides }; }
 
-describe('mapEvent', () => {
-  it('maps an initial premium purchase to an active premium entitlement', () => {
-    const m = mapEvent(F.initialPurchasePremiumAppStore);
-    expect(m).toMatchObject({
-      appUserId: 'user_1',
-      plan: 'premium',
-      subscriptionStatus: 'active',
-      subscriptionStore: 'app_store',
-      subscriptionProductId: 'osf_premium_monthly',
-      subscriptionWillRenew: true,
-    });
-    expect(m.subscriptionExpiresAt.getTime()).toBe(F.EXP_MS);
+describe('RevenueCat customer projection', () => {
+  it('uses entitlement names, not misleading product names, for access', () => {
+    expect(mapSubscriber(snapshot({}, { premium_yearly: sub() }), {now:NOW}).plan).toBe('free');
   });
-
-  it('maps a renewal to active (play store)', () => {
-    const m = mapEvent(F.renewalPremiumPlayStore);
-    expect(m).toMatchObject({ plan: 'premium', subscriptionStatus: 'active', subscriptionStore: 'play_store' });
+  it('keeps Premium when an unrelated Plus subscription has expired', () => {
+    const data = snapshot({plus:entitlement('plus_monthly',past),premium:entitlement('premium_yearly')}, {plus_monthly:sub({expires_date:past}), premium_yearly:sub()});
+    expect(mapSubscriber(data,{now:NOW})).toMatchObject({plan:'premium',subscriptionStatus:'active',subscriptionWillRenew:true});
   });
-
-  it('maps a product change (plus→premium) to active premium via stripe', () => {
-    const m = mapEvent(F.productChangePlusToPremiumStripe);
-    expect(m).toMatchObject({ plan: 'premium', subscriptionStatus: 'active', subscriptionStore: 'stripe' });
+  it('cancellation keeps access to the paid-through date and stops renewal', () => {
+    const data=snapshot({premium:entitlement('premium_yearly')},{premium_yearly:sub({unsubscribe_detected_at:past})});
+    expect(mapSubscriber(data,{now:NOW})).toMatchObject({plan:'premium',subscriptionStatus:'canceled',subscriptionWillRenew:false});
   });
-
-  it('maps a cancellation to canceled but keeps the paid plan until expiry', () => {
-    const m = mapEvent(F.cancellationPremium);
-    expect(m).toMatchObject({ plan: 'premium', subscriptionStatus: 'canceled', subscriptionWillRenew: false });
+  it('billing trouble alone does not grant access after expiry', () => {
+    const data=snapshot({premium:entitlement('premium_yearly',past)},{premium_yearly:sub({expires_date:past,billing_issues_detected_at:past})});
+    expect(mapSubscriber(data,{now:NOW}).plan).toBe('free');
   });
-
-  it('maps a billing issue to billing_issue while keeping access', () => {
-    const m = mapEvent(F.billingIssuePremium);
-    expect(m).toMatchObject({ plan: 'premium', subscriptionStatus: 'billing_issue' });
+  it('honors a real grace period and bounds access at its end', () => {
+    const data=snapshot({premium:entitlement('premium_yearly',past)},{premium_yearly:sub({expires_date:past,billing_issues_detected_at:past,grace_period_expires_date:future})});
+    const mapped=mapSubscriber(data,{now:NOW});
+    expect(mapped).toMatchObject({plan:'premium',subscriptionStatus:'in_grace',subscriptionExpiresAt:new Date(future)});
+    expect(projectSnapshot(mapped.subscriptionSnapshot,Date.parse(future)).plan).toBe('free');
   });
-
-  it('maps an expiration to free/expired and no renewal', () => {
-    const m = mapEvent(F.expirationPremium);
-    expect(m).toMatchObject({ plan: 'free', subscriptionStatus: 'expired', subscriptionWillRenew: false });
+  it('revokes refunded access even if the entitlement has a future date', () => {
+    const data=snapshot({premium:entitlement('premium_yearly')},{premium_yearly:sub({refunded_at:past})});
+    expect(mapSubscriber(data,{now:NOW}).plan).toBe('free');
   });
-
-  it('maps a yearly premium App Store purchase to the premium tier', () => {
-    const m = mapEvent({
-      event: {
-        type: 'INITIAL_PURCHASE',
-        app_user_id: 'user_prem',
-        entitlement_ids: ['premium'],
-        product_id: 'premium_yearly',
-        store: 'APP_STORE',
-        expiration_at_ms: F.EXP_MS,
-      },
-    });
-    expect(m).toMatchObject({
-      appUserId: 'user_prem',
-      plan: 'premium',
-      subscriptionStatus: 'active',
-      subscriptionStore: 'app_store',
-      subscriptionProductId: 'premium_yearly',
-      subscriptionWillRenew: true,
-    });
+  it('excludes sandbox grants unless explicitly enabled', () => {
+    const data=snapshot({premium:entitlement('premium_yearly')},{premium_yearly:sub({is_sandbox:true})});
+    expect(mapSubscriber(data,{now:NOW}).plan).toBe('free');
+    expect(mapSubscriber(data,{now:NOW,allowSandbox:true}).plan).toBe('premium');
   });
-
-  it('maps a yearly plus purchase to the plus tier (not premium)', () => {
-    const m = mapEvent({
-      event: { type: 'INITIAL_PURCHASE', app_user_id: 'user_plus', entitlement_ids: ['plus'], product_id: 'plus_yearly', store: 'APP_STORE', expiration_at_ms: F.EXP_MS },
-    });
-    expect(m).toMatchObject({ plan: 'plus', subscriptionStatus: 'active' });
+  it('falls back to still-valid Plus automatically when Premium expires between webhooks', () => {
+    const data=snapshot({premium:entitlement('premium_monthly','2026-09-13T00:00:00Z'),plus:entitlement('plus_yearly')},{premium_monthly:sub({expires_date:'2026-09-13T00:00:00Z'}),plus_yearly:sub()});
+    const mapped=mapSubscriber(data,{now:NOW});
+    expect(effectivePlan(mapped,Date.parse('2026-09-14T00:00:00Z'))).toBe('plus');
   });
-
-  it('falls back to the right tier from a plus_/premium_ product id when entitlement ids are absent', () => {
-    const plus = mapEvent({ event: { type: 'RENEWAL', app_user_id: 'u', product_id: 'plus_monthly', store: 'APP_STORE', expiration_at_ms: F.EXP_MS } });
-    const prem = mapEvent({ event: { type: 'RENEWAL', app_user_id: 'u', product_id: 'premium_monthly', store: 'APP_STORE', expiration_at_ms: F.EXP_MS } });
-    expect(plus).toMatchObject({ plan: 'plus' });
-    expect(prem).toMatchObject({ plan: 'premium' });
+  it('never converts malformed customer data into a free-plan write', () => {
+    for (const data of [{}, {subscriber:{}}, snapshot({premium:{product_identifier:'premium_yearly',expires_date:'bad'}})]) {
+      expect(()=>mapSubscriber(data,{now:NOW})).toThrow();
+    }
   });
-
-  it('maps a plus purchase to the plus plan', () => {
-    const m = mapEvent(F.initialPurchasePlus);
-    expect(m).toMatchObject({ appUserId: 'user_2', plan: 'plus', subscriptionStatus: 'active' });
+  it('does not expose unsafe management URLs', () => {
+    const data=snapshot({plus:entitlement('plus_yearly')},{plus_yearly:sub()});
+    data.subscriber.management_url='javascript:alert(1)';
+    expect(mapSubscriber(data,{now:NOW}).subscriptionManagementUrl).toBeNull();
   });
-
-  it('flags a transfer with from/to and the transferred entitlement', () => {
-    const m = mapEvent(F.transfer);
-    expect(m).toMatchObject({ transfer: true, from: 'user_old', to: 'user_new', plan: 'premium' });
-  });
-
-  it('ignores an event whose product maps to no known tier', () => {
-    const m = mapEvent(F.unknownProduct);
-    expect(m).toMatchObject({ ignored: true });
-  });
-
-  it('ignores unhandled event types (e.g. TEST pings)', () => {
-    const m = mapEvent(F.unhandledType);
-    expect(m).toMatchObject({ ignored: true });
+  it('keeps referral access after subscription expiration', () => {
+    const data=snapshot({plus:entitlement('plus_yearly',past)},{plus_yearly:sub({expires_date:past})});
+    const mapped=mapSubscriber(data,{now:NOW});
+    expect(effectivePlan({...mapped,planBoostUntil:future},NOW)).toBe('plus');
   });
 });

@@ -47,13 +47,16 @@ model User {
   // planBoostUntil is in the future, the user's EFFECTIVE plan is at least Plus.
   planBoostUntil DateTime?
   referralCode   String?  @unique  // this user's own share code
-  // Billing metadata synced from RevenueCat webhooks. `plan` above stays the
-  // authoritative gate; these are descriptive (status/renewal for the manage UI).
+  // Trusted RevenueCat snapshot, reconciled by webhooks and authenticated sync.
+  // effectivePlan projects expiration at read time and preserves referral boosts.
   subscriptionStatus    String?   // active | in_grace | billing_issue | canceled | expired
   subscriptionStore     String?   // app_store | play_store | stripe
   subscriptionProductId String?
   subscriptionExpiresAt DateTime?
   subscriptionWillRenew Boolean?
+  subscriptionSyncedAt DateTime?
+  subscriptionManagementUrl String?
+  subscriptionSnapshot Json?
   createdAt    DateTime @default(now())
 
   ownedFamilies  Family[]       @relation("FamilyOwner")

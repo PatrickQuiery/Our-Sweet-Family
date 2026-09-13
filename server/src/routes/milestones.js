@@ -15,7 +15,7 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const child = await prisma.child.findUnique({
       where: { id: childId },
-      include: { family: { include: { members: true, owner: { select: { plan: true, planBoostUntil: true } } } } },
+      include: { family: { include: { members: true, owner: { select: { plan: true, planBoostUntil: true, subscriptionSnapshot: true, subscriptionStatus: true, subscriptionExpiresAt: true } } } } },
     });
     if (!child) return res.status(404).json({ error: 'Child not found' });
 
