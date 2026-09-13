@@ -25,7 +25,18 @@ Configure a webhook for all relevant events at `https://<API-host>/api/billing/r
 
 ## Dashboard state verified September 13, 2026
 
-RevenueCat project `c6c99b64` (Our Sweet Family) still has Test Store products only. Its default offering contains the four product IDs above. The account is an Owner and the real App Store creation form is accessible. No real store or web payment provider is connected yet.
+RevenueCat project `c6c99b64` (Our Sweet Family) has a saved RevenueCat Billing web app, `appee814d54a3`, connected to the live Our Sweet Family Stripe account. The default offering preserves the existing Test Store products and includes all four real web products. The account is an Owner; the Apple store connection remains pending.
+
+| Web product | RevenueCat ID | USD price |
+| --- | --- | --- |
+| `plus_monthly` | `prod649311c930` | $5.99/month |
+| `plus_yearly` | `prod76042bae8e` | $59.99/year |
+| `premium_monthly` | `prod0697df5325` | $13.99/month |
+| `premium_yearly` | `prod5ab6b72cc6` | $139.99/year |
+
+Created canonical lowercase entitlements `plus` (`entl590e90d26f`) and `premium` (`entl40801f22ae`) to match both clients and the server. Each has its two web and two Test Store products attached. Existing uppercase and legacy entitlements were preserved. All four web products are mapped into the existing packages of default offering `ofrng4f89206671`.
+
+Saved plan-change rules for all four web products: tier upgrades and same-tier monthly-to-yearly changes apply immediately; tier downgrades and same-tier yearly-to-monthly changes apply at the next renewal. RevenueCat describes immediate upgrades as refunding unused time from the previous period. No customer subscription was changed. USD is the default currency; automatic tax, free trials, and introductory periods were not configured.
 
 Saved Customer Center configuration: screen title “Manage your family subscription” and purchase history enabled. Existing missing-purchase, plan-change, management and refund flows remain available.
 
@@ -49,9 +60,11 @@ With explicit owner approval, generated and downloaded the Apple In-App Purchase
 
 Apple Business shows the Paid Apps Agreement as **New** and requires the owner to update legal entity information first. Banking/tax and agreement completion remain owner tasks. EU distribution additionally requires the trader declaration.
 
-Stripe now lists **Our Sweet Family** in Live mode, with **Verify your email** and **Activate payments** marked Complete. Account status still shows representative information in review, **Payments paused** and **Payouts paused**, with no further action currently required. The dashboard estimates 2–3 days for review; this is not a guarantee of approval or timing. No real payment has been attempted.
+Stripe lists **Our Sweet Family** in Live mode. The latest account-status page shows **Verified** and **No active tasks for your account**; the previous review and payment/payout pause notices are no longer present. No real payment has been attempted.
 
-The RevenueCat app installation is prepared in **Live mode** and awaits the owner’s explicit confirmation of its account permissions and terms. No installation has been finalized. The RevenueCat Billing form is prepared with USD, app name **Our Sweet Family**, and the existing support contact `contact@oursweetfamily.com`, but cannot be saved until Stripe is connected. Then create web products/prices, map entitlements and complete checkout branding/support/legal links. Stripe review must clear before accepting real payments.
+With explicit owner consent, installed RevenueCat in Stripe Live mode and linked the Stripe account to RevenueCat. The web billing configuration is saved with USD, app name **Our Sweet Family**, and support contact `contact@oursweetfamily.com`. Checkout branding and end-to-end sandbox validation remain to be checked before release.
+
+Railway production access is now available. The existing service has `REVENUECAT_WEBHOOK_SECRET` but no `REVENUECAT_API_KEY`. A new server-only key form is prepared, awaiting action-time consent to generate and install it. No secret key has been printed or committed. The web public SDK key has been saved and verified in Vercel's Production environment as `VITE_REVENUECAT_WEB_KEY`; production billing deployment remains pending.
 
 After the Apple credential is connected, attach real Apple products to `plus`/`premium` and the default offering. Android additionally requires Play configuration. No real-money checkout has been validated.
 
@@ -61,7 +74,7 @@ After the Apple credential is connected, attach real Apple products to `plus`/`p
 2. Run `npm ci`, `npm run db:generate --workspace=server`, then apply migrations with `npx prisma migrate deploy` from `server/` against the intended database. The new migration adds three nullable columns and does not delete existing data. Production start already runs migrations.
 3. Deploy API before either new client; otherwise clients will receive missing-endpoint errors. The new API requires the server key for real event reconciliation, so configure it before rollout.
 4. Build/deploy web with its public key. Build a new native development/TestFlight binary with the platform key (native purchase SDK requires a native build). Do not ship the Test Store key in production.
-5. Run the acceptance checks below on isolated test accounts, then release production only after real-store configuration and sandbox purchase testing pass. The subscription release has not been deployed. Railway and EAS access, live payment-provider activation and final store validation remain incomplete. App Store Connect is now accessible and draft product setup is saved as described above.
+5. Run the acceptance checks below on isolated test accounts, then release production only after real-store configuration and sandbox purchase testing pass. The subscription release has not been deployed. Railway access and Stripe connection are available; server credentials, EAS access and final store validation remain incomplete. App Store Connect draft product setup is saved as described above.
 
 ## Acceptance checks
 
