@@ -83,6 +83,12 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "edaf1f17-3f9e-4e22-a686-100fcb617cbf"
+      }
+    },
+    "owner": "our-sweet-family"
   }
 }
