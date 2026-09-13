@@ -64,7 +64,7 @@ Stripe lists **Our Sweet Family** in Live mode. The latest account-status page s
 
 With explicit owner consent, installed RevenueCat in Stripe Live mode and linked the Stripe account to RevenueCat. The web billing configuration is saved with USD, app name **Our Sweet Family**, and support contact `contact@oursweetfamily.com`. Checkout branding and end-to-end sandbox validation remain to be checked before release.
 
-Railway production access is now available. The existing service has `REVENUECAT_WEBHOOK_SECRET` but no `REVENUECAT_API_KEY`. A new server-only key form is prepared, awaiting action-time consent to generate and install it. No secret key has been printed or committed. The web public SDK key has been saved and verified in Vercel's Production environment as `VITE_REVENUECAT_WEB_KEY`; production billing deployment remains pending.
+With explicit owner approval, generated the V1 secret key **Our Sweet Family Railway server** and installed it as `REVENUECAT_API_KEY` in Railway production. Also set `REVENUECAT_ALLOW_SANDBOX=false`. Railway reports the configuration deployment successful and the service Online. The existing `REVENUECAT_WEBHOOK_SECRET` is retained, and the RevenueCat webhook destination matches the production `/api/billing/revenuecat` endpoint. No secret key has been printed or committed. The web public SDK key has been saved and verified in Vercel's Production environment as `VITE_REVENUECAT_WEB_KEY`. The running code remains the prior production release; subscription code deployment and end-to-end checkout validation remain pending.
 
 After the Apple credential is connected, attach real Apple products to `plus`/`premium` and the default offering. Android additionally requires Play configuration. No real-money checkout has been validated.
 
@@ -74,7 +74,7 @@ After the Apple credential is connected, attach real Apple products to `plus`/`p
 2. Run `npm ci`, `npm run db:generate --workspace=server`, then apply migrations with `npx prisma migrate deploy` from `server/` against the intended database. The new migration adds three nullable columns and does not delete existing data. Production start already runs migrations.
 3. Deploy API before either new client; otherwise clients will receive missing-endpoint errors. The new API requires the server key for real event reconciliation, so configure it before rollout.
 4. Build/deploy web with its public key. Build a new native development/TestFlight binary with the platform key (native purchase SDK requires a native build). Do not ship the Test Store key in production.
-5. Run the acceptance checks below on isolated test accounts, then release production only after real-store configuration and sandbox purchase testing pass. The subscription release has not been deployed. Railway access and Stripe connection are available; server credentials, EAS access and final store validation remain incomplete. App Store Connect draft product setup is saved as described above.
+5. Run the acceptance checks below on isolated test accounts, then release production only after real-store configuration and sandbox purchase testing pass. The subscription release has not been deployed. Railway credentials and Stripe connection are configured; EAS access and final store validation remain incomplete. App Store Connect draft product setup is saved as described above.
 
 ## Acceptance checks
 
