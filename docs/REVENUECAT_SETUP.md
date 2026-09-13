@@ -49,7 +49,9 @@ With explicit owner approval, generated and downloaded the Apple In-App Purchase
 
 Apple Business shows the Paid Apps Agreement as **New** and requires the owner to update legal entity information first. Banking/tax and agreement completion remain owner tasks. EU distribution additionally requires the trader declaration.
 
-Stripe is signed in to the new business account but currently offers only Test mode/sandbox. Its dashboard requires email and business verification before real payments. The RevenueCat Stripe app installation was inspected but not finalized. Once live mode is activated, the owner must confirm the concrete app-install permissions/terms, then connect Stripe to RevenueCat Billing, create web products/prices, map entitlements and configure checkout branding/support/legal links.
+Stripe now lists **Our Sweet Family** in Live mode, with **Verify your email** and **Activate payments** marked Complete. Account status still shows representative information in review, **Payments paused** and **Payouts paused**, with no further action currently required. The dashboard estimates 2–3 days for review; this is not a guarantee of approval or timing. No real payment has been attempted.
+
+The RevenueCat app installation is prepared in **Live mode** and awaits the owner’s explicit confirmation of its account permissions and terms. No installation has been finalized. The RevenueCat Billing form is prepared with USD, app name **Our Sweet Family**, and the existing support contact `contact@oursweetfamily.com`, but cannot be saved until Stripe is connected. Then create web products/prices, map entitlements and complete checkout branding/support/legal links. Stripe review must clear before accepting real payments.
 
 After the Apple credential is connected, attach real Apple products to `plus`/`premium` and the default offering. Android additionally requires Play configuration. No real-money checkout has been validated.
 
