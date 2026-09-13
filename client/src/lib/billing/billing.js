@@ -34,7 +34,7 @@ export function managementUrl(status) {
   return null;
 }
 export function validateWebKey(key, allowSandbox = false) {
-  return typeof key === 'string' && (/^rcb_[A-Za-z0-9]+$/.test(key) || (allowSandbox && /^test_[A-Za-z0-9]+$/.test(key)));
+  return typeof key === 'string' && (/^rcb_[A-Za-z0-9]+$/.test(key) || (allowSandbox && /^(?:test_|rcb_sb_)[A-Za-z0-9]+$/.test(key)));
 }
 export async function syncPurchase(sync, tier, delay = ms => new Promise(resolve => setTimeout(resolve, ms))) {
   let status = null;

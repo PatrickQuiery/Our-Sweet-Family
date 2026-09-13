@@ -31,6 +31,8 @@ describe('billing purchase boundaries', () => {
     assert.equal(validateWebKey('test_public', false), false);
     assert.equal(validateWebKey('test_public', true), true);
     assert.equal(validateWebKey('rcb_public', false), true);
+    assert.equal(validateWebKey('rcb_sb_public', false), false);
+    assert.equal(validateWebKey('rcb_sb_public', true), true);
   });
   it('keeps purchase pending when server never confirms entitlement', async () => {
     let calls = 0;
