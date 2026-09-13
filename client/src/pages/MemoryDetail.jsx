@@ -240,7 +240,6 @@ export default function MemoryDetail() {
               autoPlay
               muted
               playsInline
-              showFullscreenButton
               controls
               className="max-w-full max-h-[600px] w-full"
             />

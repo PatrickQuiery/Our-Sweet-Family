@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, act, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, act, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import MemoryDetail from './MemoryDetail';
 import api from '../lib/api';
@@ -24,10 +24,11 @@ describe('memory detail loading', () => {
     expect(document.body.style.overflow).toBe('');
   });
 });
-it('opens video memories with muted inline autoplay and a fullscreen option', async () => {
+it('opens video memories with muted inline autoplay and native controls', async () => {
   api.get.mockResolvedValue({data:{memory:{id:'video',fileType:'video',fileUrl:'https://example.com/video.mp4',capturedAt:'2026-09-01T12:00:00Z',uploadedById:'owner',reactions:[],comments:[]}}});
   const {container}=render(<MemoryRouter initialEntries={['/memories/video']} future={{v7_startTransition:true,v7_relativeSplatPath:true}}><Routes><Route path="/memories/:id" element={<MemoryDetail/>}/></Routes></MemoryRouter>);
-  expect(await screen.findByRole('button',{name:'Full screen'})).toBeTruthy();
+  await waitFor(() => expect(container.querySelector('video')).toBeTruthy());
+  expect(screen.queryByRole('button',{name:'Full screen'})).toBeNull();
   const player=container.querySelector('video');
-  expect(player.autoplay).toBe(true);expect(player.muted).toBe(true);expect(player.playsInline).toBe(true);
+  expect(player.autoplay).toBe(true);expect(player.muted).toBe(true);expect(player.playsInline).toBe(true);expect(player.controls).toBe(true);
 });
